@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
   auto ct = [=](const TestSpacePoint& sp, float, float,
                 float) -> std::pair<Acts::Vector3, Acts::Vector2> {
     Acts::Vector3 position(sp.x(), sp.y(), sp.z());
-    Acts::Vector2 covariance(sp.varianceR(), sp.varianceZ());
+    Acts::Vector2 covariance(sp.m_varianceR, sp.m_varianceZ);
     return std::make_pair(position, covariance);
   };
 
