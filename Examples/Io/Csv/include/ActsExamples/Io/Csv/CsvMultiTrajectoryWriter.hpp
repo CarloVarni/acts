@@ -10,12 +10,26 @@
 
 #include "ActsExamples/EventData/Trajectories.hpp"
 #include "ActsExamples/Framework/WriterT.hpp"
+#include "Acts/EventData/MultiTrajectoryHelpers.hpp"
+#include "ActsFatras/EventData/Barcode.hpp"
 
 #include <fstream>
 
 using namespace Acts::UnitLiterals;
 
 namespace ActsExamples {
+
+/// @brief Struct for brief trajectory summary info
+/// @TODO: add nSharedHits
+///
+struct trackInfo : public Acts::MultiTrajectoryHelpers::TrajectoryState {
+  size_t trackId;
+  ActsFatras::Barcode particleId;
+  size_t nMajorityHits;
+  std::string trackType;
+  double truthMatchProb;
+  const TrackParameters* fitterParameters;
+};
 
 /// @class CsvMultiTrajectoryWriter
 ///
@@ -35,11 +49,11 @@ class CsvMultiTrajectoryWriter : public WriterT<TrajectoriesContainer> {
   struct Config {
     std::string inputTrajectories;  ///< Input trajectory collection
     std::string outputDir;          ///< where to place output files
-    std::string inputMeasurementParticlesMap;
+    std::string inputMeasurementParticlesMap; ///< Input hit-particles map collection
     size_t outputPrecision = 6;   ///< floating point precision
     size_t nMeasurementsMin = 9;  ///< Min number of measurements
-    double truthMatchProbMin = 0.5;
-    double ptMin = 1_GeV;
+    double truthMatchProbMin = 0.5; ///< Probability threshold for fake tracks 
+    double ptMin = 1_GeV; ///< Min pt of tracks
   };
 
   /// constructor
