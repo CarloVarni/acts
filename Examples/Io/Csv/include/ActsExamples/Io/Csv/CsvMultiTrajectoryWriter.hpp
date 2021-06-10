@@ -70,8 +70,7 @@ class CsvMultiTrajectoryWriter : public WriterT<TrajectoriesContainer> {
     std::string trackType;
     double truthMatchProb;
     const TrackParameters* fittedParameters;
-  }; // trackInfo struct
-
+  };  // trackInfo struct
 };
 
 }  // namespace ActsExamples
