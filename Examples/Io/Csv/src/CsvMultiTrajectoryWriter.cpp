@@ -173,7 +173,7 @@ ProcessCode CsvMultiTrajectoryWriter::writeT(
     // write the track info
     mos << trajState.trackId << ",";
     mos << trajState.particleId << ",";
-    mos << trajState.nStates << "," ;
+    mos << trajState.nStates << ",";
     mos << trajState.nMajorityHits << ",";
     mos << trajState.nMeasurements << ",";
     mos << trajState.nOutliers << ",";
