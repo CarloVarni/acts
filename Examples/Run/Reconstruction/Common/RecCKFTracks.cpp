@@ -23,6 +23,7 @@
 #include "ActsExamples/Io/Performance/TrackFinderPerformanceWriter.hpp"
 #include "ActsExamples/Io/Root/RootTrajectoryParametersWriter.hpp"
 #include "ActsExamples/Io/Root/RootTrajectoryStatesWriter.hpp"
+#include "ActsExamples/Io/Root/RootTrajectorySummaryWriter.hpp"
 #include "ActsExamples/MagneticField/MagneticFieldOptions.hpp"
 #include "ActsExamples/Options/CommonOptions.hpp"
 #include "ActsExamples/TrackFinding/SeedingAlgorithm.hpp"
@@ -31,7 +32,7 @@
 #include "ActsExamples/TrackFinding/TrackFindingAlgorithm.hpp"
 #include "ActsExamples/TrackFinding/TrackFindingOptions.hpp"
 #include "ActsExamples/TrackFinding/TrackParamsEstimationAlgorithm.hpp"
-#include "ActsExamples/TruthTracking/ParticleSmearing.hpp"
+#include "ActsExamples/TrackFitting/TrackFittingOptions.hpp"
 #include "ActsExamples/TruthTracking/TruthSeedSelector.hpp"
 #include "ActsExamples/TruthTracking/TruthTrackFinder.hpp"
 #include "ActsExamples/Utilities/Options.hpp"
@@ -73,6 +74,7 @@ int runRecCKFTracks(int argc, char* argv[],
                             OutputFormat::Csv | OutputFormat::DirectoryOnly);
   detector->addOptions(desc);
   Options::addMagneticFieldOptions(desc);
+  Options::addFittingOptions(desc);
   Options::addTrackFindingOptions(desc);
   addRecCKFOptions(desc);
   Options::addDigitizationOptions(desc);
@@ -225,6 +227,9 @@ int runRecCKFTracks(int argc, char* argv[],
     paramsEstimationCfg.sigmaTheta = 0.02_degree;
     paramsEstimationCfg.sigmaQOverP = 0.1 / 1._GeV;
     paramsEstimationCfg.sigmaT0 = 1400._s;
+    paramsEstimationCfg.initialVarInflation =
+        vm["ckf-initial-variance-inflation"].template as<Options::Reals<6>>();
+
     sequencer.addAlgorithm(std::make_shared<TrackParamsEstimationAlgorithm>(
         paramsEstimationCfg, logLevel));
 
@@ -249,7 +254,7 @@ int runRecCKFTracks(int argc, char* argv[],
   trackStatesWriter.inputTrajectories = trackFindingCfg.outputTrajectories;
   // @note The full particles collection is used here to avoid lots of warnings
   // since the unselected CKF track might have a majority particle not in the
-  // filtered particle collection. Thsi could be avoided when a seperate track
+  // filtered particle collection. This could be avoided when a seperate track
   // selection algorithm is used.
   trackStatesWriter.inputParticles = particleReader.outputParticles;
   trackStatesWriter.inputSimHits = simHitReaderCfg.outputSimHits;
@@ -268,7 +273,7 @@ int runRecCKFTracks(int argc, char* argv[],
   trackParamsWriter.inputTrajectories = trackFindingCfg.outputTrajectories;
   // @note The full particles collection is used here to avoid lots of warnings
   // since the unselected CKF track might have a majority particle not in the
-  // filtered particle collection. Thsi could be avoided when a seperate track
+  // filtered particle collection. This could be avoided when a seperate track
   // selection algorithm is used.
   trackParamsWriter.inputParticles = particleReader.outputParticles;
   trackParamsWriter.inputMeasurementParticlesMap =
@@ -279,6 +284,17 @@ int runRecCKFTracks(int argc, char* argv[],
   sequencer.addWriter(std::make_shared<RootTrajectoryParametersWriter>(
       trackParamsWriter, logLevel));
 
+  // write track summary from CKF
+  RootTrajectorySummaryWriter::Config trackSummaryWriter;
+  trackSummaryWriter.inputTrajectories = trackFindingCfg.outputTrajectories;
+  trackSummaryWriter.inputMeasurementParticlesMap =
+      digiCfg.outputMeasurementParticlesMap;
+  trackSummaryWriter.outputDir = outputDir;
+  trackSummaryWriter.outputFilename = "tracksummary_ckf.root";
+  trackSummaryWriter.outputTreename = "tracksummary_ckf";
+  sequencer.addWriter(std::make_shared<RootTrajectorySummaryWriter>(
+      trackSummaryWriter, logLevel));
+
   // Write CKF performance data
   CKFPerformanceWriter::Config perfWriterCfg;
   perfWriterCfg.inputParticles = inputParticles;
@@ -287,7 +303,7 @@ int runRecCKFTracks(int argc, char* argv[],
       digiCfg.outputMeasurementParticlesMap;
   // The bottom seed could be the first, second or third hits on the truth track
   perfWriterCfg.nMeasurementsMin = particleSelectorCfg.nHitsMin - 3;
-  perfWriterCfg.ptMin = 1_GeV;
+  perfWriterCfg.ptMin = 0.4_GeV;
   perfWriterCfg.outputDir = outputDir;
 #ifdef ACTS_PLUGIN_ONNX
   // Onnx plugin related options
