@@ -14,8 +14,8 @@
 #include "Acts/Surfaces/Surface.hpp"
 
 #include <functional>
-#include <unordered_map>
 #include <type_traits>
+#include <unordered_map>
 
 namespace Acts {
 
@@ -72,7 +72,8 @@ TrajectoryState trajectoryState(
       trajState.measurementChi2.push_back(state.chi2());
       trajState.measurementVolume.push_back(volume);
       trajState.measurementLayer.push_back(layer);
-      trajState.contributingMeasurementIndex.push_back(state.calibratedSourceLink().index());
+      trajState.contributingMeasurementIndex.push_back(
+          state.calibratedSourceLink().index());
     } else if (typeFlags.test(Acts::TrackStateFlag::OutlierFlag)) {
       trajState.nOutliers++;
       trajState.outlierChi2.push_back(state.chi2());
@@ -123,7 +124,8 @@ VolumeTrajectoryStateContainer trajectoryState(
       trajState.measurementChi2.push_back(state.chi2());
       trajState.measurementVolume.push_back(volume);
       trajState.measurementLayer.push_back(layer);
-      trajState.contributingMeasurementIndex.push_back(state.calibratedSourceLink().index());
+      trajState.contributingMeasurementIndex.push_back(
+          state.calibratedSourceLink().index());
     } else if (typeFlags.test(Acts::TrackStateFlag::OutlierFlag)) {
       trajState.nOutliers++;
       trajState.outlierChi2.push_back(state.chi2());
@@ -137,35 +139,40 @@ VolumeTrajectoryStateContainer trajectoryState(
   });
   return trajStateContainer;
 }
-  
-/// @brief Update trajState collection with nSharedHits by checking what measurement indexes each trajState uses
+
+/// @brief Update trajState collection with nSharedHits by checking what
+/// measurement indexes each trajState uses
 ///
 /// @param [in] array of trajState objects
-template< typename trajState_t >
+template <typename trajState_t>
 void computeSharedHits(std::vector<trajState_t>& trajStateCollection) {
-  static_assert(std::is_base_of<TrajectoryState,trajState_t>::value,
-		"computeSharedHits requires struct inheriting from TrajectoryState");
-  
+  static_assert(
+      std::is_base_of<TrajectoryState, trajState_t>::value,
+      "computeSharedHits requires struct inheriting from TrajectoryState");
+
   // Hit index -> array of tracks using it
-  std::unordered_map< std::size_t, std::vector<std::size_t> > recordedHits;
-  
+  std::unordered_map<std::size_t, std::vector<std::size_t> > recordedHits;
+
   // Record the tracks that use the hits
-  for (std::size_t i(0); i<trajStateCollection.size(); i++) {
-    std::vector<std::size_t>& contributingHits = trajStateCollection.at(i).contributingMeasurementIndex;
+  for (std::size_t i(0); i < trajStateCollection.size(); i++) {
+    std::vector<std::size_t>& contributingHits =
+        trajStateCollection.at(i).contributingMeasurementIndex;
     for (std::size_t hitIndex : contributingHits) {
-      if (recordedHits.find(hitIndex) == recordedHits.end()) recordedHits[hitIndex] = std::vector<std::size_t>();
+      if (recordedHits.find(hitIndex) == recordedHits.end())
+        recordedHits[hitIndex] = std::vector<std::size_t>();
       recordedHits[hitIndex].push_back(i);
     }
   }
 
   // Update nSharedHits
   for (const auto& [hitIndex, trackIndexArray] : recordedHits) {
-    if (trackIndexArray.size() < 2) continue;
+    if (trackIndexArray.size() < 2)
+      continue;
     for (std::size_t trackIndex : trackIndexArray)
       trajStateCollection.at(trackIndex).nSharedHits++;
   }
 }
-  
+
 /// @brief Transforms the filtered parameters from a @c TrackStateProxy to free
 /// parameters
 ///

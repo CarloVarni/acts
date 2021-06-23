@@ -18,7 +18,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-
 using namespace ActsExamples;
 
 CsvMultiTrajectoryWriter::CsvMultiTrajectoryWriter(
@@ -54,21 +53,21 @@ ProcessCode CsvMultiTrajectoryWriter::writeT(
 
   std::vector<std::size_t> trajIndexCollection;
   std::vector<std::size_t> trackTipCollection;
-  std::vector<Acts::MultiTrajectoryHelpers::TrajectoryState> trackInfoCollection;
-  // 
+  std::vector<Acts::MultiTrajectoryHelpers::TrajectoryState>
+      trackInfoCollection;
+  //
   for (unsigned int index(0); index < trajectories.size(); index++) {
     const auto& traj = trajectories.at(index);
-    // The trajectory entry indices and the multiTrajectory   
+    // The trajectory entry indices and the multiTrajectory
     const auto& trackTips = traj.tips();
     const auto& mj = traj.multiTrajectory();
     if (trackTips.empty()) {
       ACTS_WARNING("Empty multiTrajectory.");
       continue;
     }
-    
+
     // Loop over all trajectories in a multiTrajectory
     for (const size_t& trackTip : trackTips) {
-
       // Check if the reco track has fitted track parameters
       if (not traj.hasTrackParameters(trackTip)) {
         ACTS_WARNING(
@@ -81,20 +80,21 @@ ProcessCode CsvMultiTrajectoryWriter::writeT(
       const auto& momentum = traj.trackParameters(trackTip).momentum();
       const auto pT = Acts::VectorHelpers::perp(momentum);
       if (pT < m_cfg.ptMin) {
-	continue;
+        continue;
       }
-      
+
       trajIndexCollection.push_back(index);
       trackTipCollection.push_back(trackTip);
-      trackInfoCollection.push_back(Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip));
+      trackInfoCollection.push_back(
+          Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip));
     }
   }
-  
+
   // Compute Shared Hits and Update trajectoryState collection
   Acts::MultiTrajectoryHelpers::computeSharedHits(trackInfoCollection);
 
   size_t trackId = 0;
-  for (unsigned int i(0); i<trackTipCollection.size(); i++) {
+  for (unsigned int i(0); i < trackTipCollection.size(); i++) {
     std::size_t trajIndex = trajIndexCollection.at(i);
     std::size_t trackTip = trackTipCollection.at(i);
 
@@ -111,21 +111,21 @@ ProcessCode CsvMultiTrajectoryWriter::writeT(
     // Get the majority truth particle to this track
     std::vector<ParticleHitCount> particleHitCount;
     identifyContributingParticles(hitParticlesMap, traj, trackTip,
-				  particleHitCount);
+                                  particleHitCount);
     if (particleHitCount.empty()) {
       ACTS_WARNING(
-		   "No truth particle associated with this trajectory with entry "
-		   "index = "
-		   << trackTip);
+          "No truth particle associated with this trajectory with entry "
+          "index = "
+          << trackTip);
       continue;
     }
-    
+
     // Get the majority particle counts
     ActsFatras::Barcode majorityParticleId =
-      particleHitCount.front().particleId;
+        particleHitCount.front().particleId;
     // n Majority hits
     size_t nMajorityHits = particleHitCount.front().hitCount;
-    
+
     // track info
     trackInfo toAdd;
     toAdd.trackId = trackId;
@@ -142,16 +142,16 @@ ProcessCode CsvMultiTrajectoryWriter::writeT(
     toAdd.fittedParameters = &traj.trackParameters(trackTip);
     toAdd.contributingMeasurementIndex = trajState.contributingMeasurementIndex;
     toAdd.trackType = "unknown";
-    
+
     // Check if the trajectory is matched with truth.
     if (toAdd.truthMatchProb >= m_cfg.truthMatchProbMin) {
       matched[toAdd.particleId].push_back({toAdd, toAdd.trackId});
     } else {
       toAdd.trackType = "fake";
     }
-    
+
     infoMap[toAdd.trackId] = toAdd;
-    
+
     trackId++;
   }  // end of one trajectory
 
@@ -168,11 +168,9 @@ ProcessCode CsvMultiTrajectoryWriter::writeT(
                 // sort by nOutliers
                 return (lhs.first.nOutliers < rhs.first.nOutliers);
               });
-    
+
     listGoodTracks.insert(matchedTracks.front().first.trackId);
   }
-
-  
 
   // write csv header
   mos << "track_id,particleId,"
@@ -192,7 +190,7 @@ ProcessCode CsvMultiTrajectoryWriter::writeT(
     } else if (trajState.trackType != "fake") {
       trajState.trackType = "duplicate";
     }
-    
+
     // write the track info
     mos << trajState.trackId << ",";
     mos << trajState.particleId << ",";
@@ -207,8 +205,10 @@ ProcessCode CsvMultiTrajectoryWriter::writeT(
     mos << trajState.chi2Sum * 1.0 / trajState.NDF << ",";
     mos << Acts::VectorHelpers::perp(trajState.fittedParameters->momentum())
         << ",";
-    mos << Acts::VectorHelpers::eta(trajState.fittedParameters->momentum()) << ",";
-    mos << Acts::VectorHelpers::phi(trajState.fittedParameters->momentum()) << ",";
+    mos << Acts::VectorHelpers::eta(trajState.fittedParameters->momentum())
+        << ",";
+    mos << Acts::VectorHelpers::phi(trajState.fittedParameters->momentum())
+        << ",";
     mos << trajState.truthMatchProb << ",";
     mos << trajState.trackType;
     mos << '\n';
