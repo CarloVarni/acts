@@ -10,7 +10,6 @@
 
 #include "ActsExamples/Utilities/Paths.hpp"
 #include "ActsExamples/Validation/TrackClassification.hpp"
-#include "Acts/Definitions/TrackParametrization.hpp"
 
 #include <ios>
 #include <iostream>
@@ -18,6 +17,8 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+
+#include <time.h>
 
 using namespace ActsExamples;
 
@@ -34,6 +35,10 @@ CsvMultiTrajectoryWriter::CsvMultiTrajectoryWriter(
 ProcessCode CsvMultiTrajectoryWriter::writeT(
     const AlgorithmContext& context,
     const TrajectoriesContainer& trajectories) {
+
+  struct timespec timespec_startTime, timespec_stopTime;
+  clock_gettime( CLOCK_PROCESS_CPUTIME_ID ,&timespec_startTime);
+
   // open per-event file
   std::string path =
       perEventFilepath(m_cfg.outputDir, "CKFtracks.csv", context.eventNumber);
@@ -214,5 +219,8 @@ ProcessCode CsvMultiTrajectoryWriter::writeT(
     mos << '\n';
   }
 
+  clock_gettime( CLOCK_PROCESS_CPUTIME_ID ,&timespec_stopTime);
+  long int timing_time = (timespec_stopTime.tv_sec - timespec_startTime.tv_sec) * 1e9 + timespec_stopTime.tv_nsec - timespec_startTime.tv_nsec;
+  std::cout<<"TIMING: " <<timing_time << std::endl;
   return ProcessCode::SUCCESS;
 }
