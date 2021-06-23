@@ -157,9 +157,10 @@ ProcessCode CsvMultiTrajectoryWriter::writeT(
 
   
   // Compute nSharedHits
-  std::vector<trackInfo> trajStateCollection;
-  for (auto& [id, trajState] : infoMap)
-    trajStateCollection.push_back(trajState);
+  std::vector<trackInfo*> trajStateCollection;
+  //  std::unordered_map<size_t, trackInfo>
+  for (auto it=infoMap.begin(); it!=infoMap.end(); it++)
+    trajStateCollection.push_back(*it.second);
   Acts::MultiTrajectoryHelpers::computeSharedHits(trajStateCollection);
   
 
