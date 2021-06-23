@@ -82,10 +82,8 @@ TrajectoryState trajectoryState(
 
     if (state.hasCalibrated()) {
       trajState.contributingMeasurementIndex.push_back(state.calibratedSourceLink().index());
-    } else if (state.hasUncalibrated()) {
-      std::cout<<">>>> PROBLEMA NON CALIBRATO"<<std::endl;
-      trajState.contributingMeasurementIndex.push_back(state.uncalibrated().index());
-    }
+    } 
+
   });
   return trajState;
 }
@@ -139,10 +137,8 @@ VolumeTrajectoryStateContainer trajectoryState(
 
     if (state.hasCalibrated()) {
       trajState.contributingMeasurementIndex.push_back(state.calibratedSourceLink().index());
-    } else if (state.hasUncalibrated()) {
-      std::cout<<">>>> ALTRO PROBLEMA NON CALIBRATO"<<std::endl;
-      trajState.contributingMeasurementIndex.push_back(state.uncalibrated().index());
-    }
+    } 
+
     return true;
   });
   return trajStateContainer;
