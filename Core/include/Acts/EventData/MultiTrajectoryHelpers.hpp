@@ -36,6 +36,8 @@ struct TrajectoryState {
   std::vector<unsigned int> measurementLayer = {};
   std::vector<unsigned int> outlierVolume = {};
   std::vector<unsigned int> outlierLayer = {};
+  size_t nSharedHits = 0;
+  std::vector<size_t> contributingMeasurementIndex = {};
 };
 
 // Container for trajectory summary info at a specific volume
@@ -76,6 +78,13 @@ TrajectoryState trajectoryState(
       trajState.outlierLayer.push_back(layer);
     } else if (typeFlags.test(Acts::TrackStateFlag::HoleFlag)) {
       trajState.nHoles++;
+    }
+
+    if (state.hasCalibrated()) {
+      trajState.contributingMeasurementIndex.push_back(state.calibratedSourceLink().index());
+    } else if (state.hasUncalibrated()) {
+      std::cout<<">>>> PROBLEMA NON CALIBRATO"<<std::endl;
+      trajState.contributingMeasurementIndex.push_back(state.uncalibrated().index());
     }
   });
   return trajState;
@@ -126,6 +135,13 @@ VolumeTrajectoryStateContainer trajectoryState(
       trajState.outlierLayer.push_back(layer);
     } else if (typeFlags.test(Acts::TrackStateFlag::HoleFlag)) {
       trajState.nHoles++;
+    }
+
+    if (state.hasCalibrated()) {
+      trajState.contributingMeasurementIndex.push_back(state.calibratedSourceLink().index());
+    } else if (state.hasUncalibrated()) {
+      std::cout<<">>>> ALTRO PROBLEMA NON CALIBRATO"<<std::endl;
+      trajState.contributingMeasurementIndex.push_back(state.uncalibrated().index());
     }
     return true;
   });
