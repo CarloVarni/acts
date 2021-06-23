@@ -143,6 +143,31 @@ VolumeTrajectoryStateContainer trajectoryState(
   });
   return trajStateContainer;
 }
+ 
+/// @brief Update trajState collection with nSharedHits by checking what measurement indexes each trajState uses
+///
+/// @param [in] array of trajState objects
+template< typename trajState_t >
+void computeSharedHits(std::vector<trajState_t>& trajStateCollection) {
+  // Hit index -> array of tracks using it
+  std::unordered_map< std::size_t, std::vector<std::size_t> > recordedHits;
+
+  // Record the tracks that use the hits
+  for (std::size_t i(0); i<trajStateCollection.size(); i++) {
+    std::vector<std::size_t>& contributingHits = trajStateCollection.at(i).contributingMeasurementIndex;
+    for (std::size_t hitIndex : contributingHits) {
+      if (recordedHits.find(hitIndex) != recordedHits.end()) recordedHits[hitIndex] = std::vector<std::size_t>();
+      recordedHits[hitIndex].push_back(i);
+    }
+  }
+
+  // Update nSharedHits
+  for (const auto& [hitIndex, trackIndexArray] : recordedHits) {
+    if (trackIndexArray.size() < 2) continue;
+    for (std::size_t trackIndex : trackIndexArray)
+      trajStateCollection.at(trackIndex).nSharedHits++;
+  }
+}
 
 /// @brief Transforms the filtered parameters from a @c TrackStateProxy to free
 /// parameters

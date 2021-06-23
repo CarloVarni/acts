@@ -155,31 +155,13 @@ ProcessCode CsvMultiTrajectoryWriter::writeT(
     listGoodTracks.insert(matchedTracks.front().first.trackId);
   }
 
-
+  
   // Compute nSharedHits
-  std::unordered_map< std::size_t, std::vector<std::size_t> > recordedHits;
-
-  // Store hits
-  for (auto& [id, trajState] : infoMap) {
-    std::vector<std::size_t> measurementIndexes = trajState.contributingMeasurementIndex;
-    for (std::size_t hitIndex : measurementIndexes)
-      if ( recordedHits.find(hitIndex) != recordedHits.end() ) {
-	recordedHits[hitIndex].push_back(id);
-      } else {
-	std::vector<std::size_t> toAdd;
-	toAdd.push_back(id);
-	recordedHits[hitIndex] = toAdd;
-      }
-  }
-
-  // Check Shared Hits
-  for (auto& [hitIndex, trackIds] : recordedHits) {
-    if (trackIds.size() < 2) continue;
-    for (auto trackID : trackIds) {
-      infoMap[trackID].nSharedHits++;
-    }
-  }
-
+  std::vector<trackInfo> trajStateCollection;
+  for (auto& [id, trajState] : infoMap)
+    trajStateCollection.push_back(trajState);
+  Acts::MultiTrajectoryHelpers::computeSharedHits(trajStateCollection);
+  
 
   // write csv header
   mos << "track_id,particleId,"
