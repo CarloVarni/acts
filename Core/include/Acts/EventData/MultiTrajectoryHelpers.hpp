@@ -72,6 +72,7 @@ TrajectoryState trajectoryState(
       trajState.measurementChi2.push_back(state.chi2());
       trajState.measurementVolume.push_back(volume);
       trajState.measurementLayer.push_back(layer);
+      trajState.contributingMeasurementIndex.push_back(state.calibratedSourceLink().index());
     } else if (typeFlags.test(Acts::TrackStateFlag::OutlierFlag)) {
       trajState.nOutliers++;
       trajState.outlierChi2.push_back(state.chi2());
@@ -80,11 +81,6 @@ TrajectoryState trajectoryState(
     } else if (typeFlags.test(Acts::TrackStateFlag::HoleFlag)) {
       trajState.nHoles++;
     }
-
-    if (state.hasCalibrated()) {
-      trajState.contributingMeasurementIndex.push_back(state.calibratedSourceLink().index());
-    } 
-
   });
   return trajState;
 }
@@ -127,6 +123,7 @@ VolumeTrajectoryStateContainer trajectoryState(
       trajState.measurementChi2.push_back(state.chi2());
       trajState.measurementVolume.push_back(volume);
       trajState.measurementLayer.push_back(layer);
+      trajState.contributingMeasurementIndex.push_back(state.calibratedSourceLink().index());
     } else if (typeFlags.test(Acts::TrackStateFlag::OutlierFlag)) {
       trajState.nOutliers++;
       trajState.outlierChi2.push_back(state.chi2());
@@ -135,10 +132,6 @@ VolumeTrajectoryStateContainer trajectoryState(
     } else if (typeFlags.test(Acts::TrackStateFlag::HoleFlag)) {
       trajState.nHoles++;
     }
-
-    if (state.hasCalibrated()) {
-      trajState.contributingMeasurementIndex.push_back(state.calibratedSourceLink().index());
-    } 
 
     return true;
   });
@@ -152,10 +145,10 @@ template< typename trajState_t >
 void computeSharedHits(std::vector<trajState_t>& trajStateCollection) {
   static_assert(std::is_base_of<TrajectoryState,trajState_t>::value,
 		"computeSharedHits requires struct inheriting from TrajectoryState");
-
+  
   // Hit index -> array of tracks using it
   std::unordered_map< std::size_t, std::vector<std::size_t> > recordedHits;
-
+  
   // Record the tracks that use the hits
   for (std::size_t i(0); i<trajStateCollection.size(); i++) {
     std::vector<std::size_t>& contributingHits = trajStateCollection.at(i).contributingMeasurementIndex;
