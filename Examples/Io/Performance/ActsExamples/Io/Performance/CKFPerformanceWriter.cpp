@@ -121,24 +121,29 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
     const auto& mj = traj.multiTrajectory();
     const auto& trackTips = traj.tips();
 
+    if (trackTips.empty()) {
+      ACTS_WARNING("Empty multiTrajectory.");
+      continue;
+    }
+
     // Loop over all trajectories in a multiTrajectory
-    for (auto trackTip : trackTips) {
+    for (const std::size_t& trackTip : trackTips) {
       // Check if the reco track has fitted track parameters
       if (not traj.hasTrackParameters(trackTip)) {
         ACTS_WARNING(
-            "No fitted track parameters for trajectory with entry index = "
-            << trackTip);
+	   "No fitted track parameters for trajectory with entry index = "
+	   << trackTip);
         continue;
       }
-
-      const auto& fittedParameters = traj.trackParameters(trackTip);
+      
       // Requirement on the pT of the track
-      const auto& momentum = fittedParameters.momentum();
-      const auto pT = perp(momentum);
+      const auto& momentum = traj.trackParameters(trackTip).momentum();
+      const auto pT = Acts::VectorHelpers::perp(momentum);
       if (pT < m_cfg.ptMin) {
         continue;
       }
-
+      
+      
       // store
       trajIndexCollection.push_back(itraj);
       trackTipCollection.push_back(trackTip);
@@ -151,8 +156,10 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
   Acts::MultiTrajectoryHelpers::computeSharedHits(trackStateCollection);
 
   for (unsigned int index(0); index<trajIndexCollection.size(); index++) {
-    const auto& traj = trajectories.at(index);
-    auto trackTip = trackTipCollection.at(index);
+    std::size_t trajIndex = trajIndexCollection.at(index);
+    std::size_t trackTip = trackTipCollection.at(index);
+
+    const auto& traj = trajectories.at(trajIndex);
     const auto& trajState = trackStateCollection.at(index);
 
     // Reco track selection
@@ -161,8 +168,9 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
     if (trajState.nMeasurements < m_cfg.nMeasurementsMin) {
       continue;
     }
-    
+
     const auto& fittedParameters = traj.trackParameters(trackTip);
+
     // Fill the trajectory summary info
     m_trackSummaryPlotTool.fill(m_trackSummaryPlotCache, fittedParameters,
 				trajState.nStates, trajState.nMeasurements,

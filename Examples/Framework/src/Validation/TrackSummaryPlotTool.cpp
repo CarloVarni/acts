@@ -51,7 +51,7 @@ void ActsExamples::TrackSummaryPlotTool::book(
       "nOutliers_vs_pT", "Number of outliers vs. pT", bPt, bNum);
   // number of Shared Hits versus pt
   trackSummaryPlotCache.nSharedHits_vs_pt = PlotHelpers::bookProf(
-      "nSharedHits_vs_eta" ,"Number of Shared Hits vs. pT" , bPt, bNum);
+      "nSharedHits_vs_pT" ,"Number of Shared Hits vs. pT" , bPt, bNum);
 }
 
 void ActsExamples::TrackSummaryPlotTool::clear(
