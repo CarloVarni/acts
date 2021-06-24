@@ -103,12 +103,11 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
   // Vector of input features for neural network classification
   std::vector<float> inputFeatures(3);
 
-
   std::vector<std::size_t> trajIndexCollection;
   std::vector<std::size_t> trackTipCollection;
-  std::vector< Acts::MultiTrajectoryHelpers::TrajectoryState >
-    trackStateCollection;
-  
+  std::vector<Acts::MultiTrajectoryHelpers::TrajectoryState>
+      trackStateCollection;
+
   // Loop over all trajectories
   for (size_t itraj = 0; itraj < trajectories.size(); ++itraj) {
     const auto& traj = trajectories[itraj];
@@ -131,31 +130,30 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
       // Check if the reco track has fitted track parameters
       if (not traj.hasTrackParameters(trackTip)) {
         ACTS_WARNING(
-	   "No fitted track parameters for trajectory with entry index = "
-	   << trackTip);
+            "No fitted track parameters for trajectory with entry index = "
+            << trackTip);
         continue;
       }
-      
+
       // Requirement on the pT of the track
       const auto& momentum = traj.trackParameters(trackTip).momentum();
       const auto pT = Acts::VectorHelpers::perp(momentum);
       if (pT < m_cfg.ptMin) {
         continue;
       }
-      
-      
+
       // store
       trajIndexCollection.push_back(itraj);
       trackTipCollection.push_back(trackTip);
       trackStateCollection.push_back(
-	  Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip));
-    } // end all trajectories in a multiTrajectory
-  }   // end all multiTrajectories
+          Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip));
+    }  // end all trajectories in a multiTrajectory
+  }    // end all multiTrajectories
 
   // Compute nSharedHits
   Acts::MultiTrajectoryHelpers::computeSharedHits(trackStateCollection);
 
-  for (unsigned int index(0); index<trajIndexCollection.size(); index++) {
+  for (unsigned int index(0); index < trajIndexCollection.size(); index++) {
     std::size_t trajIndex = trajIndexCollection.at(index);
     std::size_t trackTip = trackTipCollection.at(index);
 
@@ -173,40 +171,40 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
 
     // Fill the trajectory summary info
     m_trackSummaryPlotTool.fill(m_trackSummaryPlotCache, fittedParameters,
-				trajState.nStates, trajState.nMeasurements,
-				trajState.nOutliers, trajState.nHoles, trajState.nSharedHits);
-    
+                                trajState.nStates, trajState.nMeasurements,
+                                trajState.nOutliers, trajState.nHoles,
+                                trajState.nSharedHits);
+
     // Get the majority truth particle to this track
     identifyContributingParticles(hitParticlesMap, traj, trackTip,
-				  particleHitCounts);
+                                  particleHitCounts);
     if (particleHitCounts.empty()) {
       ACTS_WARNING(
-	  "No truth particle associated with this trajectory with entry "
-	  "index = "
-	  << trackTip);
+          "No truth particle associated with this trajectory with entry "
+          "index = "
+          << trackTip);
       continue;
     }
     // Get the majority particleId and majority particle counts
     // Note that the majority particle might be not in the truth seeds
     // collection
     ActsFatras::Barcode majorityParticleId =
-      particleHitCounts.front().particleId;
+        particleHitCounts.front().particleId;
     size_t nMajorityHits = particleHitCounts.front().hitCount;
-    
+
     // Check if the trajectory is matched with truth.
     // If not, it will be classified as 'fake'
     bool isFake = false;
     if (nMajorityHits * 1. / trajState.nMeasurements >=
-	m_cfg.truthMatchProbMin) {
-      matched[majorityParticleId].push_back(
-	{nMajorityHits, fittedParameters});
+        m_cfg.truthMatchProbMin) {
+      matched[majorityParticleId].push_back({nMajorityHits, fittedParameters});
     } else {
       isFake = true;
       unmatched[majorityParticleId]++;
     }
     // Fill fake rate plots
     m_fakeRatePlotTool.fill(m_fakeRatePlotCache, fittedParameters, isFake);
-    
+
     // Use neural network classification for duplication rate plots
     // Currently, the network used for this example can only handle
     // good/duplicate classification, so need to manually exclude fake tracks
@@ -218,10 +216,9 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
       bool isDuplicated = m_cfg.duplicatedPredictor(inputFeatures);
       // Fill the duplication rate
       m_duplicationPlotTool.fill(m_duplicationPlotCache, fittedParameters,
-				 isDuplicated);
+                                 isDuplicated);
     }
   }  // end all indexes
-
 
   // Use truth-based classification for duplication rate plots
   if (!m_cfg.duplicatedPredictor) {
