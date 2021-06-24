@@ -101,6 +101,11 @@ ActsExamples::ProcessCode ActsExamples::TrackFitterPerformanceWriter::writeT(
   // Exclusive access to the tree while writing
   std::lock_guard<std::mutex> lock(m_writeMutex);
 
+  // List of traj states
+  std::vector<Acts::MultiTrajectoryHelpers::TrajectoryState> trajStates;
+  // List fitter track params
+  std::vector<std::size_t> trajIndexes;
+
   // Loop over all trajectories
   for (size_t itraj = 0; itraj < trajectories.size(); ++itraj) {
     const auto& traj = trajectories[itraj];
@@ -128,7 +133,6 @@ ActsExamples::ProcessCode ActsExamples::TrackFitterPerformanceWriter::writeT(
       ACTS_WARNING("No fitted track parameters.");
       continue;
     }
-    const auto& fittedParameters = traj.trackParameters(trackTip);
 
     // Get the majority truth particle for this trajectory
     identifyContributingParticles(hitParticlesMap, traj, trackTip,
@@ -149,13 +153,27 @@ ActsExamples::ProcessCode ActsExamples::TrackFitterPerformanceWriter::writeT(
     // Fill the residual plots
     m_resPlotTool.fill(m_resPlotCache, ctx.geoContext, *ip,
                        traj.trackParameters(trackTip));
-    // Collect the trajectory summary info
-    auto trajState =
-        Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip);
+    // Record the trajectory summary info
+    trajStates.push_back(
+        Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip));
+    // Record the index of corresponding traj
+    trajIndexes.push_back(itraj);
+  }
+
+  Acts::MultiTrajectoryHelpers::computeSharedHits(trajStates);
+
+  for (unsigned int index(0); index < trajStates.size(); index++) {
+    const auto& trajState = trajStates.at(index);
+
+    const auto& traj = trajectories.at(trajIndexes.at(index));
+    auto trackTip = traj.tips().front();
+    const auto& fittedParameters = traj.trackParameters(trackTip);
+
     // Fill the trajectory summary info
     m_trackSummaryPlotTool.fill(m_trackSummaryPlotCache, fittedParameters,
                                 trajState.nStates, trajState.nMeasurements,
-                                trajState.nOutliers, trajState.nHoles);
+                                trajState.nOutliers, trajState.nHoles,
+                                trajState.nSharedHits);
   }
 
   // Fill the efficiency, defined as the ratio between number of tracks with

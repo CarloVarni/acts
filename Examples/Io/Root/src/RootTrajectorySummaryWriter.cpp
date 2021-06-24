@@ -73,6 +73,7 @@ ActsExamples::RootTrajectorySummaryWriter::RootTrajectorySummaryWriter(
     m_outputTree->Branch("nMeasurements", &m_nMeasurements);
     m_outputTree->Branch("nOutliers", &m_nOutliers);
     m_outputTree->Branch("nHoles", &m_nHoles);
+    m_outputTree->Branch("nSharedHits", &m_nSharedHits);
     m_outputTree->Branch("chi2Sum", &m_chi2Sum);
     m_outputTree->Branch("NDF", &m_NDF);
     m_outputTree->Branch("measurementChi2", &m_measurementChi2);
@@ -137,6 +138,11 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
   // Get the event number
   m_eventNr = ctx.eventNumber;
 
+  std::vector<std::size_t> trajIndexCollection;
+  std::vector<std::size_t> trackTipCollection;
+  std::vector<Acts::MultiTrajectoryHelpers::TrajectoryState>
+      trackStateCollection;
+
   // Loop over the trajectories
   for (size_t itraj = 0; itraj < trajectories.size(); ++itraj) {
     const auto& traj = trajectories[itraj];
@@ -160,84 +166,98 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
       // The entry index for this subtrajectory
       const auto& trackTip = trackTips[isubtraj];
 
-      // Collect the trajectory summary info
-      auto trajState =
-          Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip);
-      m_nStates.push_back(trajState.nStates);
-      m_nMeasurements.push_back(trajState.nMeasurements);
-      m_nOutliers.push_back(trajState.nOutliers);
-      m_nHoles.push_back(trajState.nHoles);
-      m_chi2Sum.push_back(trajState.chi2Sum);
-      m_NDF.push_back(trajState.NDF);
-      m_measurementChi2.push_back(trajState.measurementChi2);
-      m_outlierChi2.push_back(trajState.measurementChi2);
-      // They are stored as double (as the vector of vector of int is not known
-      // to ROOT)
-      m_measurementVolume.emplace_back(trajState.measurementVolume.begin(),
-                                       trajState.measurementVolume.end());
-      m_measurementLayer.emplace_back(trajState.measurementLayer.begin(),
-                                      trajState.measurementLayer.end());
-      m_outlierVolume.emplace_back(trajState.outlierVolume.begin(),
-                                   trajState.outlierVolume.end());
-      m_outlierLayer.emplace_back(trajState.outlierLayer.begin(),
-                                  trajState.outlierLayer.end());
-
-      // Get the majority truth particle to this track
-      identifyContributingParticles(hitParticlesMap, traj, trackTip,
-                                    particleHitCounts);
-      if (not particleHitCounts.empty()) {
-        // Get the barcode of the majority truth particle
-        long unsigned int barcode =
-            particleHitCounts.front().particleId.value();
-        auto nMajorityHits = particleHitCounts.front().hitCount;
-        m_majorityParticleId.push_back(barcode);
-        m_nMajorityHits.push_back(nMajorityHits);
-      } else {
-        m_majorityParticleId.push_back(0);
-        m_nMajorityHits.push_back(0);
-      }
-
-      // Get the fitted track parameter
-      bool hasFittedParams = false;
-      if (traj.hasTrackParameters(trackTip)) {
-        hasFittedParams = true;
-        const auto& boundParam = traj.trackParameters(trackTip);
-        const auto& parameter = boundParam.parameters();
-
-        m_eLOC0_fit.push_back(parameter[Acts::eBoundLoc0]);
-        m_eLOC1_fit.push_back(parameter[Acts::eBoundLoc1]);
-        m_ePHI_fit.push_back(parameter[Acts::eBoundPhi]);
-        m_eTHETA_fit.push_back(parameter[Acts::eBoundTheta]);
-        m_eQOP_fit.push_back(parameter[Acts::eBoundQOverP]);
-        m_eT_fit.push_back(parameter[Acts::eBoundTime]);
-
-        if (boundParam.covariance().has_value()) {
-          const auto& covariance = *boundParam.covariance();
-          m_err_eLOC0_fit.push_back(
-              sqrt(covariance(Acts::eBoundLoc0, Acts::eBoundLoc0)));
-          m_err_eLOC1_fit.push_back(
-              sqrt(covariance(Acts::eBoundLoc1, Acts::eBoundLoc1)));
-          m_err_ePHI_fit.push_back(
-              sqrt(covariance(Acts::eBoundPhi, Acts::eBoundPhi)));
-          m_err_eTHETA_fit.push_back(
-              sqrt(covariance(Acts::eBoundTheta, Acts::eBoundTheta)));
-          m_err_eQOP_fit.push_back(
-              sqrt(covariance(Acts::eBoundQOverP, Acts::eBoundQOverP)));
-          m_err_eT_fit.push_back(
-              sqrt(covariance(Acts::eBoundTime, Acts::eBoundTime)));
-        } else {
-          m_err_eLOC0_fit.push_back(NaNfloat);
-          m_err_eLOC1_fit.push_back(NaNfloat);
-          m_err_ePHI_fit.push_back(NaNfloat);
-          m_err_eTHETA_fit.push_back(NaNfloat);
-          m_err_eQOP_fit.push_back(NaNfloat);
-          m_err_eT_fit.push_back(NaNfloat);
-        }
-      }
-
-      m_hasFittedParams.push_back(hasFittedParams);
+      trajIndexCollection.push_back(itraj);
+      trackTipCollection.push_back(trackTip);
+      trackStateCollection.push_back(
+          Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip));
     }  // all subtrajectories
   }    // all trajectories
+
+  // Compute nSharedHits
+  Acts::MultiTrajectoryHelpers::computeSharedHits(trackStateCollection);
+
+  for (unsigned int index(0); index < trajIndexCollection.size(); index++) {
+    std::size_t trajIndex = trajIndexCollection.at(index);
+    std::size_t trackTip = trackTipCollection.at(index);
+
+    const auto& traj = trajectories.at(trajIndex);
+    const auto& trajState = trackStateCollection.at(index);
+
+    // Collect the trajectory summary info
+    m_nStates.push_back(trajState.nStates);
+    m_nMeasurements.push_back(trajState.nMeasurements);
+    m_nOutliers.push_back(trajState.nOutliers);
+    m_nHoles.push_back(trajState.nHoles);
+    m_nSharedHits.push_back(trajState.nSharedHits);
+    m_chi2Sum.push_back(trajState.chi2Sum);
+    m_NDF.push_back(trajState.NDF);
+    m_measurementChi2.push_back(trajState.measurementChi2);
+    m_outlierChi2.push_back(trajState.measurementChi2);
+    // They are stored as double (as the vector of vector of int is not known
+    // to ROOT)
+    m_measurementVolume.emplace_back(trajState.measurementVolume.begin(),
+                                     trajState.measurementVolume.end());
+    m_measurementLayer.emplace_back(trajState.measurementLayer.begin(),
+                                    trajState.measurementLayer.end());
+    m_outlierVolume.emplace_back(trajState.outlierVolume.begin(),
+                                 trajState.outlierVolume.end());
+    m_outlierLayer.emplace_back(trajState.outlierLayer.begin(),
+                                trajState.outlierLayer.end());
+
+    // Get the majority truth particle to this track
+    identifyContributingParticles(hitParticlesMap, traj, trackTip,
+                                  particleHitCounts);
+    if (not particleHitCounts.empty()) {
+      // Get the barcode of the majority truth particle
+      long unsigned int barcode = particleHitCounts.front().particleId.value();
+      auto nMajorityHits = particleHitCounts.front().hitCount;
+      m_majorityParticleId.push_back(barcode);
+      m_nMajorityHits.push_back(nMajorityHits);
+    } else {
+      m_majorityParticleId.push_back(0);
+      m_nMajorityHits.push_back(0);
+    }
+
+    // Get the fitted track parameter
+    bool hasFittedParams = false;
+    if (traj.hasTrackParameters(trackTip)) {
+      hasFittedParams = true;
+      const auto& boundParam = traj.trackParameters(trackTip);
+      const auto& parameter = boundParam.parameters();
+
+      m_eLOC0_fit.push_back(parameter[Acts::eBoundLoc0]);
+      m_eLOC1_fit.push_back(parameter[Acts::eBoundLoc1]);
+      m_ePHI_fit.push_back(parameter[Acts::eBoundPhi]);
+      m_eTHETA_fit.push_back(parameter[Acts::eBoundTheta]);
+      m_eQOP_fit.push_back(parameter[Acts::eBoundQOverP]);
+      m_eT_fit.push_back(parameter[Acts::eBoundTime]);
+
+      if (boundParam.covariance().has_value()) {
+        const auto& covariance = *boundParam.covariance();
+        m_err_eLOC0_fit.push_back(
+            sqrt(covariance(Acts::eBoundLoc0, Acts::eBoundLoc0)));
+        m_err_eLOC1_fit.push_back(
+            sqrt(covariance(Acts::eBoundLoc1, Acts::eBoundLoc1)));
+        m_err_ePHI_fit.push_back(
+            sqrt(covariance(Acts::eBoundPhi, Acts::eBoundPhi)));
+        m_err_eTHETA_fit.push_back(
+            sqrt(covariance(Acts::eBoundTheta, Acts::eBoundTheta)));
+        m_err_eQOP_fit.push_back(
+            sqrt(covariance(Acts::eBoundQOverP, Acts::eBoundQOverP)));
+        m_err_eT_fit.push_back(
+            sqrt(covariance(Acts::eBoundTime, Acts::eBoundTime)));
+      } else {
+        m_err_eLOC0_fit.push_back(NaNfloat);
+        m_err_eLOC1_fit.push_back(NaNfloat);
+        m_err_ePHI_fit.push_back(NaNfloat);
+        m_err_eTHETA_fit.push_back(NaNfloat);
+        m_err_eQOP_fit.push_back(NaNfloat);
+        m_err_eT_fit.push_back(NaNfloat);
+      }
+    }
+
+    m_hasFittedParams.push_back(hasFittedParams);
+  }
 
   // fill the variables
   m_outputTree->Fill();
@@ -248,6 +268,7 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
   m_nMeasurements.clear();
   m_nOutliers.clear();
   m_nHoles.clear();
+  m_nSharedHits.clear();
   m_chi2Sum.clear();
   m_NDF.clear();
   m_measurementChi2.clear();
