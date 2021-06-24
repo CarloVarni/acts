@@ -144,10 +144,10 @@ VolumeTrajectoryStateContainer trajectoryState(
 /// measurement indexes each trajState uses
 ///
 /// @param [in] array of trajState objects
-template <typename trajState_t>
-void computeSharedHits(std::vector<trajState_t>& trajStateCollection) {
+template <typename traj_state_t>
+void computeSharedHits(std::vector<traj_state_t>& trajStateCollection) {
   static_assert(
-      std::is_base_of<TrajectoryState, trajState_t>::value,
+      std::is_base_of<TrajectoryState, traj_state_t>::value,
       "computeSharedHits requires struct inheriting from TrajectoryState");
 
   // Hit index -> array of tracks using it
