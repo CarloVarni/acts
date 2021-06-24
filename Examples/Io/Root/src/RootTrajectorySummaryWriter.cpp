@@ -138,11 +138,10 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
   // Get the event number
   m_eventNr = ctx.eventNumber;
 
-
   std::vector<std::size_t> trajIndexCollection;
   std::vector<std::size_t> trackTipCollection;
-  std::vector< Acts::MultiTrajectoryHelpers::TrajectoryState >
-    trackStateCollection;
+  std::vector<Acts::MultiTrajectoryHelpers::TrajectoryState>
+      trackStateCollection;
 
   // Loop over the trajectories
   for (size_t itraj = 0; itraj < trajectories.size(); ++itraj) {
@@ -170,14 +169,14 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
       trajIndexCollection.push_back(itraj);
       trackTipCollection.push_back(trackTip);
       trackStateCollection.push_back(
-	  Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip));
+          Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip));
     }  // all subtrajectories
   }    // all trajectories
 
   // Compute nSharedHits
   Acts::MultiTrajectoryHelpers::computeSharedHits(trackStateCollection);
 
-  for (unsigned int index(0); index<trajIndexCollection.size(); index++) {
+  for (unsigned int index(0); index < trajIndexCollection.size(); index++) {
     std::size_t trajIndex = trajIndexCollection.at(index);
     std::size_t trackTip = trackTipCollection.at(index);
 
@@ -197,21 +196,20 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
     // They are stored as double (as the vector of vector of int is not known
     // to ROOT)
     m_measurementVolume.emplace_back(trajState.measurementVolume.begin(),
-				     trajState.measurementVolume.end());
+                                     trajState.measurementVolume.end());
     m_measurementLayer.emplace_back(trajState.measurementLayer.begin(),
-				    trajState.measurementLayer.end());
+                                    trajState.measurementLayer.end());
     m_outlierVolume.emplace_back(trajState.outlierVolume.begin(),
-				 trajState.outlierVolume.end());
+                                 trajState.outlierVolume.end());
     m_outlierLayer.emplace_back(trajState.outlierLayer.begin(),
-				trajState.outlierLayer.end());
-    
+                                trajState.outlierLayer.end());
+
     // Get the majority truth particle to this track
     identifyContributingParticles(hitParticlesMap, traj, trackTip,
-				  particleHitCounts);
+                                  particleHitCounts);
     if (not particleHitCounts.empty()) {
       // Get the barcode of the majority truth particle
-      long unsigned int barcode =
-	particleHitCounts.front().particleId.value();
+      long unsigned int barcode = particleHitCounts.front().particleId.value();
       auto nMajorityHits = particleHitCounts.front().hitCount;
       m_majorityParticleId.push_back(barcode);
       m_nMajorityHits.push_back(nMajorityHits);
@@ -219,45 +217,45 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
       m_majorityParticleId.push_back(0);
       m_nMajorityHits.push_back(0);
     }
-    
+
     // Get the fitted track parameter
     bool hasFittedParams = false;
     if (traj.hasTrackParameters(trackTip)) {
       hasFittedParams = true;
       const auto& boundParam = traj.trackParameters(trackTip);
       const auto& parameter = boundParam.parameters();
-      
+
       m_eLOC0_fit.push_back(parameter[Acts::eBoundLoc0]);
       m_eLOC1_fit.push_back(parameter[Acts::eBoundLoc1]);
       m_ePHI_fit.push_back(parameter[Acts::eBoundPhi]);
       m_eTHETA_fit.push_back(parameter[Acts::eBoundTheta]);
       m_eQOP_fit.push_back(parameter[Acts::eBoundQOverP]);
       m_eT_fit.push_back(parameter[Acts::eBoundTime]);
-      
+
       if (boundParam.covariance().has_value()) {
-	const auto& covariance = *boundParam.covariance();
-	m_err_eLOC0_fit.push_back(
-	    sqrt(covariance(Acts::eBoundLoc0, Acts::eBoundLoc0)));
-	m_err_eLOC1_fit.push_back(
-	    sqrt(covariance(Acts::eBoundLoc1, Acts::eBoundLoc1)));
-	m_err_ePHI_fit.push_back(
+        const auto& covariance = *boundParam.covariance();
+        m_err_eLOC0_fit.push_back(
+            sqrt(covariance(Acts::eBoundLoc0, Acts::eBoundLoc0)));
+        m_err_eLOC1_fit.push_back(
+            sqrt(covariance(Acts::eBoundLoc1, Acts::eBoundLoc1)));
+        m_err_ePHI_fit.push_back(
             sqrt(covariance(Acts::eBoundPhi, Acts::eBoundPhi)));
-	m_err_eTHETA_fit.push_back(
+        m_err_eTHETA_fit.push_back(
             sqrt(covariance(Acts::eBoundTheta, Acts::eBoundTheta)));
-	m_err_eQOP_fit.push_back(
+        m_err_eQOP_fit.push_back(
             sqrt(covariance(Acts::eBoundQOverP, Acts::eBoundQOverP)));
-	m_err_eT_fit.push_back(
+        m_err_eT_fit.push_back(
             sqrt(covariance(Acts::eBoundTime, Acts::eBoundTime)));
       } else {
-	m_err_eLOC0_fit.push_back(NaNfloat);
-	m_err_eLOC1_fit.push_back(NaNfloat);
-	m_err_ePHI_fit.push_back(NaNfloat);
-	m_err_eTHETA_fit.push_back(NaNfloat);
-	m_err_eQOP_fit.push_back(NaNfloat);
-	m_err_eT_fit.push_back(NaNfloat);
+        m_err_eLOC0_fit.push_back(NaNfloat);
+        m_err_eLOC1_fit.push_back(NaNfloat);
+        m_err_ePHI_fit.push_back(NaNfloat);
+        m_err_eTHETA_fit.push_back(NaNfloat);
+        m_err_eQOP_fit.push_back(NaNfloat);
+        m_err_eT_fit.push_back(NaNfloat);
       }
     }
-    
+
     m_hasFittedParams.push_back(hasFittedParams);
   }
 
