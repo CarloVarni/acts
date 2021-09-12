@@ -37,11 +37,12 @@
 #include "ActsExamples/Utilities/Options.hpp"
 #include "ActsExamples/Utilities/Paths.hpp"
 #include <Acts/Definitions/Units.hpp>
+#include "ActsExamples/Io/Performance/TrackingSequencePerformanceWriter.hpp"
 
 #include <memory>
 
 #include <boost/filesystem.hpp>
-
+#include "ActsExamples/Io/Performance/SeedingPerformanceWriter.hpp"
 #include "RecInput.hpp"
 
 using namespace Acts::UnitLiterals;
@@ -345,6 +346,38 @@ int runRecCKFTracks(int argc, char* argv[],
     sequencer.addWriter(std::make_shared<CsvMultiTrajectoryWriter>(
         trackWriterCsvConfig, logLevel));
   }
+
+  TrackingSequencePerformanceWriter::Config perfTrackSequenceWriterCfg;
+  perfTrackSequenceWriterCfg.inputTracks = trackFindingCfg.outputTrajectories;
+  perfTrackSequenceWriterCfg.outputDir = outputDir;
+  if (not truthEstimatedSeeded) {
+    perfTrackSequenceWriterCfg.inputSeeds = "seeds";
+  }
+  perfTrackSequenceWriterCfg.inputProtoTracks = "prototracks";
+  perfTrackSequenceWriterCfg.inputSpacePoints = {
+    "spacepoints",
+  };
+  perfTrackSequenceWriterCfg.trackingGeometry = trackingGeometry;
+
+  //  sequencer.addWriter(
+  //      std::make_shared<TrackingSequencePerformanceWriter>(perfTrackSequenceWriterCfg, logLevel));
+
+
+
+
+
+
+  SeedingPerformanceWriter::Config seedPerfCfg;
+  seedPerfCfg.inputProtoTracks = "prototracks";
+  seedPerfCfg.inputParticles = inputParticles;
+  seedPerfCfg.inputMeasurementParticlesMap =
+    digiCfg.outputMeasurementParticlesMap;
+  seedPerfCfg.filePath = outputDir + "/performance_tracking_hists.root";
+  sequencer.addWriter(
+		      std::make_shared<SeedingPerformanceWriter>(seedPerfCfg, logLevel));
+
+
+
 
   return sequencer.run();
 }
