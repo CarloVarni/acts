@@ -348,19 +348,23 @@ int runRecCKFTracks(int argc, char* argv[],
   }
 
   TrackingSequencePerformanceWriter::Config perfTrackSequenceWriterCfg;
-  perfTrackSequenceWriterCfg.inputTracks = trackFindingCfg.outputTrajectories;
+  perfTrackSequenceWriterCfg.fileName = "muon_efficiency_plots.root";
+  perfTrackSequenceWriterCfg.inputMultiTrajectories = trackFindingCfg.outputTrajectories;
   perfTrackSequenceWriterCfg.outputDir = outputDir;
-  if (not truthEstimatedSeeded) {
-    perfTrackSequenceWriterCfg.inputSeeds = "seeds";
-  }
-  perfTrackSequenceWriterCfg.inputProtoTracks = "prototracks";
-  perfTrackSequenceWriterCfg.inputSpacePoints = {
-    "spacepoints",
-  };
-  perfTrackSequenceWriterCfg.trackingGeometry = trackingGeometry;
+  perfTrackSequenceWriterCfg.inputParticles = inputParticles;
+  perfTrackSequenceWriterCfg.inputMeasurementParticlesMap = digiCfg.outputMeasurementParticlesMap;
+  perfTrackSequenceWriterCfg.selection_pt_eta_phi = 
+    [=] (float pt, float eta, float) -> bool 
+    {
+      if (pt < 1._GeV)
+	return false;
+      if (std::fabs(eta) > 2.5)
+	return false;
+      return true;
+    };
 
-  //  sequencer.addWriter(
-  //      std::make_shared<TrackingSequencePerformanceWriter>(perfTrackSequenceWriterCfg, logLevel));
+  sequencer.addWriter(
+     std::make_shared<TrackingSequencePerformanceWriter>(perfTrackSequenceWriterCfg, logLevel));
 
 
 

@@ -9,6 +9,7 @@ add_library(
   src/Utilities/Helpers.cpp
   src/Validation/DuplicationPlotTool.cpp
   src/Validation/EffPlotTool.cpp
+  src/Validation/PersonalPlotTool.cpp
   src/Validation/FakeRatePlotTool.cpp
   src/Validation/ResPlotTool.cpp
   src/Validation/TrackClassification.cpp
