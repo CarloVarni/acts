@@ -28,17 +28,17 @@ void ActsExamples::PersonalPlotTool::book(
   ACTS_DEBUG("Initialize the histograms for efficiency plots");
   effPlotCache.trackEff_vs_pT_vs_eta =
     PlotHelpers::bookEff("eff_muon_pt_vs_eta",
-			 "eff_muon_pt_vs_eta",
+			 "Tracking Efficiency;Truth pT [GeV/c];Truth #eta",
 			 bPt, bEta);
   
   effPlotCache.trackEff_vs_pT_vs_phi =
     PlotHelpers::bookEff("eff_muon_pt_vs_phi",
-			 "eff_muon_pt_vs_phi",
+			 "Tracking Efficiency;Truth pT [GeV/c];Truth #phi",
 			 bPt, bPhi);
   
   effPlotCache.trackEff_vs_eta_vs_phi =
     PlotHelpers::bookEff("eff_muon_eta_vs_phi",
-			 "eff_muon_eta_vs_phi",
+			 "Tracking Efficiency;Truth #eta;Truth #phi",
 			 bEta, bPhi);
   
   // Reco

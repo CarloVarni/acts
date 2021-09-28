@@ -11,6 +11,7 @@
 #include "Acts/Plugins/Onnx/MLTrackClassifier.hpp"
 #endif
 #include "ActsExamples/Digitization/DigitizationOptions.hpp"
+#include "ActsExamples/Options/CommonOptions.hpp"
 #include "ActsExamples/Framework/Sequencer.hpp"
 #include "ActsExamples/Framework/WhiteBoard.hpp"
 #include "ActsExamples/Geometry/CommonGeometry.hpp"
@@ -53,12 +54,15 @@ using namespace std::placeholders;
 void addRecCKFOptions(ActsExamples::Options::Description& desc) {
   using namespace ActsExamples;
   using boost::program_options::bool_switch;
+  using boost::program_options::value;
 
   auto opt = desc.add_options();
   opt("ckf-truth-smeared-seeds", bool_switch(),
       "Use track parameters smeared from truth particles for steering CKF");
   opt("ckf-truth-estimated-seeds", bool_switch(),
       "Use track parameters estimated from truth tracks for steering CKF");
+  opt("performance-particles", value<std::string>()->default_value(""),
+      "Performance plot for specific particles");
 }
 
 int runRecCKFTracks(int argc, char* argv[],
@@ -347,12 +351,36 @@ int runRecCKFTracks(int argc, char* argv[],
         trackWriterCsvConfig, logLevel));
   }
 
+  std::string performance_particles = vm["performance-particles"].template as<std::string>();
+  if (performance_particles.empty()) {
+    throw std::runtime_error("No performance particles have been specificied! Use `performance-particles` option.");
+  }
+
   TrackingSequencePerformanceWriter::Config perfTrackSequenceWriterCfg;
-  perfTrackSequenceWriterCfg.fileName = "muon_efficiency_plots.root";
+  perfTrackSequenceWriterCfg.fileName = performance_particles + "_efficiency_plots.root";
   perfTrackSequenceWriterCfg.inputMultiTrajectories = trackFindingCfg.outputTrajectories;
   perfTrackSequenceWriterCfg.outputDir = outputDir;
   perfTrackSequenceWriterCfg.inputParticles = inputParticles;
   perfTrackSequenceWriterCfg.inputMeasurementParticlesMap = digiCfg.outputMeasurementParticlesMap;
+  if (performance_particles == "pion") {
+    perfTrackSequenceWriterCfg.pdg = { 
+      Acts::PdgParticle::ePionPlus,
+      Acts::PdgParticle::ePionMinus
+    };
+  } else if (performance_particles == "muon") {
+    perfTrackSequenceWriterCfg.pdg = { 
+      Acts::PdgParticle::eMuon,
+      Acts::PdgParticle::eAntiMuon
+    };
+  } else if (performance_particles == "electron") {
+    perfTrackSequenceWriterCfg.pdg = {
+      Acts::PdgParticle::eElectron,
+      Acts::PdgParticle::eAntiElectron,
+      Acts::PdgParticle::ePositron
+    };
+  } else {
+    throw std::runtime_error("No appropriate performance particles.");
+  }
   perfTrackSequenceWriterCfg.selection_pt_eta_phi = 
     [=] (float pt, float eta, float) -> bool 
     {

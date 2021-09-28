@@ -14,6 +14,7 @@
 #include "ActsExamples/Validation/TrackClassification.hpp"
 #include "ActsFatras/EventData/Barcode.hpp"
 #include "Acts/Utilities/Helpers.hpp"
+#include "Acts/EventData/MultiTrajectoryHelpers.hpp"
 
 #include <stdexcept>
 #include <unordered_map>
@@ -111,15 +112,24 @@ ActsExamples::TrackingSequencePerformanceWriter::writeT(const AlgorithmContext& 
   std::unordered_map<ActsFatras::Barcode,
 		     unsigned long int> storageTruthParticlesNRecoTimes;
 
+
   for (const auto& particle : particles) {
     const ActsFatras::Barcode& barcode = particle.particleId();
     const Acts::PdgParticle& pdg = particle.pdg();
 
     // Select only muons    
-    if (std::abs(pdg) != Acts::PdgParticle::eMuon)
+    bool isTargetParticle = false;
+    for (const auto& t_pdg : m_cfg.pdg)
+      if (pdg == t_pdg) {
+	isTargetParticle = true;
+	break;
+      }
+
+    if (not isTargetParticle)
       continue;
+
     // check if already stored
-    if (storageTruthParticlesNRecoTimes.find(pdg) != storageTruthParticlesNRecoTimes.end())
+    if (storageTruthParticlesNRecoTimes.find(barcode) != storageTruthParticlesNRecoTimes.end())
       throw std::runtime_error("Truth particle already in memory");
 
     // position and requirements on pt and eta and phi
@@ -186,7 +196,18 @@ ActsExamples::TrackingSequencePerformanceWriter::writeT(const AlgorithmContext& 
 	particleHitCounts.front().particleId;
       size_t nMajorityHits = particleHitCounts.front().hitCount;
       
-      // check if particle is muon
+      // Collect the trajectory summary info
+      auto trajState =
+          Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip);
+
+      // if (trajState.nMeasurements < 9)
+      //  	continue;
+
+      // Remove fakes
+      if (nMajorityHits * 1. / trajState.nMeasurements < 0.5)
+	continue;
+
+      // check if particle is target
       if (storageTruthParticlesNRecoTimes.find(majorityParticleId) == storageTruthParticlesNRecoTimes.end())
 	continue;
       

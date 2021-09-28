@@ -28,7 +28,7 @@ class PersonalPlotTool {
   struct Config {
     std::map<std::string, PlotHelpers::Binning> varBinning = {
       {"Eta", PlotHelpers::Binning("#eta", 40, -4, 4)},
-      {"Phi", PlotHelpers::Binning("#phi", 25, -3.15, 3.15)},
+      {"Phi", PlotHelpers::Binning("#phi", 12, -3.15, 3.15)},
       {"Pt", PlotHelpers::Binning("pT [GeV/c]", 10, 0, 10)},
       {"N_Reco_Times", PlotHelpers::Binning("N Reco Times",10, 0, 10)}
     };

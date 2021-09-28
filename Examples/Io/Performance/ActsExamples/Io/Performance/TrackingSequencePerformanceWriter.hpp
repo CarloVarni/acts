@@ -39,17 +39,19 @@ namespace ActsExamples {
   public:
     struct Config {
       /// Output Filename
-      std::string fileName;
+      std::string fileName = "";
       // output dir
-      std::string outputDir;
+      std::string outputDir = "";
       /// Input reconstructed tracks collection.
-      std::string inputMultiTrajectories;
+      std::string inputMultiTrajectories = "";
       /// Input particles collection.
-      std::string inputParticles;
+      std::string inputParticles = "";
       /// Input hit-particles map collection.
-      std::string inputMeasurementParticlesMap;
-      // Selection criteria
+      std::string inputMeasurementParticlesMap= "";
+      /// Selection criteria
       std::function<bool(float,float,float)> selection_pt_eta_phi = [=] (float, float, float) -> bool { return true; };
+      /// Target particle pdg
+      std::vector<Acts::PdgParticle> pdg = {};
 
       EffPlotTool::Config effPlotToolConfig;
       PersonalPlotTool::Config personalPlotToolConfig;
