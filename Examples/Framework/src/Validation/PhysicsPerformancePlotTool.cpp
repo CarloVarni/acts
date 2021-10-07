@@ -143,6 +143,27 @@ namespace ActsExamples {
     PlotHelpers::fillHisto(effPlotCache.particle_phi, t_phi);
   }
 
+  void 
+  PhysicsPerformancePlotTool::fill(PhysicsPerformancePlotCache& effPlotCache,
+				   const TrackParameters& trackParams,
+				   std::size_t nContributingParticles) const
+  {
+    this->fill(effPlotCache, trackParams);
+    this->fill_nContributingParticles(effPlotCache, nContributingParticles);
+  }
+  
+  void 
+  PhysicsPerformancePlotTool::fill(PhysicsPerformancePlotCache& effPlotCache,
+				   const TrackParameters& trackParams) const 
+  {
+    const auto& momentum = trackParams.momentum();
+    const auto pT = Acts::VectorHelpers::perp(momentum);
+    const auto eta = Acts::VectorHelpers::eta(momentum);
+    const auto phi = Acts::VectorHelpers::phi(momentum);
+
+    this->fill(effPlotCache, pT, eta, phi);
+  }
+
   void
   PhysicsPerformancePlotTool::fill(PhysicsPerformancePlotTool::PhysicsPerformancePlotCache& effPlotCache,
 				   const ActsFatras::Particle& truthParticle,
@@ -152,14 +173,24 @@ namespace ActsExamples {
     const auto t_pT = truthParticle.transverseMomentum();
     const auto t_eta = eta(truthParticle.unitDirection());
     const auto t_phi = phi(truthParticle.unitDirection());
-    
+
     PlotHelpers::fillEff(effPlotCache.trackEff_vs_pT_vs_eta, t_pT, t_eta, status );
     PlotHelpers::fillEff(effPlotCache.trackEff_vs_pT_vs_phi, t_pT, t_phi, status );
     PlotHelpers::fillEff(effPlotCache.trackEff_vs_eta_vs_phi, t_eta, t_phi, status );
-    
+
     this->fill(effPlotCache, t_pT, t_eta, t_phi);
-      
-      PlotHelpers::fillHisto(effPlotCache.n_reco_times, RecoTimes);
+    PlotHelpers::fillHisto(effPlotCache.n_reco_times, RecoTimes);
   }
   
+  void
+  PhysicsPerformancePlotTool::fill(PhysicsPerformancePlotCache& effPlotCache,
+				   const ActsFatras::Particle& truthParticle) const
+  {
+    const auto t_pT = truthParticle.transverseMomentum();
+    const auto t_eta = eta(truthParticle.unitDirection());
+    const auto t_phi = phi(truthParticle.unitDirection());
+
+    this->fill(effPlotCache, t_pT, t_eta, t_phi);
+  }
+
 }

@@ -12,6 +12,7 @@
 #include "ActsExamples/Utilities/Helpers.hpp"
 #include "ActsFatras/EventData/Particle.hpp"
 #include "Acts/EventData/TrackParameters.hpp"
+#include "ActsExamples/EventData/Track.hpp"
 
 #include <map>
 #include <memory>
@@ -56,6 +57,7 @@ class PhysicsPerformancePlotTool {
   };
   
   /// Constructor
+  PhysicsPerformancePlotTool() = delete;
   ///
   /// @param cfg Configuration struct
   /// @param lvl Message level declaration
@@ -77,11 +79,24 @@ class PhysicsPerformancePlotTool {
 	    int ntimes, bool status) const;
 
   void fill(PhysicsPerformancePlotCache& effPlotCache,
-	    float, float, float) const;
+            const ActsFatras::Particle& truthParticle) const;
+
+  void fill(PhysicsPerformancePlotCache& effPlotCache,
+            const TrackParameters& trackParams,
+	    std::size_t nContributingParticles) const;
+
+  void fill(PhysicsPerformancePlotCache& effPlotCache,
+	    const TrackParameters& trackParams) const;
+
+
 
   void fill_nContributingParticles(PhysicsPerformancePlotCache& effPlotCache,
 				   std::size_t) const;
 
+  void fill(PhysicsPerformancePlotCache& effPlotCache,
+	    float, float, float) const;
+  
+  
   /// @brief write the efficiency plots to file
   ///
   /// @param effPlotCache cache object for efficiency plots

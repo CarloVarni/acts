@@ -30,8 +30,7 @@ ActsExamples::TrackingSequencePerformanceWriter::TrackingSequencePerformanceWrit
     m_truthPerformancePlotTool(m_cfg.truthPerformancePlotConfig, level),
     m_recoPerformancePlotTool(m_cfg.recoPerformancePlotConfig, level),
     m_fakePerformancePlotTool(m_cfg.fakePerformancePlotConfig, level),
-    m_unmatchedPerformancePlotTool(m_cfg.unmatchedPerformancePlotConfig, level),
-    m_personalPlotTool(m_cfg.personalPlotToolConfig, level)
+    m_unmatchedPerformancePlotTool(m_cfg.unmatchedPerformancePlotConfig, level)
 {
   
   if (m_cfg.fileName.empty()) {
@@ -67,7 +66,6 @@ ActsExamples::TrackingSequencePerformanceWriter::TrackingSequencePerformanceWrit
   m_recoPerformancePlotTool.book(m_recoPerformancePlotCache);
   m_fakePerformancePlotTool.book(m_fakePerformancePlotCache);
   m_unmatchedPerformancePlotTool.book(m_unmatchedPerformancePlotCache);
-  m_personalPlotTool.book(m_personalPlotCache);
   
 }
 
@@ -77,7 +75,6 @@ ActsExamples::TrackingSequencePerformanceWriter::~TrackingSequencePerformanceWri
   m_recoPerformancePlotTool.clear(m_recoPerformancePlotCache);
   m_fakePerformancePlotTool.clear(m_fakePerformancePlotCache);
   m_unmatchedPerformancePlotTool.clear(m_unmatchedPerformancePlotCache);
-  m_personalPlotTool.clear(m_personalPlotCache);
 
   if (m_outputFile) {
     m_outputFile->Close();
@@ -93,7 +90,6 @@ ActsExamples::TrackingSequencePerformanceWriter::endRun() {
     m_recoPerformancePlotTool.write(m_recoPerformancePlotCache);
     m_fakePerformancePlotTool.write(m_fakePerformancePlotCache);
     m_unmatchedPerformancePlotTool.write(m_unmatchedPerformancePlotCache);
-    m_personalPlotTool.write(m_personalPlotCache);
     ACTS_INFO("Wrote performance plots to '" << m_outputFile->GetPath() << "'");
   }
 
@@ -221,8 +217,7 @@ ActsExamples::TrackingSequencePerformanceWriter::writeT(const AlgorithmContext& 
 
       // Remove fakes
       if (nMajorityHits * 1. / trajState.nMeasurements < m_cfg.fakeThreshold) {
-	m_personalPlotTool.fill_fake(m_personalPlotCache, pT, eta, phi);
-	m_fakePerformancePlotTool.fill(m_fakePerformancePlotCache, pT, eta, phi);
+	m_fakePerformancePlotTool.fill(m_fakePerformancePlotCache, fittedParameters); 
 	storageFakeParticles.insert(majorityParticleId);
 	continue;
       }
@@ -231,12 +226,7 @@ ActsExamples::TrackingSequencePerformanceWriter::writeT(const AlgorithmContext& 
       if (storageTruthParticlesNRecoTimes.find(majorityParticleId) == storageTruthParticlesNRecoTimes.end())
 	continue;
 
-      m_personalPlotTool.fill_nContributingParticles(m_personalPlotCache, nContributingParticles);      
-      m_personalPlotTool.fill_reco(m_personalPlotCache, pT, eta, phi);
-
-      m_recoPerformancePlotTool.fill(m_recoPerformancePlotCache, pT, eta, phi);
-      m_recoPerformancePlotTool.fill_nContributingParticles(m_recoPerformancePlotCache, nContributingParticles);
-
+      m_recoPerformancePlotTool.fill(m_recoPerformancePlotCache, fittedParameters, nContributingParticles);
       storageTruthParticlesNRecoTimes.at(majorityParticleId)++;
     }
   }
@@ -256,8 +246,6 @@ ActsExamples::TrackingSequencePerformanceWriter::writeT(const AlgorithmContext& 
 				    truth_particle,
 				    ntimes, 
 				    ntimes > 0);
-    m_personalPlotTool.fill_truth(m_personalPlotCache, truth_particle,
-				  ntimes, ntimes > 0);
 
     if (ntimes > 0) counter++;
   }
@@ -294,8 +282,7 @@ ActsExamples::TrackingSequencePerformanceWriter::writeT(const AlgorithmContext& 
     if (not m_cfg.selection_pt_eta_phi(pT, eta, phi))
       continue;
 
-    m_unmatchedPerformancePlotTool.fill(m_unmatchedPerformancePlotCache, pT, eta, phi);
-    m_personalPlotTool.fill_unmatched(m_personalPlotCache, pT, eta, phi);
+    m_unmatchedPerformancePlotTool.fill(m_unmatchedPerformancePlotCache, particle);
   }
 
   ACTS_INFO("Reconstructed Particles: " << counter << " / " << storageTruthParticlesNRecoTimes.size());

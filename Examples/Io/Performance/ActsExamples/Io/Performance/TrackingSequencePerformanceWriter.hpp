@@ -15,7 +15,6 @@
 #include "ActsExamples/Framework/WriterT.hpp"
 #include "ActsExamples/Validation/DuplicationPlotTool.hpp"
 #include "ActsExamples/Validation/EffPlotTool.hpp"
-#include "ActsExamples/Validation/PersonalPlotTool.hpp"
 #include "ActsExamples/Validation/PhysicsPerformancePlotTool.hpp"
 
 #include <mutex>
@@ -66,9 +65,6 @@ namespace ActsExamples {
       PhysicsPerformancePlotTool::Config fakePerformancePlotConfig;
       // Un-Matched
       PhysicsPerformancePlotTool::Config unmatchedPerformancePlotConfig;
-
-      //
-      PersonalPlotTool::Config personalPlotToolConfig;
     };
     
     /// Construct from configuration and log level.
@@ -107,9 +103,6 @@ namespace ActsExamples {
     // Un-Matched
     PhysicsPerformancePlotTool m_unmatchedPerformancePlotTool;
     PhysicsPerformancePlotTool::PhysicsPerformancePlotCache m_unmatchedPerformancePlotCache;
-    //
-    PersonalPlotTool m_personalPlotTool;
-    PersonalPlotTool::PersonalPlotCache m_personalPlotCache;
   };
 
 }  // namespace ActsExamples
