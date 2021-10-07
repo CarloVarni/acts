@@ -16,6 +16,7 @@
 #include "ActsExamples/Validation/DuplicationPlotTool.hpp"
 #include "ActsExamples/Validation/EffPlotTool.hpp"
 #include "ActsExamples/Validation/PersonalPlotTool.hpp"
+#include "ActsExamples/Validation/PhysicsPerformancePlotTool.hpp"
 
 #include <mutex>
 #include <string>
@@ -48,12 +49,25 @@ namespace ActsExamples {
       std::string inputParticles = "";
       /// Input hit-particles map collection.
       std::string inputMeasurementParticlesMap= "";
+      ///
+      double fakeThreshold = 0.5;
       /// Selection criteria
       std::function<bool(float,float,float)> selection_pt_eta_phi = [=] (float, float, float) -> bool { return true; };
       /// Target particle pdg
       std::vector<Acts::PdgParticle> pdg = {};
 
+      // Eff
       EffPlotTool::Config effPlotToolConfig;
+      // Truth
+      PhysicsPerformancePlotTool::Config truthPerformancePlotConfig;
+      // Reco
+      PhysicsPerformancePlotTool::Config recoPerformancePlotConfig;
+      // Fakes
+      PhysicsPerformancePlotTool::Config fakePerformancePlotConfig;
+      // Un-Matched
+      PhysicsPerformancePlotTool::Config unmatchedPerformancePlotConfig;
+
+      //
       PersonalPlotTool::Config personalPlotToolConfig;
     };
     
@@ -81,6 +95,19 @@ namespace ActsExamples {
     EffPlotTool m_effPlotTool;
     EffPlotTool::EffPlotCache m_effPlotCache;
 
+    // Truth
+    PhysicsPerformancePlotTool m_truthPerformancePlotTool;
+    PhysicsPerformancePlotTool::PhysicsPerformancePlotCache m_truthPerformancePlotCache;
+    // Reco
+    PhysicsPerformancePlotTool m_recoPerformancePlotTool;
+    PhysicsPerformancePlotTool::PhysicsPerformancePlotCache m_recoPerformancePlotCache;
+    // Fakes
+    PhysicsPerformancePlotTool m_fakePerformancePlotTool;
+    PhysicsPerformancePlotTool::PhysicsPerformancePlotCache m_fakePerformancePlotCache;
+    // Un-Matched
+    PhysicsPerformancePlotTool m_unmatchedPerformancePlotTool;
+    PhysicsPerformancePlotTool::PhysicsPerformancePlotCache m_unmatchedPerformancePlotCache;
+    //
     PersonalPlotTool m_personalPlotTool;
     PersonalPlotTool::PersonalPlotCache m_personalPlotCache;
   };

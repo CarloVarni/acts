@@ -47,6 +47,8 @@
 
 #include "ActsExamples/Io/Performance/SeedingPerformanceWriter.hpp"
 
+#include "ActsExamples/Validation/PhysicsPerformancePlotTool.hpp"
+
 using namespace Acts::UnitLiterals;
 using namespace ActsExamples;
 using namespace boost::filesystem;
@@ -357,8 +359,30 @@ int runRecCKFTracks(int argc, char* argv[],
     throw std::runtime_error("No performance particles have been specificied! Use `performance-particles` option.");
   }
 
+  // Tools
+   PhysicsPerformancePlotTool::Config truthConfig;
+   truthConfig.tool_name = "TruthPhysicsPerformancePlotTool";
+   truthConfig.particle_name = "truth_particle";
+
+   PhysicsPerformancePlotTool::Config recoConfig;
+   recoConfig.tool_name = "RecoPhysicsPerformancePlotTool";
+   recoConfig.particle_name = "reco_particle";
+
+   PhysicsPerformancePlotTool::Config fakeConfig;
+   fakeConfig.tool_name = "FakePhysicsPerformancePlotTool";
+   fakeConfig.particle_name = "fake_particle";
+
+   PhysicsPerformancePlotTool::Config unmatchedConfig;
+   unmatchedConfig.tool_name = "UnmatchedPerformancePlotTool";
+   unmatchedConfig.particle_name = "unmatched_particle";
+
   TrackingSequencePerformanceWriter::Config perfTrackSequenceWriterCfg;
   perfTrackSequenceWriterCfg.fileName = performance_particles + "_efficiency_plots.root";
+  perfTrackSequenceWriterCfg.truthPerformancePlotConfig = truthConfig;
+  perfTrackSequenceWriterCfg.recoPerformancePlotConfig = recoConfig;
+  perfTrackSequenceWriterCfg.fakePerformancePlotConfig = fakeConfig;
+  perfTrackSequenceWriterCfg.unmatchedPerformancePlotConfig = unmatchedConfig;
+
   perfTrackSequenceWriterCfg.inputMultiTrajectories = trackFindingCfg.outputTrajectories;
   perfTrackSequenceWriterCfg.outputDir = outputDir;
   perfTrackSequenceWriterCfg.inputParticles = inputParticles;
@@ -399,7 +423,7 @@ int runRecCKFTracks(int argc, char* argv[],
 
 
 
-
+  /*
   SeedingPerformanceWriter::Config seedPerfCfg;
   seedPerfCfg.inputProtoTracks = "prototracks";
   seedPerfCfg.inputParticles = inputParticles;
@@ -408,7 +432,7 @@ int runRecCKFTracks(int argc, char* argv[],
   seedPerfCfg.filePath = outputDir + "/performance_tracking_hists.root";
   sequencer.addWriter(
 		      std::make_shared<SeedingPerformanceWriter>(seedPerfCfg, logLevel));
-
+  */
 
 
 

@@ -27,6 +27,10 @@ ActsExamples::TrackingSequencePerformanceWriter::TrackingSequencePerformanceWrit
   : WriterT(config.inputMultiTrajectories, "SeedingPerformanceWriter", level),
     m_cfg(std::move(config)) ,
     m_effPlotTool(m_cfg.effPlotToolConfig, level),
+    m_truthPerformancePlotTool(m_cfg.truthPerformancePlotConfig, level),
+    m_recoPerformancePlotTool(m_cfg.recoPerformancePlotConfig, level),
+    m_fakePerformancePlotTool(m_cfg.fakePerformancePlotConfig, level),
+    m_unmatchedPerformancePlotTool(m_cfg.unmatchedPerformancePlotConfig, level),
     m_personalPlotTool(m_cfg.personalPlotToolConfig, level)
 {
   
@@ -59,12 +63,20 @@ ActsExamples::TrackingSequencePerformanceWriter::TrackingSequencePerformanceWrit
 
   // initialize the plot tools
   m_effPlotTool.book(m_effPlotCache);
+  m_truthPerformancePlotTool.book(m_truthPerformancePlotCache);
+  m_recoPerformancePlotTool.book(m_recoPerformancePlotCache);
+  m_fakePerformancePlotTool.book(m_fakePerformancePlotCache);
+  m_unmatchedPerformancePlotTool.book(m_unmatchedPerformancePlotCache);
   m_personalPlotTool.book(m_personalPlotCache);
   
 }
 
 ActsExamples::TrackingSequencePerformanceWriter::~TrackingSequencePerformanceWriter() {
   m_effPlotTool.clear(m_effPlotCache);
+  m_truthPerformancePlotTool.clear(m_truthPerformancePlotCache);
+  m_recoPerformancePlotTool.clear(m_recoPerformancePlotCache);
+  m_fakePerformancePlotTool.clear(m_fakePerformancePlotCache);
+  m_unmatchedPerformancePlotTool.clear(m_unmatchedPerformancePlotCache);
   m_personalPlotTool.clear(m_personalPlotCache);
 
   if (m_outputFile) {
@@ -77,6 +89,10 @@ ActsExamples::TrackingSequencePerformanceWriter::endRun() {
   if (m_outputFile) {
     m_outputFile->cd();
     m_effPlotTool.write(m_effPlotCache);
+    m_truthPerformancePlotTool.write(m_truthPerformancePlotCache);
+    m_recoPerformancePlotTool.write(m_recoPerformancePlotCache);
+    m_fakePerformancePlotTool.write(m_fakePerformancePlotCache);
+    m_unmatchedPerformancePlotTool.write(m_unmatchedPerformancePlotCache);
     m_personalPlotTool.write(m_personalPlotCache);
     ACTS_INFO("Wrote performance plots to '" << m_outputFile->GetPath() << "'");
   }
@@ -111,19 +127,22 @@ ActsExamples::TrackingSequencePerformanceWriter::writeT(const AlgorithmContext& 
   // particle list: barcode -> n reco times
   std::unordered_map<ActsFatras::Barcode,
 		     unsigned long int> storageTruthParticlesNRecoTimes;
+  // particles labeled as fakes
+  std::unordered_set<ActsFatras::Barcode> storageFakeParticles;
 
 
   for (const auto& particle : particles) {
     const ActsFatras::Barcode& barcode = particle.particleId();
     const Acts::PdgParticle& pdg = particle.pdg();
 
-    // Select only muons    
+    // Select only target particles
     bool isTargetParticle = false;
-    for (const auto& t_pdg : m_cfg.pdg)
+    for (const auto& t_pdg : m_cfg.pdg) {
       if (pdg == t_pdg) {
 	isTargetParticle = true;
 	break;
       }
+    }
 
     if (not isTargetParticle)
       continue;
@@ -160,7 +179,7 @@ ActsExamples::TrackingSequencePerformanceWriter::writeT(const AlgorithmContext& 
     const auto& trackTips = traj.tips();
 
 
-
+    // run on tips
     for (const auto& trackTip : trackTips) {
       // Check if the reco track has fitted track parameters
       if (not traj.hasTrackParameters(trackTip)) {
@@ -200,23 +219,31 @@ ActsExamples::TrackingSequencePerformanceWriter::writeT(const AlgorithmContext& 
       auto trajState =
           Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip);
 
-      // if (trajState.nMeasurements < 9)
-      //  	continue;
-
       // Remove fakes
-      if (nMajorityHits * 1. / trajState.nMeasurements < 0.5)
+      if (nMajorityHits * 1. / trajState.nMeasurements < m_cfg.fakeThreshold) {
+	m_personalPlotTool.fill_fake(m_personalPlotCache, pT, eta, phi);
+	m_fakePerformancePlotTool.fill(m_fakePerformancePlotCache, pT, eta, phi);
+	storageFakeParticles.insert(majorityParticleId);
 	continue;
+      }
 
       // check if particle is target
       if (storageTruthParticlesNRecoTimes.find(majorityParticleId) == storageTruthParticlesNRecoTimes.end())
 	continue;
-      
+
+      m_personalPlotTool.fill_nContributingParticles(m_personalPlotCache, nContributingParticles);      
       m_personalPlotTool.fill_reco(m_personalPlotCache, pT, eta, phi);
+
+      m_recoPerformancePlotTool.fill(m_recoPerformancePlotCache, pT, eta, phi);
+      m_recoPerformancePlotTool.fill_nContributingParticles(m_recoPerformancePlotCache, nContributingParticles);
+
       storageTruthParticlesNRecoTimes.at(majorityParticleId)++;
     }
   }
   
-  // Count how many muons have been reconstructed now
+
+
+  // Count how many particles have been reconstructed now
   long unsigned int counter = 0;
   for (const auto& [barcode, ntimes] : storageTruthParticlesNRecoTimes) {
 
@@ -225,13 +252,53 @@ ActsExamples::TrackingSequencePerformanceWriter::writeT(const AlgorithmContext& 
     
     // Fill efficiency plots
     m_effPlotTool.fill(m_effPlotCache, truth_particle, ntimes > 0);
+    m_truthPerformancePlotTool.fill(m_truthPerformancePlotCache,
+				    truth_particle,
+				    ntimes, 
+				    ntimes > 0);
     m_personalPlotTool.fill_truth(m_personalPlotCache, truth_particle,
 				  ntimes, ntimes > 0);
 
     if (ntimes > 0) counter++;
   }
 
-  ACTS_INFO("Reconstructed Muons: " << counter << " / " << storageTruthParticlesNRecoTimes.size());
+  // check un matched
+  for (const auto& particle : particles) {
+    const ActsFatras::Barcode& barcode = particle.particleId();
+    const Acts::PdgParticle& pdg = particle.pdg();
+
+    // Select only target particles
+    bool isTargetParticle = false;
+    for (const auto& t_pdg : m_cfg.pdg) {
+      if (pdg == t_pdg) {
+        isTargetParticle = true;
+        break;
+      }
+    }
+
+    if (not isTargetParticle) 
+      continue;
+
+    // check if matched
+    if (storageTruthParticlesNRecoTimes.find(barcode) != storageTruthParticlesNRecoTimes.end())
+      continue;
+    // check if labelled as fake
+    if (storageFakeParticles.find(barcode) != storageFakeParticles.end())
+      continue;
+
+    // position and requirements on pt and eta and phi
+    const auto pT = particle.transverseMomentum();
+    const auto phi = Acts::VectorHelpers::phi(particle.unitDirection());
+    const auto eta = Acts::VectorHelpers::eta(particle.unitDirection());
+    
+    if (not m_cfg.selection_pt_eta_phi(pT, eta, phi))
+      continue;
+
+    m_unmatchedPerformancePlotTool.fill(m_unmatchedPerformancePlotCache, pT, eta, phi);
+    m_personalPlotTool.fill_unmatched(m_personalPlotCache, pT, eta, phi);
+  }
+
+  ACTS_INFO("Reconstructed Particles: " << counter << " / " << storageTruthParticlesNRecoTimes.size());
 
   return ProcessCode::SUCCESS;
 }
