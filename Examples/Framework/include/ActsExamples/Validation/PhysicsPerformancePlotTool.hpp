@@ -33,6 +33,13 @@ class PhysicsPerformancePlotTool {
       {"Eta", PlotHelpers::Binning("#eta", 40, -4, 4)},
       {"Phi", PlotHelpers::Binning("#phi", 12, -3.15, 3.15)},
       {"Pt", PlotHelpers::Binning("pT [GeV/c]", 10, 0, 10)},
+      {"d0", PlotHelpers::Binning("d0 [mm]", 40, -10, 10)},
+      {"z0", PlotHelpers::Binning("z0 [mm]", 40, -1, 1)},
+      {"err_Pt", PlotHelpers::Binning("err_Pt [GeV/C]",  40, 0 ,1000)},
+      {"err_d0", PlotHelpers::Binning("#sigma_{d0} [mm]", 10, 0, 2)},
+      {"err_z0", PlotHelpers::Binning("#sigma_{z0} [mm]", 10, 0, 2)},
+      {"significance_d0", PlotHelpers::Binning("significance d0", 40, -20, 20)},
+      {"significance_z0", PlotHelpers::Binning("significance z0", 40, -20, 20)},
       {"N_Reco_Times", PlotHelpers::Binning("N Reco Times",10, 0, 10)},
       {"N_Contributing_Particles", PlotHelpers::Binning("N Contributing Particles",20, 0, 10)}
     };
@@ -40,18 +47,63 @@ class PhysicsPerformancePlotTool {
 
   /// @brief Nested Cache struct
   struct PhysicsPerformancePlotCache {
+    // Eff
     TEfficiency* trackEff_vs_pT_vs_eta;
     TEfficiency* trackEff_vs_pT_vs_phi;
     TEfficiency* trackEff_vs_eta_vs_phi;
 
+    // 1D
     TH1F* particle_pt;
     TH1F* particle_eta;
     TH1F* particle_phi;
 
+    TH1F* particle_d0;
+    TH1F* particle_z0;
+    TH1F* particle_err_d0;
+    TH1F* particle_err_z0;
+    TH1F* particle_significance_d0;
+    TH1F* particle_significance_z0;
+
+    TProfile* profile_particle_pTqOverP_vs_eta;
+    TProfile* profile_particle_pTqOverP_vs_phi;
+
+    TProfile* profile_particle_err_inv_pT_vs_eta;
+    TProfile* profile_particle_err_inv_pT_vs_phi;
+
+    TProfile* profile_particle_pT_vs_eta;
+    TProfile* profile_particle_pT_vs_phi;
+
+    TProfile* profile_particle_d0_vs_eta;
+    TProfile* profile_particle_d0_vs_phi;
+    TProfile* profile_particle_z0_vs_eta;
+    TProfile* profile_particle_z0_vs_phi;
+
+    TProfile* profile_particle_err_d0_vs_eta;
+    TProfile* profile_particle_err_d0_vs_phi;
+    TProfile* profile_particle_err_z0_vs_eta;
+    TProfile* profile_particle_err_z0_vs_phi;
+
+    // 2D
     TH2F* particle_pT_vs_eta;
     TH2F* particle_pT_vs_phi;
     TH2F* particle_eta_vs_phi;
 
+    TH2F* particle_d0_vs_eta;
+    TH2F* particle_d0_vs_phi;
+    TH2F* particle_z0_vs_eta;
+    TH2F* particle_z0_vs_phi;
+
+    TH2F* particle_err_d0_vs_eta;
+    TH2F* particle_err_d0_vs_phi;
+    TH2F* particle_err_z0_vs_eta;
+    TH2F* particle_err_z0_vs_phi;
+
+    TH2F* particle_significance_d0_vs_eta;
+    TH2F* particle_significance_d0_vs_phi;
+    TH2F* particle_significance_z0_vs_eta;
+    TH2F* particle_significance_z0_vs_phi;
+
+    // Other
     TH1F* n_contributing_particles;
     TH1F* n_reco_times;
   };
