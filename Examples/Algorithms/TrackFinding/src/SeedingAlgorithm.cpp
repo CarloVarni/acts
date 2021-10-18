@@ -17,6 +17,7 @@
 #include "ActsExamples/EventData/ProtoTrack.hpp"
 #include "ActsExamples/EventData/SimSeed.hpp"
 #include "ActsExamples/Framework/WhiteBoard.hpp"
+#include "Acts/Seeding/SeedCreator.hpp"
 
 #include <stdexcept>
 
@@ -102,36 +103,23 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
 
   // construct the seeding tools
   // covariance tool, extracts covariances per spacepoint as required
-  auto extractGlobalQuantities =
-      [=](const SimSpacePoint& sp, float, float,
-          float) -> std::pair<Acts::Vector3, Acts::Vector2> {
+  std::function<std::pair<Acts::Vector3, Acts::Vector2>(const SimSpacePoint& sp, float, float, float)> extractGlobalQuantities =
+    [](const SimSpacePoint& sp, float, float,
+       float) -> std::pair<Acts::Vector3, Acts::Vector2> {
     Acts::Vector3 position{sp.x(), sp.y(), sp.z()};
     Acts::Vector2 covariance{sp.varianceR(), sp.varianceZ()};
     return std::make_pair(position, covariance);
   };
 
-  auto bottomBinFinder = std::make_shared<Acts::BinFinder<SimSpacePoint>>(
-      Acts::BinFinder<SimSpacePoint>());
-  auto topBinFinder = std::make_shared<Acts::BinFinder<SimSpacePoint>>(
-      Acts::BinFinder<SimSpacePoint>());
-  auto grid =
-      Acts::SpacePointGridCreator::createGrid<SimSpacePoint>(m_cfg.gridConfig);
-  auto spacePointsGrouping = Acts::BinnedSPGroup<SimSpacePoint>(
-      spacePointPtrs.begin(), spacePointPtrs.end(), extractGlobalQuantities,
-      bottomBinFinder, topBinFinder, std::move(grid), m_cfg.seedFinderConfig);
-  auto finder = Acts::Seedfinder<SimSpacePoint>(m_cfg.seedFinderConfig);
-
-  // run the seeding
   static thread_local SimSeedContainer seeds;
   seeds.clear();
-  static thread_local decltype(finder)::State state;
 
-  auto group = spacePointsGrouping.begin();
-  auto groupEnd = spacePointsGrouping.end();
-  for (; !(group == groupEnd); ++group) {
-    finder.createSeedsForGroup(state, std::back_inserter(seeds), group.bottom(),
-                               group.middle(), group.top());
-  }
+  Acts::SeedCreator::createSeeds(m_cfg.gridConfig,
+				 m_cfg.seedFinderConfig,
+				 spacePointPtrs.begin(),
+				 spacePointPtrs.end(),
+				 std::back_inserter(seeds),
+				 extractGlobalQuantities);
 
   // extract proto tracks, i.e. groups of measurement indices, from tracks seeds
   size_t nSeeds = seeds.size();
