@@ -11,13 +11,13 @@
 #include "Acts/Seeding/BinFinder.hpp"
 #include "Acts/Seeding/BinnedSPGroup.hpp"
 #include "Acts/Seeding/Seed.hpp"
+#include "Acts/Seeding/SeedCreator.hpp"
 #include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/Seedfinder.hpp"
 #include "Acts/Surfaces/Surface.hpp"
 #include "ActsExamples/EventData/ProtoTrack.hpp"
 #include "ActsExamples/EventData/SimSeed.hpp"
 #include "ActsExamples/Framework/WhiteBoard.hpp"
-#include "Acts/Seeding/SeedCreator.hpp"
 
 #include <stdexcept>
 
@@ -103,9 +103,11 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
 
   // construct the seeding tools
   // covariance tool, extracts covariances per spacepoint as required
-  std::function<std::pair<Acts::Vector3, Acts::Vector2>(const SimSpacePoint& sp, float, float, float)> extractGlobalQuantities =
-    [](const SimSpacePoint& sp, float, float,
-       float) -> std::pair<Acts::Vector3, Acts::Vector2> {
+  std::function<std::pair<Acts::Vector3, Acts::Vector2>(const SimSpacePoint& sp,
+                                                        float, float, float)>
+      extractGlobalQuantities =
+          [](const SimSpacePoint& sp, float, float,
+             float) -> std::pair<Acts::Vector3, Acts::Vector2> {
     Acts::Vector3 position{sp.x(), sp.y(), sp.z()};
     Acts::Vector2 covariance{sp.varianceR(), sp.varianceZ()};
     return std::make_pair(position, covariance);
@@ -114,12 +116,9 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   static thread_local SimSeedContainer seeds;
   seeds.clear();
 
-  Acts::SeedCreator::createSeeds(m_cfg.gridConfig,
-				 m_cfg.seedFinderConfig,
-				 spacePointPtrs.begin(),
-				 spacePointPtrs.end(),
-				 std::back_inserter(seeds),
-				 extractGlobalQuantities);
+  Acts::SeedCreator::createSeeds(
+      m_cfg.gridConfig, m_cfg.seedFinderConfig, spacePointPtrs.begin(),
+      spacePointPtrs.end(), std::back_inserter(seeds), extractGlobalQuantities);
 
   // extract proto tracks, i.e. groups of measurement indices, from tracks seeds
   size_t nSeeds = seeds.size();
