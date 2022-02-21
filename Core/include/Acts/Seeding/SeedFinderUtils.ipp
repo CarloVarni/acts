@@ -10,8 +10,8 @@ namespace Acts {
 
 namespace SeedFinderUtils {
 template <typename callable_t, typename external_spacepoint_t>
-using isSignatureCompatible =
-    decltype(std::declval<callable_t&>() = std::declval<external_spacepoint_t>());
+using isSignatureCompatible = decltype(
+    std::declval<callable_t&>() = std::declval<external_spacepoint_t>());
 }
 
 template <typename external_spacepoint_t>
@@ -30,16 +30,18 @@ LinCircle transformCoordinates(
       sp, spM, bottom, extractFunction);
 }
 
-template <typename external_spacepoint_t,
-	  typename callable_t>
-LinCircle transformCoordinates(
-    const external_spacepoint_t& sp, const external_spacepoint_t& spM,
-    bool bottom,
-    callable_t&& extractFunction) {
-  using member_ptr_type = std::array<float, 6>(*)(const external_spacepoint_t&);
+template <typename external_spacepoint_t, typename callable_t>
+LinCircle transformCoordinates(const external_spacepoint_t& sp,
+                               const external_spacepoint_t& spM, bool bottom,
+                               callable_t&& extractFunction) {
+  using member_ptr_type =
+      std::array<float, 6> (*)(const external_spacepoint_t&);
 
-  static_assert(Concepts::is_detected<SeedFinderUtils::isSignatureCompatible, member_ptr_type, decltype(extractFunction)>::value,
-  "Callable given does not correspond exactly to required call signature -> std::array<float, 6>(const external_spacepoint_t&)");
+  static_assert(
+      Concepts::is_detected<SeedFinderUtils::isSignatureCompatible,
+                            member_ptr_type, decltype(extractFunction)>::value,
+      "Callable given does not correspond exactly to required call signature "
+      "-> std::array<float, 6>(const external_spacepoint_t&)");
 
   // The computation inside this function is exactly identical to that in the
   // vectorized version of this function, except that it operates on a single
@@ -89,18 +91,20 @@ void transformCoordinates(
       vec, spM, bottom, enableCutsForSortedSP, linCircleVec, extractFunction);
 }
 
+template <typename external_spacepoint_t, typename callable_t>
+void transformCoordinates(const std::vector<const external_spacepoint_t*>& vec,
+                          const external_spacepoint_t& spM, bool bottom,
+                          bool enableCutsForSortedSP,
+                          std::vector<LinCircle>& linCircleVec,
+                          callable_t&& extractFunction) {
+  using member_ptr_type =
+      std::array<float, 6> (*)(const external_spacepoint_t&);
 
-template <typename external_spacepoint_t,
-          typename callable_t>
-void transformCoordinates(
-    const std::vector<const external_spacepoint_t*>& vec,
-    const external_spacepoint_t& spM, bool bottom, bool enableCutsForSortedSP,
-    std::vector<LinCircle>& linCircleVec,
-    callable_t&& extractFunction) {
-  using member_ptr_type = std::array<float, 6>(*)(const external_spacepoint_t&);
-
-  static_assert(Concepts::is_detected<SeedFinderUtils::isSignatureCompatible, member_ptr_type, decltype(extractFunction)>::value,
-  "Callable given does not correspond exactly to required call signature -> std::array<float, 6>(const external_spacepoint_t&)");
+  static_assert(
+      Concepts::is_detected<SeedFinderUtils::isSignatureCompatible,
+                            member_ptr_type, decltype(extractFunction)>::value,
+      "Callable given does not correspond exactly to required call signature "
+      "-> std::array<float, 6>(const external_spacepoint_t&)");
 
   auto [xM, yM, zM, rM, varianceRM, varianceZM] = extractFunction(spM);
 
