@@ -23,12 +23,13 @@ LinCircle transformCoordinates(
       sp, spM, bottom, extractFunction);
 }
 
-template <typename external_spacepoint_t>
+template <typename external_spacepoint_t,
+	  typename callable_t>
 LinCircle transformCoordinates(
     const external_spacepoint_t& sp, const external_spacepoint_t& spM,
     bool bottom,
-    std::function<std::array<float, 6>(const external_spacepoint_t&)>
-        extractFunction) {
+    callable_t&& extractFunction) {
+
   // The computation inside this function is exactly identical to that in the
   // vectorized version of this function, except that it operates on a single
   // spacepoint. Please see the other version of this function for more
@@ -77,13 +78,14 @@ void transformCoordinates(
       vec, spM, bottom, enableCutsForSortedSP, linCircleVec, extractFunction);
 }
 
-template <typename external_spacepoint_t>
+
+template <typename external_spacepoint_t,
+          typename callable_t>
 void transformCoordinates(
     const std::vector<const external_spacepoint_t*>& vec,
     const external_spacepoint_t& spM, bool bottom, bool enableCutsForSortedSP,
     std::vector<LinCircle>& linCircleVec,
-    std::function<std::array<float, 6>(const external_spacepoint_t&)>
-        extractFunction) {
+    callable_t&& extractFunction) {
   auto [xM, yM, zM, rM, varianceRM, varianceZM] = extractFunction(spM);
 
   float cosPhiM = xM / rM;

@@ -36,12 +36,12 @@ LinCircle transformCoordinates(
     const InternalSpacePoint<external_spacepoint_t>& sp,
     const InternalSpacePoint<external_spacepoint_t>& spM, bool bottom);
 
-template <typename external_spacepoint_t>
+template <typename external_spacepoint_t,
+	  typename callable_t>
 LinCircle transformCoordinates(
     const external_spacepoint_t& sp, const external_spacepoint_t& spM,
     bool bottom,
-    std::function<std::array<float, 6>(const external_spacepoint_t&)>
-        extractFunction);
+    callable_t&& extractFunction);
 
 /// @brief Transform a vector of spacepoints to u-v space circles with respect
 /// to a given middle spacepoint.
@@ -59,12 +59,13 @@ void transformCoordinates(
     const InternalSpacePoint<external_spacepoint_t>& spM, bool bottom,
     bool enableCutsForSortedSP, std::vector<LinCircle>& linCircleVec);
 
-template <typename external_spacepoint_t>
+template <typename external_spacepoint_t,
+	  typename callable_t>
 void transformCoordinates(
     const std::vector<const external_spacepoint_t*>& vec,
     const external_spacepoint_t& spM, bool bottom, bool enableCutsForSortedSP,
     std::vector<LinCircle>& linCircleVec,
-    std::function<std::array<float, 6>(const external_spacepoint_t&)>);
+    callable_t&& extractFunction);
 }  // namespace Acts
 
 #include "Acts/Seeding/SeedFinderUtils.ipp"
