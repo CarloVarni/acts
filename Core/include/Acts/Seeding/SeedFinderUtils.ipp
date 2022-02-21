@@ -9,9 +9,9 @@
 namespace Acts {
 
 namespace SeedFinderUtils {
-template <typename callable_t, typename external_spacepoint_t>
+template <typename prototype_t, typename callable_t>
 using isSignatureCompatible = decltype(
-    std::declval<callable_t&>() = std::declval<external_spacepoint_t>());
+    std::declval<prototype_t&>() = std::declval<callable_t>());
 }
 
 template <typename external_spacepoint_t>
