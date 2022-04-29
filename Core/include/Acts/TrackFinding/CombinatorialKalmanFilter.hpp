@@ -70,6 +70,9 @@ struct CombinatorialKalmanFilterExtensions {
   using BranchStopper =
       Delegate<bool(const CombinatorialKalmanFilterTipState&)>;
 
+  using MikadoSelector =
+    Delegate<uint32_t(MultiTrajectory::TrackStateProxy)>;
+
   /// The Calibrator is a dedicated calibration algorithm that allows
   /// to calibrate measurements using track information, this could be
   /// e.g. sagging for wires, module deformations, etc.
@@ -81,9 +84,12 @@ struct CombinatorialKalmanFilterExtensions {
   /// The smoother back-propagates measurement information along the track
   KalmanFitterExtensions::Smoother smoother;
 
+
+  
   /// The measurement selector is called during the filtering by the Actor.
   MeasurementSelector measurementSelector;
-
+  MikadoSelector mikadoSelector;
+  
   BranchStopper branchStopper;
 
   /// Default constructor which connects the default void components
@@ -93,6 +99,7 @@ struct CombinatorialKalmanFilterExtensions {
     smoother.connect<&voidKalmanSmoother>();
     branchStopper.connect<voidBranchStopper>();
     measurementSelector.connect<voidMeasurementSelector>();
+    mikadoSelector.connect<voidMikadoSelector>();
   }
 
  private:
@@ -111,6 +118,9 @@ struct CombinatorialKalmanFilterExtensions {
     return std::pair{candidates.begin(), candidates.end()};
   };
 
+  static uint32_t
+  voidMikadoSelector (MultiTrajectory::TrackStateProxy) { return -1; }
+    
   /// Default branch stopper which will never stop
   /// @param tipState The tip state to decide whether to stop (unused)
   /// @return false
@@ -597,9 +607,16 @@ class CombinatorialKalmanFilter {
         }
         auto selectedTrackStateRange = *selectorResult;
 
+	std::vector<MultiTrajectory::TrackStateProxy> collectedMeasurements;
+	for (auto itr=selectedTrackStateRange.first; itr!=selectedTrackStateRange.second; itr++) {
+	  // need to check if index already been used!
+	  uint32_t measurement_index = m_extensions.mikadoSelector(*itr) ;
+	  collectedMeasurements.push_back( *itr );
+	}
+	
         auto procRes = processSelectedTrackStates(
-            state.geoContext, selectedTrackStateRange.first,
-            selectedTrackStateRange.second, result, isOutlier, prevTipState,
+	    state.geoContext, collectedMeasurements.begin(),
+            collectedMeasurements.end(), result, isOutlier, prevTipState,
             nBranchesOnSurface, logger);
 
         if (!procRes.ok()) {
@@ -1244,10 +1261,18 @@ class CombinatorialKalmanFilter {
     // parameters, which is not necessarily the case.
     std::vector<Result<CombinatorialKalmanFilterResult>> ckfResults;
     ckfResults.reserve(initialParameters.size());
+
+    start_parameters_container_t param_copy(initialParameters.begin(), initialParameters.end());
+    auto sortParamsByPt =
+      [] (const auto& paramA, const auto& paramB) -> bool
+      { return paramA.transverseMomentum() > paramB.transverseMomentum(); };
+
+    std::sort(param_copy.begin(), param_copy.end(), sortParamsByPt);   
+    
     // Loop over all initial track parameters. Return the results for all
     // initial track parameters including those failed ones.
-    for (size_t iseed = 0; iseed < initialParameters.size(); ++iseed) {
-      const auto& sParameters = initialParameters[iseed];
+    for (size_t iseed = 0; iseed < param_copy.size(); ++iseed) {
+      const auto& sParameters = param_copy[iseed];
       auto result = m_propagator.template propagate(sParameters, propOptions);
 
       if (!result.ok()) {

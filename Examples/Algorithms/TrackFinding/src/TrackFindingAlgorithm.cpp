@@ -15,6 +15,7 @@
 #include "ActsExamples/EventData/Track.hpp"
 #include "ActsExamples/EventData/Trajectories.hpp"
 #include "ActsExamples/Framework/WhiteBoard.hpp"
+#include "ActsExamples/EventData/MikadoSelector.hpp"
 
 #include <stdexcept>
 
@@ -62,7 +63,8 @@ ActsExamples::ProcessCode ActsExamples::TrackFindingAlgorithm::execute(
   Acts::GainMatrixUpdater kfUpdater;
   Acts::GainMatrixSmoother kfSmoother;
   Acts::MeasurementSelector measSel{m_cfg.measurementSelectorCfg};
-
+  ActsExamples::MikadoSelector mikadoSel;
+  
   Acts::CombinatorialKalmanFilterExtensions extensions;
   extensions.calibrator.connect<&MeasurementCalibrator::calibrate>(&calibrator);
   extensions.updater.connect<&Acts::GainMatrixUpdater::operator()>(&kfUpdater);
@@ -70,7 +72,9 @@ ActsExamples::ProcessCode ActsExamples::TrackFindingAlgorithm::execute(
       &kfSmoother);
   extensions.measurementSelector.connect<&Acts::MeasurementSelector::select>(
       &measSel);
-
+  extensions.mikadoSelector.connect<&ActsExamples::MikadoSelector::acccept>(
+      &mikadoSel);
+  
   // Set the CombinatorialKalmanFilter options
   ActsExamples::TrackFindingAlgorithm::TrackFinderOptions options(
       ctx.geoContext, ctx.magFieldContext, ctx.calibContext,
