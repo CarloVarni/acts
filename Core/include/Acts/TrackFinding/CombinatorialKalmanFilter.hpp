@@ -1269,7 +1269,7 @@ class CombinatorialKalmanFilter {
     std::sort(index_vector.begin(), index_vector.end(), sort_seed_function);
 
     for (std::size_t iseed : index_vector) {
-      std::cout <<"*** pt = " << initialParameters[iseed].absoluteMomentum();
+      std::cout <<"*** pt = " << initialParameters[iseed].absoluteMomentum() << std::endl;
     }
 
     // Loop over all initial track parameters. Return the results for all

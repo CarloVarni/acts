@@ -34,6 +34,14 @@ public:
       m_used_meas(n, false)
   {}
 
+  bool 
+  hasBeenUsed(const Acts::MultiTrajectory::TrackStateProxy& trackstate) const {
+    const auto& sourceLink =
+      static_cast<const IndexSourceLink&>(trackstate.uncalibrated());
+    std::size_t idMeas = sourceLink.index();
+    return m_used_meas[idMeas];
+  }
+
   Acts::Result<std::pair<std::vector<Acts::MultiTrajectory::TrackStateProxy>::iterator,
 			 std::vector<Acts::MultiTrajectory::TrackStateProxy>::iterator>>
   select(std::vector<Acts::MultiTrajectory::TrackStateProxy>& candidates,
@@ -64,20 +72,11 @@ public:
     }
 
     double minChi2 = std::numeric_limits<double>::max();
+    std::size_t n_used_meas = 0;
     size_t minIndex = 0;
     size_t index = 0;
     // Loop over all measurements to select the compatible measurements
-    for (auto& trackState : candidates) {
-      // get index of measurement and check if it has been
-      // used or can be used
-      const auto& sourceLink =
-	static_cast<const IndexSourceLink&>(trackState.uncalibrated());
-      std::size_t measIndex = sourceLink.index();
-      if (m_used_meas[measIndex]) {
-	index++;
-	continue;
-      }
-      
+    for (auto& trackState : candidates) {      
       // Take the parameter covariance
       const auto predicted = trackState.predicted();
       const auto predictedCovariance = trackState.predictedCovariance();
@@ -109,12 +108,14 @@ public:
                   res)
 	    .eval()(0, 0);	 
 
-          // Search for the measurement with the min chi2
-          if (chi2 < minChi2) {
-            minChi2 = chi2;
-            minIndex = index;
-          }
-     	}); // visit measurement
+	  if (hasBeenUsed(trackState)) {
+	    n_used_meas++;
+	  } else if (chi2 < minChi2) {
+	    // Search for the measurement with the min chi2
+	    minChi2 = chi2;
+	    minIndex = index;
+	  }
+        }); // visit measurement
       
       index++;
     }
@@ -128,7 +129,7 @@ public:
       const auto chi2 = bestIt->chi2();
       const auto chi2Cut = VariableCut(*bestIt, cuts, chi2CutOff, logger);
       ACTS_VERBOSE("Chi2: " << chi2 << ", max: " << chi2Cut);
-      if (chi2 >= chi2Cut) {
+      if (chi2 >= chi2Cut or n_used_meas >= candidates.size()) {
 	ACTS_VERBOSE("No measurement candidate. Return an outlier measurement.");
 	isOutlier = true;
 	// return single item range, no sorting necessary
@@ -139,24 +140,21 @@ public:
     std::sort(
 	      candidates.begin(), candidates.end(),
 	      [this](const auto& tsa, const auto& tsb) 
-	      { 
-		const auto& sourceLink =
-		  static_cast<const IndexSourceLink&>(tsa.uncalibrated());
-		std::size_t idMeas = sourceLink.index();
-		if (m_used_meas[idMeas]) return false;
+	      {
+		if (hasBeenUsed(tsa)) return false;
+		if (hasBeenUsed(tsb)) return true;
 		return tsa.chi2() < tsb.chi2(); 
 	      });
 
     // checking sorting
-    std::cout<<"Checking sorting: "<<std::endl;
-    for (const auto& el : candidates) {
-      const auto& sourceLink =
-	static_cast<const IndexSourceLink&>(el.uncalibrated());
-      const std::size_t idMeas = sourceLink.index();
-      const auto chi2 = el.chi2();
-      std::cout <<"   -- chi2=" << chi2 << " ; used=" << (m_used_meas[idMeas]?"Y":"N") << std::endl;
-    }
-    std::cout << "done"<<std::endl;
+    // std::cout<<"Total used Measurements: "<< n_used_meas << std::endl;
+    // std::cout<<"Checking sorting for " << candidates.size() << " candidates: "<<std::endl;
+    // for (const auto& el : candidates) {
+    //   bool used = hasBeenUsed(el);
+    //   const auto chi2 = el.chi2();
+    //   std::cout <<"   -- chi2=" << chi2 << " ; used=" << (used?"Y":"N") << std::endl;
+    // }
+    // std::cout << "done"<<std::endl;
 
     // use |eta| of best measurement to select numMeasurementsCut
     const auto numMeasurementsCut = VariableCut(
