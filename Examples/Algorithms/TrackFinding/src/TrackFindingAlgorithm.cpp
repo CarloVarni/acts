@@ -15,6 +15,7 @@
 #include "ActsExamples/EventData/Track.hpp"
 #include "ActsExamples/EventData/Trajectories.hpp"
 #include "ActsExamples/Framework/WhiteBoard.hpp"
+#include "ActsExamples/TrackFinding/MikadoSelector.hpp"
 
 #include <stdexcept>
 
@@ -62,14 +63,17 @@ ActsExamples::ProcessCode ActsExamples::TrackFindingAlgorithm::execute(
   Acts::GainMatrixUpdater kfUpdater;
   Acts::GainMatrixSmoother kfSmoother;
   Acts::MeasurementSelector measSel{m_cfg.measurementSelectorCfg};
+  ActsExamples::MikadoSelector mikadoSel{m_cfg.measurementSelectorCfg, sourceLinks.size()};
 
   Acts::CombinatorialKalmanFilterExtensions extensions;
   extensions.calibrator.connect<&MeasurementCalibrator::calibrate>(&calibrator);
   extensions.updater.connect<&Acts::GainMatrixUpdater::operator()>(&kfUpdater);
   extensions.smoother.connect<&Acts::GainMatrixSmoother::operator()>(
       &kfSmoother);
-  extensions.measurementSelector.connect<&Acts::MeasurementSelector::select>(
-      &measSel);
+  extensions.measurementSelector.connect<&ActsExamples::MikadoSelector::select>(
+      &mikadoSel);
+  // extensions.measurementSelector.connect<&Acts::MeasurementSelector::select>(
+  //     &measSel);
 
   IndexSourceLinkAccessor slAccessor;
   slAccessor.container = &sourceLinks;

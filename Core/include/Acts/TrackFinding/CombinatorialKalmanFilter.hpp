@@ -110,7 +110,7 @@ struct CombinatorialKalmanFilterExtensions {
     (void)logger;
     return std::pair{candidates.begin(), candidates.end()};
   };
-
+  
   /// Default branch stopper which will never stop
   /// @param tipState The tip state to decide whether to stop (unused)
   /// @return false
@@ -1257,9 +1257,24 @@ class CombinatorialKalmanFilter {
     // parameters, which is not necessarily the case.
     std::vector<Result<CombinatorialKalmanFilterResult>> ckfResults;
     ckfResults.reserve(initialParameters.size());
+
+    // Sort the seeds according to the impulse
+    std::vector<std::size_t> index_vector(initialParameters.size());
+    for (std::size_t idx(0); idx < index_vector.size(); idx++)
+      index_vector[idx] = idx;
+
+    auto sort_seed_function = 
+      [&initialParameters] (const std::size_t idx_a, const std::size_t idx_b) -> bool
+      { return initialParameters[idx_a].absoluteMomentum() > initialParameters[idx_b].absoluteMomentum(); };
+    std::sort(index_vector.begin(), index_vector.end(), sort_seed_function);
+
+    for (std::size_t iseed : index_vector) {
+      std::cout <<"*** pt = " << initialParameters[iseed].absoluteMomentum();
+    }
+
     // Loop over all initial track parameters. Return the results for all
     // initial track parameters including those failed ones.
-    for (size_t iseed = 0; iseed < initialParameters.size(); ++iseed) {
+    for (std::size_t iseed : index_vector) {
       const auto& sParameters = initialParameters[iseed];
       auto result = m_propagator.template propagate(sParameters, propOptions);
 
