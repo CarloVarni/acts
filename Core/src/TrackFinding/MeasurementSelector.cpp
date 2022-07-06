@@ -135,29 +135,4 @@ MeasurementSelector::select(
   return std::pair{candidates.begin(), endIterator};
 }
 
-template <typename cut_value_t>
-cut_value_t MeasurementSelector::VariableCut(
-    const Acts::MultiTrajectory::TrackStateProxy& trackState,
-    const Acts::MeasurementSelector::Config::Iterator selector,
-    const std::vector<cut_value_t>& cuts, LoggerWrapper logger) {
-  const auto& etaBins = selector->etaBins;
-  if (etaBins.empty()) {
-    return cuts[0];  // shortcut if no etaBins
-  }
-  const auto eta = std::atanh(std::cos(trackState.predicted()[eBoundTheta]));
-  const auto abseta = std::abs(eta);
-  size_t bin = 0;
-  for (auto etaBin : etaBins) {
-    if (etaBin >= abseta) {
-      break;
-    }
-    bin++;
-  }
-  if (bin >= cuts.size()) {
-    bin = cuts.size() - 1;
-  }
-  ACTS_VERBOSE("Variable cut for eta=" << eta << ": " << cuts[bin]);
-  return cuts[bin];
-}
-
 }  // namespace Acts

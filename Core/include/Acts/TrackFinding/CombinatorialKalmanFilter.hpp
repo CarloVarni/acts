@@ -1268,10 +1268,6 @@ class CombinatorialKalmanFilter {
       { return initialParameters[idx_a].absoluteMomentum() > initialParameters[idx_b].absoluteMomentum(); };
     std::sort(index_vector.begin(), index_vector.end(), sort_seed_function);
 
-    for (std::size_t iseed : index_vector) {
-      std::cout <<"*** pt = " << initialParameters[iseed].absoluteMomentum() << std::endl;
-    }
-
     // Loop over all initial track parameters. Return the results for all
     // initial track parameters including those failed ones.
     for (std::size_t iseed : index_vector) {

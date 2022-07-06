@@ -60,6 +60,7 @@ class MeasurementSelector {
   ///
   /// @param config a config instance
   MeasurementSelector(Config config) : m_config(std::move(config)) {}
+  virtual ~MeasurementSelector() = default;
 
   /// @brief Function that select the measurements compatible with
   /// the given track parameter on a surface
@@ -70,12 +71,13 @@ class MeasurementSelector {
   ///
   /// @return Pair of iterators into @a candidates marking the range of selected candidates
   ///
+  virtual
   Result<std::pair<std::vector<MultiTrajectory::TrackStateProxy>::iterator,
                    std::vector<MultiTrajectory::TrackStateProxy>::iterator>>
   select(std::vector<MultiTrajectory::TrackStateProxy>& candidates,
          bool& isOutlier, LoggerWrapper logger) const;
 
- private:
+protected:
   template <typename cut_value_t>
   static cut_value_t VariableCut(
       const Acts::MultiTrajectory::TrackStateProxy& trackState,
@@ -84,5 +86,31 @@ class MeasurementSelector {
 
   Config m_config;
 };
+
+template <typename cut_value_t>
+cut_value_t MeasurementSelector::VariableCut(
+  const Acts::MultiTrajectory::TrackStateProxy& trackState,
+  const Acts::MeasurementSelector::Config::Iterator selector,
+  const std::vector<cut_value_t>& cuts, LoggerWrapper logger)
+{
+  const auto& etaBins = selector->etaBins;
+  if (etaBins.empty()) {
+    return cuts[0];  // shortcut if no etaBins
+  }
+  const auto eta = std::atanh(std::cos(trackState.predicted()[eBoundTheta]));
+  const auto abseta = std::abs(eta);
+  size_t bin = 0;
+  for (auto etaBin : etaBins) {
+    if (etaBin >= abseta) {
+      break;
+    }
+    bin++;
+  }
+  if (bin >= cuts.size()) {
+    bin = cuts.size() - 1;
+  }
+  ACTS_VERBOSE("Variable cut for eta=" << eta << ": " << cuts[bin]);
+  return cuts[bin];
+}
 
 }  // namespace Acts
