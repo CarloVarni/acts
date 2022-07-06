@@ -47,6 +47,8 @@ public:
   select(std::vector<Acts::MultiTrajectory::TrackStateProxy>& candidates,
 	 bool& isOutlier, Acts::LoggerWrapper logger) const
   {
+    std::cout<<">>> Running Mikado selector"<<std::endl;
+
     using Result = Acts::Result<
       std::pair<std::vector<Acts::MultiTrajectory::TrackStateProxy>::iterator,
 		std::vector<Acts::MultiTrajectory::TrackStateProxy>::iterator>>;
