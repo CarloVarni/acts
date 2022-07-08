@@ -56,7 +56,7 @@ def addCKFTracks(
     trackFinder = acts.examples.TrackFindingAlgorithm(
         level=s.config.logLevel,
         measurementSelectorCfg=acts.MeasurementSelector.Config(
-            [(acts.GeometryIdentifier(), ([], [15.0], [1]))]  ### QUI
+            [(acts.GeometryIdentifier(), ([], [15.0], [10]))]
         ),
         inputMeasurements="measurements",
         inputSourceLinks="sourcelinks",
