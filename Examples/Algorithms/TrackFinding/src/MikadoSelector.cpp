@@ -40,62 +40,24 @@ namespace ActsExamples {
       return Acts::CombinatorialKalmanFilterError::MeasurementSelectionFailed;
     }
 
+    // select best chi2
     std::size_t n_used_meas = 0;
-	
-    double minChi2 = std::numeric_limits<double>::max();
-    size_t minIndex = 0;
-    size_t index = 0;
-    // Loop over all measurements to select the compatible measurements
-    for (auto& trackState : candidates) {      
-      // Take the parameter covariance
-      const auto predicted = trackState.predicted();
-      const auto predictedCovariance = trackState.predictedCovariance();
-      Acts::visit_measurement(
-			trackState.calibrated(), trackState.calibratedCovariance(),
-			trackState.calibratedSize(),
-			[&](const auto calibrated, const auto calibratedCovariance) {
-          constexpr size_t kMeasurementSize =
-	    decltype(calibrated)::RowsAtCompileTime;
 
-          using ParametersVector = Acts::ActsVector<kMeasurementSize>;
+    auto select_trackstate
+      = [this, &n_used_meas] (const Acts::MultiTrajectory::TrackStateProxy& trackState) -> bool
+      {
+	bool has_been_used = hasBeenUsed(trackState);
+	if (has_been_used) n_used_meas++;
+	return not has_been_used;
+      };
+    const auto bestIt = selectBestCandidate(candidates, select_trackstate);
 
-          // Take the projector (measurement mapping function)
-          const auto H =
-	    trackState.projector()
-	    .template topLeftCorner<kMeasurementSize, Acts::eBoundSize>()
-	    .eval();
-
-          // Get the residuals
-          ParametersVector res;
-          res = calibrated - H * predicted;
-
-          // Get the chi2
-          double& chi2 = trackState.chi2();
-          chi2 = (res.transpose() *
-                  ((calibratedCovariance +
-                    H * predictedCovariance * H.transpose()))
-		  .inverse() *
-                  res)
-	    .eval()(0, 0);	 
-
-	  if (hasBeenUsed(trackState)) {
-	    n_used_meas++;
-	  } else if (chi2 < minChi2) {
-	    // Search for the measurement with the min chi2
-	    minChi2 = chi2;
-	    minIndex = index;
-	  }
-        }); // visit measurement
-      
-      index++;
-    }
-
+    
     const auto& chi2CutOff = cuts->chi2CutOff;
 
     {
       // If there is no selected measurement, return the measurement with the best
       // chi2 and tag it as an outlier
-      const auto bestIt = std::next(candidates.begin(), minIndex);
       const auto chi2 = bestIt->chi2();
       const auto chi2Cut = VariableCut(*bestIt, cuts, chi2CutOff, logger);
       ACTS_VERBOSE("Chi2: " << chi2 << ", max: " << chi2Cut);
@@ -107,24 +69,14 @@ namespace ActsExamples {
       }
     }
 
-    std::sort(
-	      candidates.begin(), candidates.end(),
-	      [this](const auto& tsa, const auto& tsb) 
+    std::sort(candidates.begin(), candidates.end(),
+	      [this] (const auto& tsa, const auto& tsb) -> bool
 	      {
 		if (hasBeenUsed(tsa)) return false;
 		if (hasBeenUsed(tsb)) return true;
 		return tsa.chi2() < tsb.chi2(); 
 	      });
 
-    // checking sorting
-    // std::cout<<"Total used Measurements: "<< n_used_meas << std::endl;
-    // std::cout<<"Checking sorting for " << candidates.size() << " candidates: "<<std::endl;
-    // for (const auto& el : candidates) {
-    //   bool used = hasBeenUsed(el);
-    //   const auto chi2 = el.chi2();
-    //   std::cout <<"   -- chi2=" << chi2 << " ; used=" << (used?"Y":"N") << std::endl;
-    // }
-    // std::cout << "done"<<std::endl;
 
     // use |eta| of best measurement to select numMeasurementsCut
     const std::size_t numMeasurementsCut = std::min(
@@ -149,15 +101,16 @@ namespace ActsExamples {
 	// range
       }
     }
+
+    // Set as used
+    for (auto it = candidates.begin(); it!= endIterator; it++) 
+      setAsUsed(*it);
+
     ACTS_VERBOSE("Number of selected measurements: "
 		 << std::distance(candidates.begin(), endIterator)
 		 << ", max: " << numMeasurementsCut);
 
     isOutlier = false;
-
-    // Mark as used
-    for (auto it = candidates.begin(); it!= endIterator; it++) 
-      setAsUsed(*it);
 
     return std::pair{candidates.begin(), endIterator};
   }
