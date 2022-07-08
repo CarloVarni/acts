@@ -64,6 +64,8 @@ class TrackFindingAlgorithm final : public BareAlgorithm {
     Acts::MeasurementSelector::Config measurementSelectorCfg;
     /// Compute shared hit information
     bool computeSharedHits = false;
+    /// use Mikado selector
+    bool useMikado = false;
   };
 
   /// Constructor of the track finding algorithm

@@ -70,11 +70,13 @@ ActsExamples::ProcessCode ActsExamples::TrackFindingAlgorithm::execute(
   extensions.updater.connect<&Acts::GainMatrixUpdater::operator()>(&kfUpdater);
   extensions.smoother.connect<&Acts::GainMatrixSmoother::operator()>(
       &kfSmoother);
-  extensions.measurementSelector.connect<&ActsExamples::MikadoSelector::select>(
-      &mikadoSel);
-  // extensions.measurementSelector.connect<&Acts::MeasurementSelector::select>(
-  //     &measSel);
 
+  if ( not m_cfg.useMikado ) {
+    extensions.measurementSelector.connect<&Acts::MeasurementSelector::select>(&measSel);
+  } else {
+    extensions.measurementSelector.connect<&ActsExamples::MikadoSelector::select>(&mikadoSel);
+  }
+  
   IndexSourceLinkAccessor slAccessor;
   slAccessor.container = &sourceLinks;
   Acts::SourceLinkAccessorDelegate<IndexSourceLinkAccessor::Iterator>
