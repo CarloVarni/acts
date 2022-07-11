@@ -34,9 +34,11 @@ public:
   select(std::vector<Acts::MultiTrajectory::TrackStateProxy>& candidates,
          bool& isOutlier, Acts::LoggerWrapper logger) const override;
 
+  bool sortingCriteria(const Acts::BoundTrackParameters&, const Acts::BoundTrackParameters&) const;
+    
 private:
-    bool hasBeenUsed(const Acts::MultiTrajectory::TrackStateProxy& trackstate) const;
-    void setAsUsed(const Acts::MultiTrajectory::TrackStateProxy& trackstate) const;
+  bool hasBeenUsed(const Acts::MultiTrajectory::TrackStateProxy& trackstate) const;
+  void setAsUsed(const Acts::MultiTrajectory::TrackStateProxy& trackstate) const;
     
 private:
   mutable std::vector<bool> m_used_meas;
@@ -63,5 +65,9 @@ MikadoSelector::setAsUsed(const Acts::MultiTrajectory::TrackStateProxy& tracksta
     throw std::invalid_argument("Mikado Selector is considering a measurement that has already been used in the past.");
   m_used_meas[idMeas] = true;
 }
-  
+
+inline
+bool MikadoSelector::sortingCriteria(const Acts::BoundTrackParameters& parA, const Acts::BoundTrackParameters& parB) const
+{ return parA.absoluteMomentum() > parB.absoluteMomentum(); }
+
 } // namespace

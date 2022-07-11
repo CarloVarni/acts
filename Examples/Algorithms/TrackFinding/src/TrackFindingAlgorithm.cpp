@@ -75,6 +75,7 @@ ActsExamples::ProcessCode ActsExamples::TrackFindingAlgorithm::execute(
     extensions.measurementSelector.connect<&Acts::MeasurementSelector::select>(&measSel);
   } else {
     extensions.measurementSelector.connect<&ActsExamples::MikadoSelector::select>(&mikadoSel);
+    extensions.measurementSorter.connect<&ActsExamples::MikadoSelector::sortingCriteria>(&mikadoSel);
   }
   
   IndexSourceLinkAccessor slAccessor;
@@ -86,7 +87,8 @@ ActsExamples::ProcessCode ActsExamples::TrackFindingAlgorithm::execute(
   // Set the CombinatorialKalmanFilter options
   ActsExamples::TrackFindingAlgorithm::TrackFinderOptions options(
       ctx.geoContext, ctx.magFieldContext, ctx.calibContext, slAccessorDelegate,
-      extensions, Acts::LoggerWrapper{logger()}, pOptions, &(*pSurface));
+      extensions, Acts::LoggerWrapper{logger()}, pOptions, &(*pSurface),
+      true, true, true,  m_cfg.useMikado);
 
   // Perform the track finding for all initial parameters
   ACTS_DEBUG("Invoke track finding with " << initialParameters.size()

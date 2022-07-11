@@ -86,6 +86,10 @@ struct CombinatorialKalmanFilterExtensions {
 
   BranchStopper branchStopper;
 
+  using  MeasurementSorter =
+    Delegate<bool(const Acts::BoundTrackParameters&, const Acts::BoundTrackParameters&)>;
+  MeasurementSorter measurementSorter;
+  
   /// Default constructor which connects the default void components
   CombinatorialKalmanFilterExtensions() {
     calibrator.connect<&voidKalmanCalibrator>();
@@ -93,6 +97,7 @@ struct CombinatorialKalmanFilterExtensions {
     smoother.connect<&voidKalmanSmoother>();
     branchStopper.connect<voidBranchStopper>();
     measurementSelector.connect<voidMeasurementSelector>();
+    measurementSorter.connect<voidMeasurementSorter>();
   }
 
  private:
@@ -110,6 +115,13 @@ struct CombinatorialKalmanFilterExtensions {
     (void)logger;
     return std::pair{candidates.begin(), candidates.end()};
   };
+
+  static bool voidMeasurementSorter(const Acts::BoundTrackParameters&, const Acts::BoundTrackParameters&)
+  {
+    // Default sorter should not be used!
+    throw std::bad_function_call();
+    return true;
+  }
   
   /// Default branch stopper which will never stop
   /// @param tipState The tip state to decide whether to stop (unused)
@@ -157,7 +169,8 @@ struct CombinatorialKalmanFilterOptions {
       SourceLinkAccessor accessor_,
       CombinatorialKalmanFilterExtensions extensions_, LoggerWrapper logger_,
       const PropagatorPlainOptions& pOptions, const Surface* rSurface = nullptr,
-      bool mScattering = true, bool eLoss = true, bool rSmoothing = true)
+      bool mScattering = true, bool eLoss = true, bool rSmoothing = true,
+      bool rSorting = false)
       : geoContext(gctx),
         magFieldContext(mctx),
         calibrationContext(cctx),
@@ -168,6 +181,7 @@ struct CombinatorialKalmanFilterOptions {
         multipleScattering(mScattering),
         energyLoss(eLoss),
         smoothing(rSmoothing),
+	sorting(rSorting),
         logger(logger_) {}
   /// Contexts are required and the options must not be default-constructible.
   CombinatorialKalmanFilterOptions() = delete;
@@ -199,6 +213,9 @@ struct CombinatorialKalmanFilterOptions {
 
   /// Whether to run smoothing to get fitted parameter
   bool smoothing = true;
+
+  /// Whether to sort the input according to custom function
+  bool sorting = false;
 
   /// Logger instance
   LoggerWrapper logger;
@@ -1263,10 +1280,13 @@ class CombinatorialKalmanFilter {
     for (std::size_t idx(0); idx < index_vector.size(); idx++)
       index_vector[idx] = idx;
 
-    auto sort_seed_function = 
-      [&initialParameters] (const std::size_t idx_a, const std::size_t idx_b) -> bool
-      { return initialParameters[idx_a].absoluteMomentum() > initialParameters[idx_b].absoluteMomentum(); };
-    std::sort(index_vector.begin(), index_vector.end(), sort_seed_function);
+    // Sort inputs only if requested
+    if (tfOptions.sorting) {
+      auto sort_seed_function = 
+	[&combKalmanActor, &initialParameters] (const std::size_t idx_a, const std::size_t idx_b) -> bool
+	{ return combKalmanActor.m_extensions.measurementSorter(initialParameters[idx_a], initialParameters[idx_b]); };
+      std::sort(index_vector.begin(), index_vector.end(), sort_seed_function);
+    }
 
     // Loop over all initial track parameters. Return the results for all
     // initial track parameters including those failed ones.
