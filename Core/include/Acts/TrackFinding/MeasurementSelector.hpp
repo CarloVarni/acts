@@ -78,6 +78,10 @@ class MeasurementSelector {
          bool& isOutlier, LoggerWrapper logger) const;
 
 protected:
+  std::vector<Acts::MultiTrajectory::TrackStateProxy>::iterator
+  selectBestCandidate(std::vector<Acts::MultiTrajectory::TrackStateProxy>& candidates,
+		      std::function<bool(const Acts::MultiTrajectory::TrackStateProxy&)> selection_function = [] (const Acts::MultiTrajectory::TrackStateProxy&) -> bool {return true;} ) const;
+  
   template <typename cut_value_t>
   static cut_value_t VariableCut(
       const Acts::MultiTrajectory::TrackStateProxy& trackState,

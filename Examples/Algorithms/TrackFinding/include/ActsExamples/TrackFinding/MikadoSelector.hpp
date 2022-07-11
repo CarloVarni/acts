@@ -37,10 +37,6 @@ public:
 private:
     bool hasBeenUsed(const Acts::MultiTrajectory::TrackStateProxy& trackstate) const;
     void setAsUsed(const Acts::MultiTrajectory::TrackStateProxy& trackstate) const;
-
-    std::vector<Acts::MultiTrajectory::TrackStateProxy>::iterator
-    selectBestCandidate(std::vector<Acts::MultiTrajectory::TrackStateProxy>& candidates,
-			std::function<bool(const Acts::MultiTrajectory::TrackStateProxy&)> selection_function) const;
     
 private:
   mutable std::vector<bool> m_used_meas;
@@ -67,64 +63,5 @@ MikadoSelector::setAsUsed(const Acts::MultiTrajectory::TrackStateProxy& tracksta
     throw std::invalid_argument("Mikado Selector is considering a measurement that has already been used in the past.");
   m_used_meas[idMeas] = true;
 }
-
-
-// inline for now -> templated in the future
-inline
-std::vector<Acts::MultiTrajectory::TrackStateProxy>::iterator	
-MikadoSelector::selectBestCandidate(std::vector<Acts::MultiTrajectory::TrackStateProxy>& candidates,
-				    std::function<bool(const Acts::MultiTrajectory::TrackStateProxy&)> selection_function) const
-{
-  double minChi2 = std::numeric_limits<double>::max();
-  std::vector<Acts::MultiTrajectory::TrackStateProxy>::iterator it = candidates.begin();
-
-  for (auto iter = candidates.begin(); iter != candidates.end(); iter++) {
-    auto& trackState = *iter;
-    const auto predicted = trackState.predicted();
-    const auto predictedCovariance = trackState.predictedCovariance();
-
-    if ( not selection_function(trackState) )
-      continue;
-    
-    Acts::visit_measurement(
-			trackState.calibrated(), trackState.calibratedCovariance(),
-			trackState.calibratedSize(),
-			[&] (const auto calibrated, const auto calibratedCovariance) {
-	      constexpr size_t kMeasurementSize =
-		decltype(calibrated)::RowsAtCompileTime;
-
-	      using ParametersVector = Acts::ActsVector<kMeasurementSize>;
-
-	      // Take the projector (measurement mapping function)
-	      const auto H =
-		trackState.projector()
-		.template topLeftCorner<kMeasurementSize, Acts::eBoundSize>()
-		.eval();
-	      
-	      // Get the residuals
-	      ParametersVector res;
-	      res = calibrated - H * predicted;
-	      
-	      // Get the chi2
-	      double& chi2 = trackState.chi2();
-	      chi2 = (res.transpose() *
-		      ((calibratedCovariance +
-			H * predictedCovariance * H.transpose()))
-		      .inverse() *
-		      res)
-		.eval()(0, 0);
-
-	      if (chi2 < minChi2) {
-		// Search for the measurement with the min chi2
-		minChi2 = chi2;
-		it = iter;
-	      }
-	    }); // visit measurement
-
-  } // for loop
-  
-  return it;
-}
-  
   
 } // namespace

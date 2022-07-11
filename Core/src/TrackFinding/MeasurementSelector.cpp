@@ -39,58 +39,13 @@ MeasurementSelector::select(
     return CombinatorialKalmanFilterError::MeasurementSelectionFailed;
   }
 
-  double minChi2 = std::numeric_limits<double>::max();
-  size_t minIndex = 0;
-  size_t index = 0;
-  // Loop over all measurements to select the compatible measurements
-  for (auto& trackState : candidates) {
-    // Take the parameter covariance
-    const auto predicted = trackState.predicted();
-    const auto predictedCovariance = trackState.predictedCovariance();
-    visit_measurement(
-        trackState.calibrated(), trackState.calibratedCovariance(),
-        trackState.calibratedSize(),
-        [&](const auto calibrated, const auto calibratedCovariance) {
-          constexpr size_t kMeasurementSize =
-              decltype(calibrated)::RowsAtCompileTime;
-
-          using ParametersVector = ActsVector<kMeasurementSize>;
-
-          // Take the projector (measurement mapping function)
-          const auto H =
-              trackState.projector()
-                  .template topLeftCorner<kMeasurementSize, eBoundSize>()
-                  .eval();
-
-          // Get the residuals
-          ParametersVector res;
-          res = calibrated - H * predicted;
-
-          // Get the chi2
-          double& chi2 = trackState.chi2();
-          chi2 = (res.transpose() *
-                  ((calibratedCovariance +
-                    H * predictedCovariance * H.transpose()))
-                      .inverse() *
-                  res)
-                     .eval()(0, 0);
-
-          // Search for the measurement with the min chi2
-          if (chi2 < minChi2) {
-            minChi2 = chi2;
-            minIndex = index;
-          }
-        });
-
-    index++;
-  }
+  const auto bestIt = selectBestCandidate(candidates);
 
   const auto& chi2CutOff = cuts->chi2CutOff;
 
   {
     // If there is no selected measurement, return the measurement with the best
     // chi2 and tag it as an outlier
-    const auto bestIt = std::next(candidates.begin(), minIndex);
     const auto chi2 = bestIt->chi2();
     const auto chi2Cut = VariableCut(*bestIt, cuts, chi2CutOff, logger);
     ACTS_VERBOSE("Chi2: " << chi2 << ", max: " << chi2Cut);
@@ -135,4 +90,59 @@ MeasurementSelector::select(
   return std::pair{candidates.begin(), endIterator};
 }
 
+std::vector<Acts::MultiTrajectory::TrackStateProxy>::iterator	
+MeasurementSelector::selectBestCandidate(std::vector<Acts::MultiTrajectory::TrackStateProxy>& candidates,
+					 std::function<bool(const Acts::MultiTrajectory::TrackStateProxy&)> selection_function) const
+{
+  double minChi2 = std::numeric_limits<double>::max();
+  std::vector<Acts::MultiTrajectory::TrackStateProxy>::iterator it = candidates.begin();
+  
+  for (auto iter = candidates.begin(); iter != candidates.end(); iter++) {
+    auto& trackState = *iter;
+    const auto predicted = trackState.predicted();
+    const auto predictedCovariance = trackState.predictedCovariance();
+    
+    if ( not selection_function(trackState) )
+      continue;
+    
+    Acts::visit_measurement(
+		       trackState.calibrated(), trackState.calibratedCovariance(),
+		       trackState.calibratedSize(),
+		       [&] (const auto calibrated, const auto calibratedCovariance) {
+	      constexpr size_t kMeasurementSize =
+		decltype(calibrated)::RowsAtCompileTime;
+	      
+	      using ParametersVector = Acts::ActsVector<kMeasurementSize>;
+	      
+	      // Take the projector (measurement mapping function)
+	      const auto H =
+		trackState.projector()
+		.template topLeftCorner<kMeasurementSize, Acts::eBoundSize>()
+		.eval();
+	      
+	      // Get the residuals
+	      ParametersVector res;
+	      res = calibrated - H * predicted;
+	      
+	      // Get the chi2
+	      double& chi2 = trackState.chi2();
+	      chi2 = (res.transpose() *
+		      ((calibratedCovariance +
+			H * predictedCovariance * H.transpose()))
+		      .inverse() *
+		      res)
+		.eval()(0, 0);
+	      
+	      if (chi2 < minChi2) {
+		// Search for the measurement with the min chi2
+		minChi2 = chi2;
+		it = iter;
+	      }
+	    }); // visit measurement
+    
+  } // for loop
+
+  return it;
+}
+  
 }  // namespace Acts
