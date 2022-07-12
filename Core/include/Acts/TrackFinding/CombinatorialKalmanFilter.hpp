@@ -86,9 +86,9 @@ struct CombinatorialKalmanFilterExtensions {
 
   BranchStopper branchStopper;
 
-  using  MeasurementSorter =
+  using  Sorter =
     Delegate<bool(const Acts::BoundTrackParameters&, const Acts::BoundTrackParameters&)>;
-  MeasurementSorter measurementSorter;
+  Sorter sorter;
   
   /// Default constructor which connects the default void components
   CombinatorialKalmanFilterExtensions() {
@@ -97,7 +97,7 @@ struct CombinatorialKalmanFilterExtensions {
     smoother.connect<&voidKalmanSmoother>();
     branchStopper.connect<voidBranchStopper>();
     measurementSelector.connect<voidMeasurementSelector>();
-    measurementSorter.connect<voidMeasurementSorter>();
+    sorter.connect<voidSorter>();
   }
 
  private:
@@ -116,7 +116,7 @@ struct CombinatorialKalmanFilterExtensions {
     return std::pair{candidates.begin(), candidates.end()};
   };
 
-  static bool voidMeasurementSorter(const Acts::BoundTrackParameters&, const Acts::BoundTrackParameters&)
+  static bool voidSorter(const Acts::BoundTrackParameters&, const Acts::BoundTrackParameters&)
   {
     // Default sorter should not be used!
     throw std::bad_function_call();
@@ -1284,7 +1284,7 @@ class CombinatorialKalmanFilter {
     if (tfOptions.sorting) {
       auto sort_seed_function = 
 	[&combKalmanActor, &initialParameters] (const std::size_t idx_a, const std::size_t idx_b) -> bool
-	{ return combKalmanActor.m_extensions.measurementSorter(initialParameters[idx_a], initialParameters[idx_b]); };
+	{ return combKalmanActor.m_extensions.sorter(initialParameters[idx_a], initialParameters[idx_b]); };
       std::sort(index_vector.begin(), index_vector.end(), sort_seed_function);
     }
 

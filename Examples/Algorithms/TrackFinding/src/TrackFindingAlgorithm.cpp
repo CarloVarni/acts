@@ -75,7 +75,7 @@ ActsExamples::ProcessCode ActsExamples::TrackFindingAlgorithm::execute(
     extensions.measurementSelector.connect<&Acts::MeasurementSelector::select>(&measSel);
   } else {
     extensions.measurementSelector.connect<&ActsExamples::MikadoSelector::select>(&mikadoSel);
-    extensions.measurementSorter.connect<&ActsExamples::MikadoSelector::sortingCriteria>(&mikadoSel);
+    extensions.sorter.connect<&ActsExamples::MikadoSelector::sortingCriteria>(&mikadoSel);
   }
   
   IndexSourceLinkAccessor slAccessor;
