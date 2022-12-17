@@ -178,6 +178,15 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
       state.curvatures.clear();
       state.impactParameters.clear();
 
+      // coordinate transformation and checks for middle spacepoint
+      // x and y terms for the rotation from UV to XY plane
+      float rotationTermsUVtoXY[2] = {0, 0};
+      if (m_config.useDetailedDoubleMeasurementInfo) {
+      	   rotationTermsUVtoXY[0] = spM->x() * sinTheta / spM->radius();
+           rotationTermsUVtoXY[1] = spM->y() * sinTheta / spM->radius();
+      }
+
+
       for (size_t index_t = t0; index_t < numTopSP; index_t++) {
         const std::size_t t = sorted_tops[index_t];
 
@@ -200,10 +209,6 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
           // x_0 and y_0
           float A0 = (lt.V - Vb) / dU;
 
-          // coordinate transformation and checks for middle spacepoint
-          // x and y terms for the rotation from UV to XY plane
-          float rotationTermsUVtoXY[2] = {spM->x() * sinTheta / spM->radius(),
-                                          spM->y() * sinTheta / spM->radius()};
           // position of Middle SP converted from UV to XY assuming cotTheta
           // evaluated from the Bottom and Middle SPs double
           double positionMiddle[3] = {
@@ -213,7 +218,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 
           double rMTransf[3];
           if (!xyzCoordinateCheck(m_config, spM, positionMiddle,
-                                  m_config.toleranceParam, rMTransf)) {
+                                  rMTransf)) {
             continue;
           }
 
@@ -229,7 +234,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
           auto spB = state.compatBottomSP[b];
           double rBTransf[3];
           if (!xyzCoordinateCheck(m_config, spB, positionBottom,
-                                  m_config.toleranceParam, rBTransf)) {
+                                  rBTransf)) {
             continue;
           }
 
@@ -244,7 +249,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
           auto spT = state.compatTopSP[t];
           double rTTransf[3];
           if (!xyzCoordinateCheck(m_config, spT, positionTop,
-                                  m_config.toleranceParam, rTTransf)) {
+                                  rTTransf)) {
             continue;
           }
 
@@ -277,11 +282,10 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
         float cotThetaAvg2 = cotThetaB * cotThetaT;
         if (m_config.arithmeticAverageCotTheta) {
           // use arithmetic average
-          cotThetaAvg2 = std::pow((cotThetaB + cotThetaT) / 2, 2);
-        } else {
-          if (cotThetaAvg2 <= 0) {
-            continue;
-          }
+	  float averageCotTheta = 0.5 * (cotThetaB + cotThetaT);
+          cotThetaAvg2 = averageCotTheta * averageCotTheta;
+        } else if (cotThetaAvg2 <= 0) {
+          continue;
         }
 
         // add errors of spB-spM and spM-spT pairs and add the correlation term
@@ -304,14 +308,11 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
         // fair for scattering and measurement uncertainties)
         if (deltaCotTheta2 > (error2 + scatteringInRegion2)) {
           // skip top SPs based on cotTheta sorting when producing triplets
-          if (m_config.skipPreviousTopSP) {
-            // break if cotTheta from bottom SP < cotTheta from top SP because
-            // the SP are sorted by cotTheta
-            if (cotThetaB - cotThetaT < 0) {
-              break;
-            }
-            t0 = index_t + 1;
-          }
+          if (not m_config.skipPreviousTopSP) continue;
+          // break if cotTheta from bottom SP < cotTheta from top SP because
+          // the SP are sorted by cotTheta
+          if (cotThetaB - cotThetaT < 0) break;
+          t0 = index_t + 1;
           continue;
         }
 
@@ -372,45 +373,40 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
         float p2scatterSigma = pT2scatterSigma * iSinTheta2;
         // if deltaTheta larger than allowed scattering for calculated pT, skip
         if (deltaCotTheta2 > (error2 + p2scatterSigma)) {
-          if (m_config.skipPreviousTopSP) {
-            if (cotThetaB - cotThetaT < 0) {
-              break;
-            }
-            t0 = index_t;
-          }
+          if (not m_config.skipPreviousTopSP) continue;
+          if (cotThetaB - cotThetaT < 0) break;
+          t0 = index_t;
           continue;
         }
         // A and B allow calculation of impact params in U/V plane with linear
         // function
         // (in contrast to having to solve a quadratic function in x/y plane)
-        float Im = 0;
-        if (not m_config.useDetailedDoubleMeasurementInfo) {
-          Im = std::abs((A - B * rM) * rM);
-        } else {
-          Im = std::abs((A - B * rMxy) * rMxy);
-        }
+        float Im = m_config.useDetailedDoubleMeasurementInfo
+	           ? std::abs((A - B * rMxy) * rMxy)
+		   : std::abs((A - B * rM) * rM);
 
-        if (Im <= m_config.impactMax) {
-          state.topSpVec.push_back(state.compatTopSP[t]);
-          // inverse diameter is signed depending if the curvature is
-          // positive/negative in phi
-          state.curvatures.push_back(B / std::sqrt(S2));
-          state.impactParameters.push_back(Im);
+        if (Im > m_config.impactMax) continue;
+	
+        state.topSpVec.push_back(state.compatTopSP[t]);
+        // inverse diameter is signed depending if the curvature is
+        // positive/negative in phi
+        state.curvatures.push_back(B / std::sqrt(S2));
+        state.impactParameters.push_back(Im);
 
-          // evaluate eta and pT of the seed
-          float cotThetaAvg = std::sqrt(cotThetaAvg2);
-          float theta = std::atan(1. / cotThetaAvg);
-          float eta = -std::log(std::tan(0.5 * theta));
-          state.etaVec.push_back(eta);
-          state.ptVec.push_back(pT);
-        }
-      }
-      if (!state.topSpVec.empty()) {
-        m_config.seedFilter->filterSeeds_2SpFixed(
-            *state.compatBottomSP[b], *spM, state.topSpVec, state.curvatures,
-            state.impactParameters, seedFilterState, state.seedsPerSpM);
-      }
-    }
+        // evaluate eta and pT of the seed
+        float cotThetaAvg = std::sqrt(cotThetaAvg2);
+        float theta = std::atan(1. / cotThetaAvg);
+        float eta = -std::log(std::tan(0.5 * theta));
+        state.etaVec.push_back(eta);
+        state.ptVec.push_back(pT);
+      } // loop on tops
+
+      if (state.topSpVec.empty()) continue;
+      
+      m_config.seedFilter->filterSeeds_2SpFixed(
+         *state.compatBottomSP[b], *spM, state.topSpVec, state.curvatures,
+         state.impactParameters, seedFilterState, state.seedsPerSpM);
+    } // loop on bottoms
     m_config.seedFilter->filterSeeds_1SpFixed(
         state.seedsPerSpM, seedFilterState.numQualitySeeds, outIt);
   }

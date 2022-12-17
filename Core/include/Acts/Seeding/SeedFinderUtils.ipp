@@ -147,7 +147,7 @@ std::vector<std::size_t> transformCoordinates(std::vector<external_spacepoint_t*
 template <typename external_spacepoint_t, typename sp_range_t>
 bool xyzCoordinateCheck(Acts::SeedFinderConfig<external_spacepoint_t> m_config,
                         sp_range_t sp, const double* spacepointPosition,
-                        const float toleranceParam, double* outputCoordinates) {
+			double* outputCoordinates) {
   // check the compatibility of SPs coordinates in xyz assuming the
   // Bottom-Middle direction with the strip measurement details
 
@@ -179,7 +179,7 @@ bool xyzCoordinateCheck(Acts::SeedFinderConfig<external_spacepoint_t> m_config,
   // spacepointPosition is inside the bottom detector element
   double s1 = (stripCenterDistance[0] * d1[0] + stripCenterDistance[1] * d1[1] +
                stripCenterDistance[2] * d1[2]);
-  if (std::abs(s1) > std::abs(bd1) * toleranceParam) {
+  if (std::abs(s1) > std::abs(bd1) * m_config.toleranceParam) {
     return false;
   }
 
@@ -201,7 +201,7 @@ bool xyzCoordinateCheck(Acts::SeedFinderConfig<external_spacepoint_t> m_config,
   // spacepointPosition is inside the top detector element
   double s0 = (stripCenterDistance[0] * d0[0] + stripCenterDistance[1] * d0[1] +
                stripCenterDistance[2] * d0[2]);
-  if (std::abs(s0) > std::abs(bd1) * toleranceParam) {
+  if (std::abs(s0) > std::abs(bd1) * m_config.toleranceParam) {
     return false;
   }
 
