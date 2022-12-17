@@ -251,21 +251,20 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     state.linCircleBottom.clear();
     state.linCircleTop.clear();
 
-    transformCoordinates(state.compatBottomSP, *spM, true,
-                         state.linCircleBottom);
-    transformCoordinates(state.compatTopSP, *spM, false, state.linCircleTop);
+    auto sorted_bottoms = transformCoordinates(state.compatBottomSP, *spM, true,
+                          state.linCircleBottom);
+    auto sorted_tops = transformCoordinates(state.compatTopSP, *spM, false, state.linCircleTop);
 
     state.topSpVec.clear();
     state.curvatures.clear();
     state.impactParameters.clear();
     state.seedsPerSpM.clear();
 
-    size_t numBotSP = state.compatBottomSP.size();
     size_t numTopSP = state.compatTopSP.size();
 
     size_t t0 = 0;
 
-    for (size_t b = 0; b < numBotSP; b++) {
+    for (const std::size_t b : sorted_bottoms) {
       // break if we reached the last top SP
       if (t0 == numTopSP) {
         break;
@@ -302,8 +301,11 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
       state.topSpVec.clear();
       state.curvatures.clear();
       state.impactParameters.clear();
-      for (size_t t = t0; t < numTopSP; t++) {
-        auto lt = state.linCircleTop[t];
+
+      for (size_t index_t = t0; index_t < numTopSP; index_t++) {
+        const std::size_t t = sorted_tops[index_t];
+
+	auto lt = state.linCircleTop[t];
 
         float cotThetaT = lt.cotTheta;
         float rMxy = 0.;
@@ -432,7 +434,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
             if (cotThetaB - cotThetaT < 0) {
               break;
             }
-            t0 = t + 1;
+            t0 = index_t + 1;
           }
           continue;
         }
@@ -498,7 +500,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
             if (cotThetaB - cotThetaT < 0) {
               break;
             }
-            t0 = t;
+            t0 = index_t;
           }
           continue;
         }

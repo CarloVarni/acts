@@ -282,8 +282,8 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
   std::vector<LinCircle> linCircleTop;
   linCircleTop.reserve(top.size());
 
-  transformCoordinates(bottom, middle, true, linCircleBottom);
-  transformCoordinates(top, middle, false, linCircleTop);
+  auto sorted_bottoms = transformCoordinates(bottom, middle, true, linCircleBottom);
+  auto sorted_tops = transformCoordinates(top, middle, false, linCircleTop);
 
   std::vector<float> tanLM;
   std::vector<float> tanMT;
@@ -291,22 +291,21 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
   tanLM.reserve(bottom.size());
   tanMT.reserve(top.size());
 
-  size_t numBotSP = bottom.size();
   size_t numTopSP = top.size();
 
-  for (size_t b = 0; b < numBotSP; b++) {
+  for (const std::size_t b : sorted_bottoms) {
     tanLM.push_back(std::atan2(middle.radius() - bottom[b]->radius(),
                                middle.z() - bottom[b]->z()));
   }
 
-  for (size_t t = 0; t < numTopSP; t++) {
+  for (const std::size_t t : sorted_tops) {
     tanMT.push_back(std::atan2(top[t]->radius() - middle.radius(),
                                top[t]->z() - middle.z()));
   }
 
   size_t t0 = 0;
 
-  for (size_t b = 0; b < numBotSP; b++) {
+  for (const std::size_t b : sorted_bottoms) {
     // break if we reached the last top SP
     if (t0 == numTopSP) {
       break;
@@ -339,7 +338,9 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
     top_valid.clear();
     curvatures.clear();
     impactParameters.clear();
-    for (size_t t = t0; t < numTopSP; t++) {
+
+    for (size_t index_t = t0; index_t < numTopSP; index_t++) {
+    const std::size_t t = sorted_tops[index_t];
       auto lt = linCircleTop[t];
       float cotThetaT = lt.cotTheta;
 
@@ -374,7 +375,7 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
           if (cotThetaB - cotThetaT < 0) {
             break;
           }
-          t0 = t + 1;
+          t0 = index_t + 1;
         }
         continue;
       }
@@ -413,7 +414,7 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
           if (cotThetaB - cotThetaT < 0) {
             break;
           }
-          t0 = t;
+          t0 = index_t;
         }
         continue;
       }
