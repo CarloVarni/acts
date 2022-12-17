@@ -109,6 +109,13 @@ class SeedFinder {
       sp_range_t middleSPs, sp_range_t topSPs) const;
 
  private:
+  template <typename sp_range_element_t>
+  bool isCompatibleDoublet(const Acts::SeedFinderOptions& options,
+			   const sp_range_element_t* otherSP,
+			   const sp_range_element_t* mediumSP,
+			   bool isBottom) const;
+  
+ private:
   Acts::SeedFinderConfig<external_spacepoint_t> m_config;
 };
 
