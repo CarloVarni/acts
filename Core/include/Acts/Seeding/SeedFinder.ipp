@@ -463,7 +463,7 @@ SeedFinder<external_spacepoint_t, platform_t>::isCompatibleDoublet(const Acts::S
   const float yVal = (otherSP->y() - mediumSP->y()) * (mediumSP->x() / rM) -
                      (otherSP->x() - mediumSP->x()) * (mediumSP->y() / rM);
 
-  if (std::abs(rM * yVal) > sign * m_config.impactMax * xVal) {
+  if (std::abs(rM * yVal) <= sign * m_config.impactMax * xVal) return true;
 
   // conformal transformation u=x/(x²+y²) v=y/(x²+y²) transform the
   // circle into straight lines in the u/v plane the line equation can
@@ -489,7 +489,6 @@ SeedFinder<external_spacepoint_t, platform_t>::isCompatibleDoublet(const Acts::S
   if ((bCoef * bCoef) >
       (1 + aCoef * aCoef) / options.minHelixDiameter2) 
      return false;
-  }
   
   return true;
 }
