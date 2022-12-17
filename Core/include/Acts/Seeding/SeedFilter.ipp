@@ -259,26 +259,25 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
     const {
   // sort by weight and iterate only up to configured max number of seeds per
   // middle SP
-  std::sort((seedsPerSpM.begin()), (seedsPerSpM.end()),
+  std::sort(seedsPerSpM.begin(), seedsPerSpM.end(),
             [](const std::pair<float, std::unique_ptr<const Acts::InternalSeed<
                                           external_spacepoint_t>>>& i1,
                const std::pair<float, std::unique_ptr<const Acts::InternalSeed<
                                           external_spacepoint_t>>>& i2) {
               if (i1.first != i2.first) {
                 return i1.first > i2.first;
-              } else {
-                // This is for the case when the weights from different seeds
-                // are same. This makes cpu & cuda results same
-                float seed1_sum = 0;
-                float seed2_sum = 0;
-                for (int i = 0; i < 3; i++) {
-                  seed1_sum += pow(i1.second->sp[i]->sp().y(), 2) +
-                               pow(i1.second->sp[i]->sp().z(), 2);
-                  seed2_sum += pow(i2.second->sp[i]->sp().y(), 2) +
-                               pow(i2.second->sp[i]->sp().z(), 2);
-                }
-                return seed1_sum > seed2_sum;
+              } 
+              // This is for the case when the weights from different seeds
+              // are same. This makes cpu & cuda results same
+              float seed1_sum = 0;
+              float seed2_sum = 0;
+              for (int i = 0; i < 3; i++) {
+                seed1_sum += i1.second->sp[i]->y() * i1.second->sp[i]->y() + 
+                             i1.second->sp[i]->z() * i1.second->sp[i]->z();
+                seed2_sum += i2.second->sp[i]->y() * i2.second->sp[i]->y() + 
+                             i2.second->sp[i]->z() * i2.second->sp[i]->z();
               }
+              return seed1_sum > seed2_sum;
             });
   if (m_experimentCuts != nullptr) {
     seedsPerSpM = m_experimentCuts->cutPerMiddleSP(std::move(seedsPerSpM));
@@ -304,7 +303,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
 
     if (m_cfg.seedConfirmation) {
       // continue if higher-quality seeds were found
-      if (numQualitySeeds > 0 and (*it).second->qualitySeed() == false) {
+      if (numQualitySeeds > 0 and not (*it).second->qualitySeed()) {
         continue;
       }
       if (bestSeedQuality < (*it).second->sp[0]->quality() and

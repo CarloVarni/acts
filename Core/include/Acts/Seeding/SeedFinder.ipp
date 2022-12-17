@@ -95,7 +95,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 
     // apply cut on the number of top SP if seedConfirmation is true
     SeedFilterState seedFilterState;
-    if (m_config.seedConfirmation == true) {
+    if (m_config.seedConfirmation) {
       // check if middle SP is in the central or forward region
       SeedConfirmationRangeConfig seedConfRange =
           (zM > m_config.centralSeedConfirmationRange.zMaxSeedConf ||
@@ -384,7 +384,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
         // function
         // (in contrast to having to solve a quadratic function in x/y plane)
         float Im = 0;
-        if (m_config.useDetailedDoubleMeasurementInfo == false) {
+        if (not m_config.useDetailedDoubleMeasurementInfo) {
           Im = std::abs((A - B * rM) * rM);
         } else {
           Im = std::abs((A - B * rMxy) * rMxy);
@@ -447,7 +447,8 @@ SeedFinder<external_spacepoint_t, platform_t>::isCompatibleDoublet(const Acts::S
   float deltaZ = sign * (zO - zM);
   // ratio Z/R (forward angle) of space point duplet
   float cotTheta = deltaZ / deltaR;
-  if (std::fabs(cotTheta) > m_config.cotThetaMax) return false;
+  if (cotTheta > m_config.cotThetaMax or
+      cotTheta < -m_config.cotThetaMax) return false;
 
   // check if duplet origin on z axis within collision region
   float zOrigin = zM - rM * cotTheta;
@@ -455,7 +456,8 @@ SeedFinder<external_spacepoint_t, platform_t>::isCompatibleDoublet(const Acts::S
       zOrigin > m_config.collisionRegionMax) 
     return false;
 
-  if (std::abs(deltaZ) > m_config.deltaZMax) return false;
+  if (deltaZ > m_config.deltaZMax or
+      deltaZ < -m_config.deltaZMax) return false;
   if (not m_config.interactionPointCut) return true;
 
   const float xVal = (otherSP->x() - mediumSP->x()) * (mediumSP->x() / rM) +
