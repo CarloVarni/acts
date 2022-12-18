@@ -16,32 +16,51 @@
 
 namespace Acts {
 
-template<typename comparator_t>
-class CandidatesForSpM {
-private:
-  enum Components : int { BSP=0, MSP=1, WEIGHT=2, ZORIGIN=3, QUALITY=4 };
-public:
-  CandidatesForSpM(const comparator_t& cmp, std::size_t n,
-		   std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > >& registry);
-  ~CandidatesForSpM() = default;
+  class CandidatesForSpM {
+    using stored_collection = std::tuple<std::size_t, std::size_t, float, float>;
+    
+    enum Components : int {
+      BSP=0,
+      TSP=1,
+      WEIGHT=2,
+      ZORIGIN=3
+    };
+    
+    struct candidate_greater {
+      bool operator()(const stored_collection& lhs,
+		      const stored_collection& rhs)
+      { return std::get<Components::WEIGHT>(lhs) > std::get<Components::WEIGHT>(rhs); }
+    };
+    
+  public:
+    CandidatesForSpM(std::size_t n);
+    ~CandidatesForSpM() = default;
+    
+    void setBottomSp(std::size_t idx);
+    void push(std::size_t SpT, float weight, float zOrigin);
 
-  void setBottomSp(std::size_t idx);
-  void push(std::size_t SpT, float weight, float zOrigin, bool isQuality);
+    const std::vector<stored_collection> registry()
+    {
+      std::vector<stored_collection> output;
+      while (m_storage.size() != 0) {
+	output.push_back( m_storage.top() );
+	m_storage.pop();
+      }
+      return output;
+    }
+    
+  private:
+    void addToCollection(std::size_t SpB, std::size_t SpT, float weight, float zOrigin);
+
+  public:
+    std::size_t m_max_size;
+    std::size_t m_SpB;
+    std::priority_queue<stored_collection,
+			std::vector<stored_collection>,
+			candidate_greater> m_storage;
+  };
+
+  inline void CandidatesForSpM::setBottomSp(std::size_t idx) { m_SpB = idx; }
   
-private:
-  void addToCollection(std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > >& registry,
-		       std::size_t SpT, float weight, float zOrigin, bool isQuality);
-
-  void addToCollectionWithIndex(std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > >& registry,
-				std::size_t SpT, float weight, float zOrigin, bool isQuality,
-				std::size_t index);
-  
-public:
-  std::size_t m_max_size;
-  std::size_t m_SpB;
-  std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > >& m_registry;
-  std::priority_queue<std::size_t, std::vector<std::size_t>, comparator_t> m_storage;
-};
-
 }  // namespace Acts
-#include "Acts/Seeding/CandidatesForSpM.ipp"
+

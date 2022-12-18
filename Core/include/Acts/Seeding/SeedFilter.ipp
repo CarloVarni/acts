@@ -28,7 +28,6 @@ SeedFilter<external_spacepoint_t>::SeedFilter(
 // middle-spacepoint.
 // return vector must contain weight of each seed
 template <typename external_spacepoint_t>
-template <typename candidate_handler_t>
 void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
     InternalSpacePoint<external_spacepoint_t>& bottomSP,
     InternalSpacePoint<external_spacepoint_t>& middleSP,
@@ -38,8 +37,8 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
     std::vector<std::pair<
         float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>&
         /*outCont*/,
-    candidate_handler_t& manager_sps_quality,
-    candidate_handler_t& manager_sps_no_quality) const {
+    CandidatesForSpM& manager_sps_quality,
+    CandidatesForSpM& manager_sps_no_quality) const {
 
   // seed confirmation
   SeedConfirmationRangeConfig seedConfRange;
@@ -196,7 +195,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
         // if we have not yet reached our max number of quality seeds we add the
         // new seed to outCont
 
-	manager_sps_quality.push(topSPIndex,  weight, zOrigin, true);
+	manager_sps_quality.push(topSPIndex,  weight, zOrigin);
         if (seedFilterState.numQualitySeeds < m_cfg.maxQualitySeedsPerSpMConf) {
           // fill high quality seed
           seedFilterState.numQualitySeeds++;
@@ -213,7 +212,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
       // if we have not yet reached our max number of seeds we add the new seed
       // to outCont
 
-      manager_sps_no_quality.push(topSPIndex,  weight, zOrigin, false);
+      manager_sps_no_quality.push(topSPIndex,  weight, zOrigin);
       if (seedFilterState.numSeeds < m_cfg.maxSeedsPerSpMConf) {
         // fill seed
         seedFilterState.numSeeds++;
@@ -227,7 +226,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
     // if we have not yet reached our max number of seeds we add the new seed to
     // outCont
 
-    manager_sps_no_quality.push(maxWeightSeedIndex,  weightMax, zOrigin, false);
+    manager_sps_no_quality.push(maxWeightSeedIndex,  weightMax, zOrigin);
 
     if (seedFilterState.numSeeds < m_cfg.maxSeedsPerSpMConf) {
       // fill seed

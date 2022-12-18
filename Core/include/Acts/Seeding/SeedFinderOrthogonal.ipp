@@ -254,27 +254,10 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
   std::size_t max_num_quality_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxQualitySeedsPerSpMConf;
   std::size_t max_num_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxSeedsPerSpMConf;
 
-  // This has to be revised !!!
-  // regristry contains the inputs to the InternalSeeds:
-  // --> index or bottom sp, index of top sp, seed weight (i.e. quality), zOrigin, isQuality
-  std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > > registry;
-  registry.reserve(max_num_quality_seeds_per_spm + max_num_seeds_per_spm);
-
-  // selection criteria: low quality first
-  auto sorting_criterion =
-    [&registry] (const std::size_t& a, const std::size_t& b) -> bool
-    { return std::get<1>(registry[a]) > std::get<1>(registry[b]); };
-
   // Managers for the candidates
   // these will handle the registry replacing/adding/removing candidates
-  CandidatesForSpM<decltype(sorting_criterion)> manager_sps_quality(sorting_criterion,
-                                                                    max_num_quality_seeds_per_spm,
-                                                                    registry);
-  CandidatesForSpM<decltype(sorting_criterion)> manager_sps_no_quality(sorting_criterion,
-                                                                       max_num_seeds_per_spm,
-                                                                       registry);
-
-
+  CandidatesForSpM manager_sps_quality(max_num_quality_seeds_per_spm);
+  CandidatesForSpM manager_sps_no_quality(max_num_seeds_per_spm);
 
   float rM = middle.radius();
   float varianceRM = middle.varianceR();

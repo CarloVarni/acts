@@ -57,8 +57,7 @@ class SeedFilter {
   /// @param impactParametersVec vector containing the impact parameters
   /// @param seedFilterState holds quantities used in seed filter
   /// @param outCont Output container for the seeds
-  template <typename candidate_handler_t>
-  void filterSeeds_2SpFixed(
+  virtual void filterSeeds_2SpFixed(
       InternalSpacePoint<external_spacepoint_t>& bottomSP,
       InternalSpacePoint<external_spacepoint_t>& middleSP,
       std::vector<InternalSpacePoint<external_spacepoint_t>*>& topSpVec,
@@ -67,8 +66,8 @@ class SeedFilter {
       std::vector<std::pair<
           float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>&
           outCont,
-      candidate_handler_t&,
-      candidate_handler_t&) const;
+      CandidatesForSpM&,
+      CandidatesForSpM&) const;
 
   /// Filter seeds once all seeds for one middle space point have been created
   /// @param seedsPerSpM vector of pairs containing weight and seed for all

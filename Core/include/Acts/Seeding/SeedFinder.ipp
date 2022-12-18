@@ -146,26 +146,9 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     size_t t0 = 0;
 
 
-  // This has to be revised !!!
-  // regristry contains the inputs to the InternalSeeds:
-  // --> index or bottom sp, index of top sp, seed weight (i.e. quality), zOrigin, isQuality
-  std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > > registry;
-  registry.reserve(max_num_quality_seeds_per_spm + max_num_seeds_per_spm);
-
-  // selection criteria: low quality first
-  auto sorting_criterion =
-    [&registry] (const std::size_t& a, const std::size_t& b) -> bool
-    { return std::get<2>(registry[a]) > std::get<2>(registry[b]); };
-
-  // Managers for the candidates
-  // these will handle the registry replacing/adding/removing candidates
-  CandidatesForSpM<decltype(sorting_criterion)> manager_sps_quality(sorting_criterion,
-                                                                    max_num_quality_seeds_per_spm,
-                                                                    registry);
-  CandidatesForSpM<decltype(sorting_criterion)> manager_sps_no_quality(sorting_criterion,
-                                                                       max_num_seeds_per_spm,
-                                                                       registry);
-
+    // Managers for the candidates
+    CandidatesForSpM manager_sps_quality(max_num_quality_seeds_per_spm);
+    CandidatesForSpM manager_sps_no_quality(max_num_seeds_per_spm);
 
     for (const std::size_t b : sorted_bottoms) {
       // break if we reached the last top SP
@@ -443,11 +426,21 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     } // loop on bottoms
 
       // make seeds and save candidates to state.seedsPerSpM
-      for (const auto& [bottom_idx, top_idx, weight, origin, quality] : registry) {
+      const auto& collection_quality = manager_sps_quality.registry();
+      const auto& collection_no_quality = manager_sps_no_quality.registry();
+
+      for (const auto& [bottom_idx, top_idx, weight, origin] : collection_quality) {
       	  state.seedsPerSpM.push_back(std::make_pair(
 		weight,
           	std::make_unique<const InternalSeed<external_spacepoint_t>>(
-              	     *state.compatBottomSP[bottom_idx], *spM, *state.topSpVec[top_idx], origin, quality)));
+              	     *state.compatBottomSP[bottom_idx], *spM, *state.topSpVec[top_idx], origin, true)));
+       }
+
+      for (const auto& [bottom_idx, top_idx, weight, origin] : collection_no_quality) {
+      	  state.seedsPerSpM.push_back(std::make_pair(
+		weight,
+          	std::make_unique<const InternalSeed<external_spacepoint_t>>(
+              	     *state.compatBottomSP[bottom_idx], *spM, *state.topSpVec[top_idx], origin, false)));
        }
 
     m_config.seedFilter->filterSeeds_1SpFixed(
