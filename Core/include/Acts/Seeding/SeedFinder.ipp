@@ -35,6 +35,11 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     throw std::runtime_error(
         "SeedFinderOptions not in ACTS internal units in SeedFinder");
   }
+
+  // This is used for seed filtering later
+  const std::size_t max_num_quality_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxQualitySeedsPerSpMConf;
+  const std::size_t max_num_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxSeedsPerSpMConf;
+
   for (auto spM : middleSPs) {
     float rM = spM->radius();
     float zM = spM->z();
@@ -139,6 +144,28 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     size_t numTopSP = state.compatTopSP.size();
 
     size_t t0 = 0;
+
+
+  // This has to be revised !!!
+  // regristry contains the inputs to the InternalSeeds:
+  // --> index or bottom sp, index of top sp, seed weight (i.e. quality), zOrigin, isQuality
+  std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > > registry;
+  registry.reserve(max_num_quality_seeds_per_spm + max_num_seeds_per_spm);
+
+  // selection criteria: low quality first
+  auto sorting_criterion =
+    [&registry] (const std::size_t& a, const std::size_t& b) -> bool
+    { return std::get<2>(registry[a]) > std::get<2>(registry[b]); };
+
+  // Managers for the candidates
+  // these will handle the registry replacing/adding/removing candidates
+  CandidatesForSpM<decltype(sorting_criterion)> manager_sps_quality(sorting_criterion,
+                                                                    max_num_quality_seeds_per_spm,
+                                                                    registry);
+  CandidatesForSpM<decltype(sorting_criterion)> manager_sps_no_quality(sorting_criterion,
+                                                                       max_num_seeds_per_spm,
+                                                                       registry);
+
 
     for (const std::size_t b : sorted_bottoms) {
       // break if we reached the last top SP
@@ -402,11 +429,27 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
       } // loop on tops
 
       if (state.topSpVec.empty()) continue;
-      
+
+
+      manager_sps_quality.setBottomSp(b);
+      manager_sps_no_quality.setBottomSp(b);
+
       m_config.seedFilter->filterSeeds_2SpFixed(
          *state.compatBottomSP[b], *spM, state.topSpVec, state.curvatures,
-         state.impactParameters, seedFilterState, state.seedsPerSpM);
+         state.impactParameters, seedFilterState, state.seedsPerSpM,
+	 manager_sps_quality, manager_sps_no_quality);
+
+     
     } // loop on bottoms
+
+      // make seeds and save candidates to state.seedsPerSpM
+      for (const auto& [bottom_idx, top_idx, weight, origin, quality] : registry) {
+      	  state.seedsPerSpM.push_back(std::make_pair(
+		weight,
+          	std::make_unique<const InternalSeed<external_spacepoint_t>>(
+              	     *state.compatBottomSP[bottom_idx], *spM, *state.topSpVec[top_idx], origin, quality)));
+       }
+
     m_config.seedFilter->filterSeeds_1SpFixed(
         state.seedsPerSpM, seedFilterState.numQualitySeeds, outIt);
   }

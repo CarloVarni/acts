@@ -9,49 +9,54 @@
 namespace Acts {
 
 template<typename comparator_t>
-CandidatesForSpM<comparator_t>::CandidatesForSpM(const comparator_t& cmp, std::size_t n)
+CandidatesForSpM<comparator_t>::CandidatesForSpM(const comparator_t& cmp, std::size_t n,
+						       std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > >& registry)
   : m_max_size(n),
+    m_SpB(std::numeric_limits<std::size_t>::max()),
+    m_registry(registry),
     m_storage(cmp)
 {}
 
 template<typename comparator_t>
-void CandidatesForSpM<comparator_t>::push(std::vector< std::tuple< std::size_t, float, float, bool > >& registry,
-					  std::size_t SpT, float weight, float zOrigin, bool isQuality)
+void CandidatesForSpM<comparator_t>::setBottomSp(std::size_t idx)
+{ m_SpB = idx; }
+
+template<typename comparator_t>
+void CandidatesForSpM<comparator_t>::push(std::size_t SpT, float weight, float zOrigin, bool isQuality)
 {
-  std::cout << "pushing to " << m_storage.size() <<"/"<<m_max_size<<std::endl;
   // if there is still space, add anything
   if (m_storage.size() < m_max_size) {
-    addToCollection(registry, SpT, weight, zOrigin, isQuality);
+    addToCollection(m_registry, SpT, weight, zOrigin, isQuality);
     return;
   }
   
   // if no space, replace one if quality is enough
   // compare to element with lower weight
   std::size_t index_lower_weight = m_storage.top();
-  auto& lower_element = registry[index_lower_weight];
+  auto& lower_element = m_registry[index_lower_weight];
   if (weight <= std::get<Components::WEIGHT>(lower_element))
     return;
-  
+
   // remove element with lower weight and add this one
-  addToCollectionWithIndex(registry, SpT, weight, zOrigin, isQuality,
+  addToCollectionWithIndex(m_registry, SpT, weight, zOrigin, isQuality,
 			   index_lower_weight);
 }
 
 template<typename comparator_t>
-void CandidatesForSpM<comparator_t>::addToCollection(std::vector< std::tuple< std::size_t, float, float, bool > >& registry,
+void CandidatesForSpM<comparator_t>::addToCollection(std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > >& registry,
 						     std::size_t SpT, float weight, float zOrigin, bool isQuality)
 {
-  auto toAdd = std::make_tuple(SpT, weight, zOrigin, isQuality);
+  auto toAdd = std::make_tuple(m_SpB, SpT, weight, zOrigin, isQuality);
   registry.push_back( toAdd );
   m_storage.push( registry.size() - 1 );
 }  
 
 template<typename comparator_t>
-void CandidatesForSpM<comparator_t>::addToCollectionWithIndex(std::vector< std::tuple< std::size_t, float, float, bool > >& registry,
+void CandidatesForSpM<comparator_t>::addToCollectionWithIndex(std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > >& registry,
 							      std::size_t SpT, float weight, float zOrigin, bool isQuality,
 							      std::size_t index)
 {
-  auto toAdd = std::make_tuple(SpT, weight, zOrigin, isQuality);
+  auto toAdd = std::make_tuple(m_SpB, SpT, weight, zOrigin, isQuality);
   registry[index] = toAdd;
   m_storage.pop();
   m_storage.push( index );

@@ -248,6 +248,34 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
     internal_sp_t &middle, std::vector<internal_sp_t *> &bottom,
     std::vector<internal_sp_t *> &top, SeedFilterState seedFilterState,
     output_container_t &cont) const {
+
+
+// This is used for seed filtering later
+  std::size_t max_num_quality_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxQualitySeedsPerSpMConf;
+  std::size_t max_num_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxSeedsPerSpMConf;
+
+  // This has to be revised !!!
+  // regristry contains the inputs to the InternalSeeds:
+  // --> index or bottom sp, index of top sp, seed weight (i.e. quality), zOrigin, isQuality
+  std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > > registry;
+  registry.reserve(max_num_quality_seeds_per_spm + max_num_seeds_per_spm);
+
+  // selection criteria: low quality first
+  auto sorting_criterion =
+    [&registry] (const std::size_t& a, const std::size_t& b) -> bool
+    { return std::get<1>(registry[a]) > std::get<1>(registry[b]); };
+
+  // Managers for the candidates
+  // these will handle the registry replacing/adding/removing candidates
+  CandidatesForSpM<decltype(sorting_criterion)> manager_sps_quality(sorting_criterion,
+                                                                    max_num_quality_seeds_per_spm,
+                                                                    registry);
+  CandidatesForSpM<decltype(sorting_criterion)> manager_sps_no_quality(sorting_criterion,
+                                                                       max_num_seeds_per_spm,
+                                                                       registry);
+
+
+
   float rM = middle.radius();
   float varianceRM = middle.varianceR();
   float varianceZM = middle.varianceZ();
@@ -432,10 +460,13 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
         impactParameters.push_back(Im);
       }
     }
+
     if (!top_valid.empty()) {
       m_config.seedFilter->filterSeeds_2SpFixed(*bottom[b], middle, top_valid,
                                                 curvatures, impactParameters,
-                                                seedFilterState, cont);
+                                                seedFilterState, cont,
+						manager_sps_quality,
+						manager_sps_no_quality);
     }
   }
 }

@@ -19,24 +19,27 @@ namespace Acts {
 template<typename comparator_t>
 class CandidatesForSpM {
 private:
-  enum Components : int { MSP=0, WEIGHT=1, ZORIGIN=2, QUALITY=3 };
+  enum Components : int { BSP=0, MSP=1, WEIGHT=2, ZORIGIN=3, QUALITY=4 };
 public:
-  CandidatesForSpM(const comparator_t& cmp, std::size_t n);
+  CandidatesForSpM(const comparator_t& cmp, std::size_t n,
+		   std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > >& registry);
   ~CandidatesForSpM() = default;
 
-  void push(std::vector< std::tuple< std::size_t, float, float, bool > >& registry,
-	    std::size_t SpT, float weight, float zOrigin, bool isQuality);
+  void setBottomSp(std::size_t idx);
+  void push(std::size_t SpT, float weight, float zOrigin, bool isQuality);
   
 private:
-  void addToCollection(std::vector< std::tuple< std::size_t, float, float, bool > >& registry,
+  void addToCollection(std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > >& registry,
 		       std::size_t SpT, float weight, float zOrigin, bool isQuality);
 
-  void addToCollectionWithIndex(std::vector< std::tuple< std::size_t, float, float, bool > >& registry,
+  void addToCollectionWithIndex(std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > >& registry,
 				std::size_t SpT, float weight, float zOrigin, bool isQuality,
 				std::size_t index);
   
-private:
+public:
   std::size_t m_max_size;
+  std::size_t m_SpB;
+  std::vector< std::tuple< std::size_t, std::size_t, float, float, bool > >& m_registry;
   std::priority_queue<std::size_t, std::vector<std::size_t>, comparator_t> m_storage;
 };
 
