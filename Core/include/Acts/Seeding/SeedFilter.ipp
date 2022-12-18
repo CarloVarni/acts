@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <numeric>
 #include <utility>
+#include <queue>
+#include <iostream>
 
 namespace Acts {
 // constructor
@@ -35,6 +37,30 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
     std::vector<std::pair<
         float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>&
         outCont) const {
+
+   std::cout << "Input to function: " << outCont.size() << std::endl;
+
+   // This has to be revised !!!
+   // regristry contains the inputs to the InternalSeeds:
+   // --> index of top sp (bottom and medium are already fixed), seed weight (i.e. quality), zOrigin, isQuality 
+   std::vector< std::tuple< std::size_t, float, float, bool > > registry;
+   registry.reserve(m_cfg.maxSeedsPerSpMConf + m_cfg.maxQualitySeedsPerSpMConf);
+
+   // selection criteria: low quality first
+   auto sorting_criterion =
+       [&registry] (const std::size_t& a, const std::size_t& b) -> bool
+       { return std::get<1>(registry[a]) > std::get<1>(registry[b]); };
+
+   // Managers for the candidates
+   // these will handle the registry replacing/adding/removing candidates
+   CandidatesForSpM<decltype(sorting_criterion)> manager_sps_quality(sorting_criterion,
+								     m_cfg.maxQualitySeedsPerSpMConf);
+   CandidatesForSpM<decltype(sorting_criterion)> manager_sps_no_quality(sorting_criterion,
+									m_cfg.maxSeedsPerSpMConf);
+
+
+
+
   // seed confirmation
   SeedConfirmationRangeConfig seedConfRange;
   if (m_cfg.seedConfirmation) {
@@ -189,17 +215,23 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
       if (deltaSeedConf > 0) {
         // if we have not yet reached our max number of quality seeds we add the
         // new seed to outCont
+
+	manager_sps_quality.push(registry, topSPIndex,  weight, zOrigin, true);
         if (seedFilterState.numQualitySeeds < m_cfg.maxQualitySeedsPerSpMConf) {
           // fill high quality seed
           seedFilterState.numQualitySeeds++;
+
           outCont.push_back(std::make_pair(
               weight,
               std::make_unique<const InternalSeed<external_spacepoint_t>>(
                   bottomSP, middleSP, *topSpVec[topSPIndex], zOrigin, true)));
+
         } else {
           // otherwise we check if there is a lower quality seed to remove
-          checkReplaceSeeds(bottomSP, middleSP, *topSpVec[topSPIndex], zOrigin,
-                            true, weight, outCont);
+
+	  checkReplaceSeeds(bottomSP, middleSP, *topSpVec[topSPIndex], zOrigin,
+                            		 true, weight, outCont);
+
         }
 
       } else if (weight > weightMax) {
@@ -212,40 +244,74 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
       // keep the normal behavior without seed quality confirmation
       // if we have not yet reached our max number of seeds we add the new seed
       // to outCont
+
+      manager_sps_no_quality.push(registry, topSPIndex,  weight, zOrigin, false);
       if (seedFilterState.numSeeds < m_cfg.maxSeedsPerSpMConf) {
         // fill seed
         seedFilterState.numSeeds++;
+
         outCont.push_back(std::make_pair(
             weight,
             std::make_unique<const InternalSeed<external_spacepoint_t>>(
                 bottomSP, middleSP, *topSpVec[topSPIndex], zOrigin, false)));
+
       } else {
-        // otherwise we check if there is a lower quality seed to remove
+	// otherwise we check if there is a lower quality seed to remove
+
         checkReplaceSeeds(bottomSP, middleSP, *topSpVec[topSPIndex], zOrigin,
                           false, weight, outCont);
+
       }
     }
-  }
+  } // loop on tops
   // if no high quality seed was found for a certain middle+bottom SP pair,
   // lower quality seeds can be accepted
   if (m_cfg.seedConfirmation and maxWeightSeed and
       seedFilterState.numQualitySeeds == 0) {
     // if we have not yet reached our max number of seeds we add the new seed to
     // outCont
+
+    manager_sps_no_quality.push(registry, maxWeightSeedIndex,  weightMax, zOrigin, false);
+
     if (seedFilterState.numSeeds < m_cfg.maxSeedsPerSpMConf) {
       // fill seed
       seedFilterState.numSeeds++;
+
       outCont.push_back(std::make_pair(
           weightMax,
           std::make_unique<const InternalSeed<external_spacepoint_t>>(
               bottomSP, middleSP, *topSpVec[maxWeightSeedIndex], zOrigin,
               false)));
+
     } else {
       // otherwise we check if there is a lower quality seed to remove
+
       checkReplaceSeeds(bottomSP, middleSP, *topSpVec[maxWeightSeedIndex],
                         zOrigin, false, weightMax, outCont);
+
     }
-  }
+          
+  } 
+
+    std::cout<<"original: ";
+    for (const auto& [weight, other] : outCont) {
+    	std::cout<<weight<<"["<<other->qualitySeed()<<"] ";
+    }
+    std::cout<<std::endl;
+
+    std::cout<<"my way: ";	
+    for (const auto& [top_idx, weight, origin, quality] : registry) {
+    	std::cout<<weight<<"["<<quality<<"] ";    	
+    }
+    std::cout<<std::endl;
+    std::cout<<"============"<<std::endl;
+/*
+    for (const auto& [top_idx, weight, origin, quality] : registry)
+    outCont.push_back(std::make_pair(
+          weight,
+          std::make_unique<const InternalSeed<external_spacepoint_t>>(
+              bottomSP, middleSP, *topSpVec[top_idx], origin, quality)));
+*/
 }
 
 // after creating all seeds with a common middle space point, filter again

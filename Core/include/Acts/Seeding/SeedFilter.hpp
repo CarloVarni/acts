@@ -7,6 +7,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
+#include <iostream>
 
 #include "Acts/Seeding/IExperimentCuts.hpp"
 #include "Acts/Seeding/InternalSeed.hpp"
@@ -17,8 +18,11 @@
 #include <mutex>
 #include <queue>
 #include <vector>
+#include <tuple>
 
-namespace Acts {
+#include "Acts/Seeding/CandidatesForSpM.hpp"
+
+namespace Acts {  
 struct SeedFilterState {
   // longitudinal impact parameter as defined by bottom and middle space point
   float zOrigin = 0;
