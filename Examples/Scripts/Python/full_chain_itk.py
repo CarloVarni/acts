@@ -84,7 +84,8 @@ addSeeding(
     else TruthSeedRanges(),
     *acts.examples.itk.itkSeedingAlgConfig("PixelSpacePoints"),
     geoSelectionConfigFile=geo_dir / "itk-hgtd/geoSelection-ITk.json",
-    outputDirRoot=outputDir)
+    outputDirRoot=outputDir,
+)
 
 addCKFTracks(
     s,

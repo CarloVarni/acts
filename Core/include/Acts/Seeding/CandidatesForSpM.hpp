@@ -10,14 +10,14 @@
 #include <iostream>
 
 #include <memory>
-#include <queue>
 #include <vector>
 #include <tuple>
 
 namespace Acts {
 
   class CandidatesForSpM {
-    using stored_collection = std::tuple<std::size_t, std::size_t, float, float>;
+  public:
+    using value_type = std::tuple<std::size_t, std::size_t, float, float>;
     
     enum Components : int {
       BSP=0,
@@ -25,42 +25,50 @@ namespace Acts {
       WEIGHT=2,
       ZORIGIN=3
     };
-    
-    struct candidate_greater {
-      bool operator()(const stored_collection& lhs,
-		      const stored_collection& rhs)
-      { return std::get<Components::WEIGHT>(lhs) > std::get<Components::WEIGHT>(rhs); }
-    };
-    
-  public:
+
     CandidatesForSpM(std::size_t n);
     ~CandidatesForSpM() = default;
     
     void setBottomSp(std::size_t idx);
+    const std::vector<value_type>& storage();
+
     void push(std::size_t SpT, float weight, float zOrigin);
 
-    const std::vector<stored_collection> registry()
-    {
-      std::vector<stored_collection> output;
-      while (m_storage.size() != 0) {
-	output.push_back( m_storage.top() );
-	m_storage.pop();
-      }
-      return output;
-    }
-    
   private:
-    void addToCollection(std::size_t SpB, std::size_t SpT, float weight, float zOrigin);
+    void pop();
+    float top() const;
+    bool exists(std::size_t) const;
+    float weight(std::size_t) const;
 
+    void bubbleup(std::size_t);
+    void bubbledw(std::size_t);
+    
+    void addToCollection(std::size_t SpB, std::size_t SpT, float weight, float zOrigin);
+    void insertToCollection(std::size_t SpB, std::size_t SpT, float weight, float zOrigin);
+    
   public:
     std::size_t m_max_size;
+    std::size_t m_n;
     std::size_t m_SpB;
-    std::priority_queue<stored_collection,
-			std::vector<stored_collection>,
-			candidate_greater> m_storage;
+    std::vector< value_type > m_storage;
   };
 
-  inline void CandidatesForSpM::setBottomSp(std::size_t idx) { m_SpB = idx; }
+  inline
+  const std::vector<typename CandidatesForSpM::value_type>&
+  CandidatesForSpM::storage()
+  { return m_storage; }
+
+  inline void CandidatesForSpM::setBottomSp(std::size_t idx)
+  { m_SpB = idx; }
+
+  inline float CandidatesForSpM::top() const
+  { return weight(0); }
+  
+  inline bool CandidatesForSpM::exists(std::size_t n) const
+  { return n < m_n; }
+
+  inline float CandidatesForSpM::weight(std::size_t n) const
+  { return std::get<Components::WEIGHT>(m_storage[n]); }
   
 }  // namespace Acts
 
