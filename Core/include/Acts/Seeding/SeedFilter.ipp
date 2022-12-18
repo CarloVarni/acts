@@ -244,6 +244,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
     int& numQualitySeeds,
     std::back_insert_iterator<std::vector<Seed<external_spacepoint_t>>> outIt)
     const {
+    
   // sort by weight and iterate only up to configured max number of seeds per
   // middle SP
   std::sort(seedsPerSpM.begin(), seedsPerSpM.end(),
@@ -266,6 +267,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
               }
               return seed1_sum > seed2_sum;
             });
+	    
   if (m_experimentCuts != nullptr) {
     seedsPerSpM = m_experimentCuts->cutPerMiddleSP(std::move(seedsPerSpM));
   }
@@ -274,41 +276,39 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
   if (maxSeeds > m_cfg.maxSeedsPerSpM) {
     maxSeeds = m_cfg.maxSeedsPerSpM + 1;
   }
-  auto itBegin = seedsPerSpM.begin();
-  auto it = seedsPerSpM.begin();
+
+
   // default filter removes the last seeds if maximum amount exceeded
   // ordering by weight by filterSeeds_2SpFixed means these are the lowest
   // weight seeds
   unsigned int numTotalSeeds = 0;
-  for (; it < itBegin + seedsPerSpM.size(); ++it) {
+  for (auto& [bestSeedQuality, internal_seed] : seedsPerSpM) {
     // stop if we reach the maximum number of seeds
     if (numTotalSeeds >= maxSeeds) {
       break;
     }
 
-    float bestSeedQuality = (*it).first;
-
     if (m_cfg.seedConfirmation) {
       // continue if higher-quality seeds were found
-      if (numQualitySeeds > 0 and not (*it).second->qualitySeed()) {
+      if (numQualitySeeds > 0 and not internal_seed->qualitySeed()) {
         continue;
       }
-      if (bestSeedQuality < (*it).second->sp[0]->quality() and
-          bestSeedQuality < (*it).second->sp[1]->quality() and
-          bestSeedQuality < (*it).second->sp[2]->quality()) {
+      if (bestSeedQuality < internal_seed->sp[0]->quality() and
+          bestSeedQuality < internal_seed->sp[1]->quality() and
+          bestSeedQuality < internal_seed->sp[2]->quality()) {
         continue;
       }
     }
 
     // set quality of seed components
-    (*it).second->sp[0]->setQuality(bestSeedQuality);
-    (*it).second->sp[1]->setQuality(bestSeedQuality);
-    (*it).second->sp[2]->setQuality(bestSeedQuality);
+    internal_seed->sp[0]->setQuality(bestSeedQuality);
+    internal_seed->sp[1]->setQuality(bestSeedQuality);
+    internal_seed->sp[2]->setQuality(bestSeedQuality);
 
     outIt = Seed<external_spacepoint_t>{
-        (*it).second->sp[0]->sp(), (*it).second->sp[1]->sp(),
-        (*it).second->sp[2]->sp(), (*it).second->z(), bestSeedQuality};
-    numTotalSeeds += 1;
+        internal_seed->sp[0]->sp(), internal_seed->sp[1]->sp(),
+        internal_seed->sp[2]->sp(), internal_seed->z(), bestSeedQuality};
+    ++numTotalSeeds;
   }
 }
 
