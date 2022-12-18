@@ -82,23 +82,6 @@ class SeedFilter {
       std::back_insert_iterator<std::vector<Seed<external_spacepoint_t>>> outIt)
       const;
 
-  /// Check if there is a lower quality seed that can be replaced
-  /// @param bottomSP fixed bottom space point
-  /// @param middleSP fixed middle space point
-  /// @param topSp fixed top space point
-  /// @param zOrigin on the z axis as defined by bottom and middle space point
-  /// @param isQualitySeed information whether the seed is quality confirmed or not
-  /// @param weight weight of the seed
-  /// @param outCont container for the seeds
-  virtual void checkReplaceSeeds(
-      InternalSpacePoint<external_spacepoint_t>& bottomSP,
-      InternalSpacePoint<external_spacepoint_t>& middleSP,
-      InternalSpacePoint<external_spacepoint_t>& topSp, float zOrigin,
-      bool isQualitySeed, float weight,
-      std::vector<std::pair<
-          float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>&
-          outCont) const;
-
   const SeedFilterConfig getSeedFilterConfig() const { return m_cfg; }
   const IExperimentCuts<external_spacepoint_t>* getExperimentCuts() const {
     return m_experimentCuts;

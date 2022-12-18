@@ -312,49 +312,4 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
   }
 }
 
-template <typename external_spacepoint_t>
-void SeedFilter<external_spacepoint_t>::checkReplaceSeeds(
-    InternalSpacePoint<external_spacepoint_t>& bottomSP,
-    InternalSpacePoint<external_spacepoint_t>& middleSP,
-    InternalSpacePoint<external_spacepoint_t>& topSp, float zOrigin,
-    bool isQualitySeed, float weight,
-    std::vector<std::pair<
-        float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>&
-        outCont) const {
-  // find the index of the seeds with qualitySeed() == isQualitySeed in outCont
-  // and store in seed_indices
-  std::vector<size_t> seed_indices;
-  seed_indices.reserve(outCont.size());
-  auto it = std::find_if(
-      outCont.begin(), outCont.end(),
-      [&](std::pair<float,
-                    std::unique_ptr<const InternalSeed<external_spacepoint_t>>>&
-              weight_seed) {
-        return weight_seed.second->qualitySeed() == isQualitySeed;
-      });
-  while (it != outCont.end()) {
-    seed_indices.emplace_back(std::distance(std::begin(outCont), it));
-    it = std::find_if(
-        std::next(it), outCont.end(),
-        [&](std::pair<
-            float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>&
-                outContCheck) {
-          return outContCheck.second->qualitySeed() == isQualitySeed;
-        });
-  }
-
-  // find index of the seed with the minimum weight
-  size_t index =
-      *std::min_element(std::begin(seed_indices), std::end(seed_indices),
-                        [&outCont](const size_t& a, const size_t& b) {
-                          return outCont.at(a).first < outCont.at(b).first;
-                        });
-  // replace that seed with the new one if new one is better
-  if (outCont.at(index).first < weight) {
-    outCont.at(index) = std::make_pair(
-        weight, std::make_unique<const InternalSeed<external_spacepoint_t>>(
-                    bottomSP, middleSP, topSp, zOrigin, isQualitySeed));
-  }
-}
-
 }  // namespace Acts
