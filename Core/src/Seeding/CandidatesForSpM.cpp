@@ -13,11 +13,12 @@ namespace Acts {
   CandidatesForSpM::CandidatesForSpM()
     : m_max_size(0),
       m_n(0),
-      m_SpB(std::numeric_limits<std::size_t>::max()),
-      m_SpM(std::numeric_limits<std::size_t>::max())
+      m_SpB(CandidatesForSpM::default_value),
+      m_SpM(CandidatesForSpM::default_value)
   {}
   
-  void CandidatesForSpM::push(std::size_t SpT, float weight, float zOrigin)
+  void CandidatesForSpM::push(typename CandidatesForSpM::sp_type SpT,
+			      float weight, float zOrigin)
   {
     // if there is still space, add anything
     if (m_n < m_max_size) {
@@ -36,7 +37,10 @@ namespace Acts {
     insertToCollection(m_SpB, m_SpM, SpT, weight, zOrigin);
   }
   
-  void CandidatesForSpM::addToCollection(std::size_t SpB, std::size_t SpM, std::size_t SpT, float weight, float zOrigin)
+  void CandidatesForSpM::addToCollection(typename CandidatesForSpM::sp_type SpB,
+					 typename CandidatesForSpM::sp_type SpM,
+					 typename CandidatesForSpM::sp_type SpT,
+					 float weight, float zOrigin)
   {
     auto toAdd = std::make_tuple(SpB, SpM, SpT, weight, zOrigin);
     m_storage.push_back( toAdd );
@@ -44,7 +48,10 @@ namespace Acts {
     bubbleup(added_index);
   }  
 
-  void CandidatesForSpM::insertToCollection(std::size_t SpB, std::size_t SpM, std::size_t SpT, float weight, float zOrigin)
+  void CandidatesForSpM::insertToCollection(typename CandidatesForSpM::sp_type SpB,
+					    typename CandidatesForSpM::sp_type SpM,
+					    typename CandidatesForSpM::sp_type SpT,
+					    float weight, float zOrigin)
   {
     auto toAdd = std::make_tuple(SpB, SpM, SpT, weight, zOrigin);
     m_storage[m_n] = toAdd;

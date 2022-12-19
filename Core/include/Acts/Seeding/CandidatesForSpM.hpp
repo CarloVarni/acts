@@ -16,9 +16,11 @@
 namespace Acts {
 
   class CandidatesForSpM {
-  public:
-    using value_type = std::tuple<std::size_t, std::size_t, std::size_t, float, float>;
+    using sp_type = std::size_t;
+    using value_type = std::tuple<sp_type, sp_type, sp_type, float, float>;
+    static const sp_type default_value = std::numeric_limits<sp_type>::max();
     
+  public:    
     enum Components : int {
       BSP=0,
       MSP,
@@ -31,11 +33,11 @@ namespace Acts {
     ~CandidatesForSpM() = default;
 
     void setMaxElements(std::size_t n);
-    void setMediumSp(std::size_t idx);
-    void setBottomSp(std::size_t idx);
+    void setMediumSp(sp_type);
+    void setBottomSp(sp_type);
     const std::vector<value_type>& storage() const;
 
-    void push(std::size_t SpT, float weight, float zOrigin);
+    void push(sp_type SpT, float weight, float zOrigin);
     void clear();
     
   private:
@@ -47,14 +49,15 @@ namespace Acts {
     void bubbleup(std::size_t);
     void bubbledw(std::size_t);
     
-    void addToCollection(std::size_t SpB, std::size_t SpM, std::size_t SpT, float weight, float zOrigin);
-    void insertToCollection(std::size_t SpB, std::size_t SpM, std::size_t SpT, float weight, float zOrigin);
+    void addToCollection(sp_type SpB, sp_type SpM, sp_type SpT, float weight, float zOrigin);
+    void insertToCollection(sp_type SpB, sp_type SpM, sp_type SpT, float weight, float zOrigin);
     
   public:
     std::size_t m_max_size;
     std::size_t m_n;
-    std::size_t m_SpB;
-    std::size_t m_SpM;
+    // space points
+    sp_type m_SpB;
+    sp_type m_SpM;
     // This vector is sorted as a min heap tree
     // Each node is lower then its childs
     // Thus, it is guaranteed that the lower elements is at the front
@@ -73,10 +76,10 @@ namespace Acts {
     m_max_size = n;
   }
   
-  inline void CandidatesForSpM::setMediumSp(std::size_t idx)
+  inline void CandidatesForSpM::setMediumSp(typename CandidatesForSpM::sp_type idx)
   { m_SpM = idx; }
   
-  inline void CandidatesForSpM::setBottomSp(std::size_t idx)
+  inline void CandidatesForSpM::setBottomSp(typename CandidatesForSpM::sp_type idx)
   { m_SpB = idx; }
 
   inline float CandidatesForSpM::top() const
@@ -94,7 +97,7 @@ namespace Acts {
     m_n = 0;
     // clean bottom so that we understand there is a problem
     // if in cicle this is not manullay set
-    m_SpB = std::numeric_limits<std::size_t>::max();
+    m_SpB = default_value;
     // do not clear spm
     m_storage.clear();
   }
