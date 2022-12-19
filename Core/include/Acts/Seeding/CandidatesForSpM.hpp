@@ -32,14 +32,14 @@ namespace Acts {
     CandidatesForSpM();
     ~CandidatesForSpM() = default;
 
-    void setMaxElements(std::size_t n_low = 0,
-			std::size_t n_high = 0);
+    void setMaxElements(std::size_t n_low,
+			std::size_t n_high);
     void setMediumSp(sp_type);
     void setBottomSp(sp_type);
     const std::vector<value_type>& storage(bool isQuality) const;
     const sp_type& spM() const;
     
-    void push(sp_type& SpT, float weight, float zOrigin, bool isQuality);
+    void push(sp_type SpT, float weight, float zOrigin, bool isQuality);
     void clear();
     
   private:
@@ -130,9 +130,9 @@ namespace Acts {
     // do not clear max size, this is set only once
     m_n_high = 0;
     m_n_low = 0;
-    // clean bottom so that we understand there is a problem
-    // if in cicle this is not manullay set
+    // clean fixed space points
     m_SpB = default_value;
+    m_SpM = default_value;
     // do not clear spm
     m_storage_high.clear();
     m_storage_low.clear();

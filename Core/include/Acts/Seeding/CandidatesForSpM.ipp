@@ -19,7 +19,7 @@ namespace Acts {
   {}
 
   template<typename external_space_point_t>
-  void CandidatesForSpM<external_space_point_t>::push(typename CandidatesForSpM<external_space_point_t>::sp_type& SpT,
+  void CandidatesForSpM<external_space_point_t>::push(typename CandidatesForSpM<external_space_point_t>::sp_type SpT,
 			      float weight, float zOrigin,
 			      bool isQuality)
   {

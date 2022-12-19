@@ -37,8 +37,8 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
   }
 
   // This is used for seed filtering later
-  const std::size_t max_num_quality_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxQualitySeedsPerSpMConf;
   const std::size_t max_num_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxSeedsPerSpMConf;
+  const std::size_t max_num_quality_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxQualitySeedsPerSpMConf;
 
   state.candidates_collector.setMaxElements(max_num_seeds_per_spm,
 					    max_num_quality_seeds_per_spm);
@@ -151,12 +151,10 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     size_t t0 = 0;
 
 
-    // candidates per sp medium
-    state.candidates_collector.setMediumSp(spM);
-
     // clear previous results and then loop on bottoms and tops
     state.candidates_collector.clear();
-
+    // candidates per sp medium
+    state.candidates_collector.setMediumSp(spM);
 
 
     for (const std::size_t b : sorted_bottoms) {
