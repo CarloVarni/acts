@@ -7,7 +7,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
-#include <iostream>
 
 #include <memory>
 #include <vector>
@@ -45,7 +44,7 @@ namespace Acts {
   private:
     bool exists(std::size_t, std::size_t) const;
 
-    void pop(std::vector< value_type >&, std::size_t&, const std::size_t&);
+    void pop(std::vector< value_type >&, std::size_t&);
     float top(const std::vector< value_type >&) const;
     float weight(const std::vector< value_type >&, std::size_t) const;
 
@@ -58,7 +57,7 @@ namespace Acts {
     void insertToCollection(std::vector< value_type >&,
 			    sp_type& SpB, sp_type& SpT, float weight, float zOrigin,
 			    bool isQuality);
-    
+
   public:
     // sizes
     std::size_t m_max_size_high;

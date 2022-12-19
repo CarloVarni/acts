@@ -26,7 +26,7 @@ namespace Acts {
     auto& storage = isQuality ? m_storage_high : m_storage_low;
     const std::size_t& current_max_size = isQuality ? m_max_size_high : m_max_size_low;
     std::size_t& current_size = isQuality ? m_n_high : m_n_low;
-    
+
     // if there is still space, add anything
     if (current_size < current_max_size) {
       addToCollection(storage,
@@ -42,7 +42,7 @@ namespace Acts {
       return;
     
     // remove element with lower weight and add this one  
-    pop(storage, current_size, current_max_size);
+    pop(storage, current_size);
     insertToCollection(storage,
     		       m_SpB, SpT, weight, zOrigin,
 		       isQuality);
@@ -81,7 +81,7 @@ namespace Acts {
   template<typename external_space_point_t>
   void CandidatesForSpM<external_space_point_t>::bubbledw(std::vector< value_type >& storage,
        							  std::size_t n,
-							  std::size_t max_size)
+							  std::size_t actual_size)
   {
     // left child : 2 * n + 1
     // right child: 2 * n + 2
@@ -90,12 +90,12 @@ namespace Acts {
     std::size_t right_child = 2 * n + 2;
     
     // no left child, we stop
-    if (not exists(left_child, max_size)) return;
+    if (not exists(left_child, actual_size)) return;
     // no right child, left wins
-    if (not exists(right_child, max_size)) {
+    if (not exists(right_child, actual_size)) {
       if (weight(storage, left_child) < current) {
 	std::swap(storage[n], storage[left_child]);
-	return bubbledw(storage, left_child, max_size);
+	return bubbledw(storage, left_child, actual_size);
       }
     }
     // both childs
@@ -103,13 +103,13 @@ namespace Acts {
     if (weight(storage, left_child) < weight(storage, right_child)) {
       if (weight(storage, left_child) < current) {
 	std::swap(storage[n], storage[left_child]);
-	return bubbledw(storage, left_child, max_size);
+	return bubbledw(storage, left_child, actual_size);
       }
     }
     // right is smaller
     if (weight(storage, right_child) < current) {
       std::swap(storage[n], storage[right_child]);
-      return bubbledw(storage, right_child, max_size);
+      return bubbledw(storage, right_child, actual_size);
     }
     
   }
@@ -123,8 +123,9 @@ namespace Acts {
     // parent: (n - 1) / 2;
     std::size_t parent_idx = (n - 1) / 2;
 
-    std::size_t weight_current = weight(storage, n);
-    std::size_t weight_parent = weight(storage, parent_idx);
+    float weight_current = weight(storage, n);
+    float weight_parent = weight(storage, parent_idx);
+
     if (weight_parent <= weight_current)
       { return; }
     
@@ -134,12 +135,11 @@ namespace Acts {
 
   template<typename external_space_point_t>
   void CandidatesForSpM<external_space_point_t>::pop(std::vector< value_type >& storage,
-       						     std::size_t& current_size,
-						     const std::size_t& current_max_size)
+       						     std::size_t& current_size)
   {
     storage[0] = storage[current_size - 1];
     --current_size;
-    bubbledw(storage, 0, current_max_size);
+    bubbledw(storage, 0, current_size);
   }
   
 } //namespace
