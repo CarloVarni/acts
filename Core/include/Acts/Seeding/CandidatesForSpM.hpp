@@ -33,12 +33,12 @@ namespace Acts {
 
     void setMaxElements(std::size_t n_low,
 			std::size_t n_high);
-    void setMediumSp(sp_type);
-    void setBottomSp(sp_type);
+    void setMediumSp(sp_type&);
+    void setBottomSp(sp_type&);
     const std::vector<value_type>& storage(bool isQuality) const;
     const sp_type& spM() const;
     
-    void push(sp_type SpT, float weight, float zOrigin, bool isQuality);
+    void push(sp_type& SpT, float weight, float zOrigin, bool isQuality);
     void clear();
     
   private:
@@ -104,11 +104,11 @@ namespace Acts {
   }
 
   template<typename external_space_point_t>
-  inline void CandidatesForSpM<external_space_point_t>::setMediumSp(typename CandidatesForSpM<external_space_point_t>::sp_type idx)
+  inline void CandidatesForSpM<external_space_point_t>::setMediumSp(typename CandidatesForSpM<external_space_point_t>::sp_type& idx)
   { m_SpM = idx; }
 
   template<typename external_space_point_t>
-  inline void CandidatesForSpM<external_space_point_t>::setBottomSp(typename CandidatesForSpM<external_space_point_t>::sp_type idx)
+  inline void CandidatesForSpM<external_space_point_t>::setBottomSp(typename CandidatesForSpM<external_space_point_t>::sp_type& idx)
   { m_SpB = idx; }
 
   template<typename external_space_point_t>

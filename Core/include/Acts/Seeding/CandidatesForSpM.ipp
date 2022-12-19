@@ -19,7 +19,7 @@ namespace Acts {
   {}
 
   template<typename external_space_point_t>
-  void CandidatesForSpM<external_space_point_t>::push(typename CandidatesForSpM<external_space_point_t>::sp_type SpT,
+  void CandidatesForSpM<external_space_point_t>::push(typename CandidatesForSpM<external_space_point_t>::sp_type& SpT,
 			      float weight, float zOrigin,
 			      bool isQuality)
   {
@@ -71,6 +71,9 @@ namespace Acts {
 					    float weight, float zOrigin,
 					    bool isQuality)
   {
+    // inserts elements to the end of the collection
+    // function called when space in storage is full
+    // before this a pop is called
     auto toAdd = std::make_tuple(SpB, SpT, weight, zOrigin);
     std::size_t& added_index = isQuality ? m_n_high : m_n_low;
     storage[added_index] = toAdd;
@@ -91,23 +94,29 @@ namespace Acts {
     
     // no left child, we stop
     if (not exists(left_child, actual_size)) return;
+
+    float weight_left_child = weight(storage, left_child);
+    
     // no right child, left wins
     if (not exists(right_child, actual_size)) {
-      if (weight(storage, left_child) < current) {
+      if (weight_left_child < current) {
 	std::swap(storage[n], storage[left_child]);
 	return bubbledw(storage, left_child, actual_size);
       }
     }
+
+    float weight_right_child = weight(storage, right_child);
+
     // both childs
     // left is smaller
-    if (weight(storage, left_child) < weight(storage, right_child)) {
-      if (weight(storage, left_child) < current) {
+    if (weight_left_child < weight_right_child) {
+      if (weight_left_child < current) {
 	std::swap(storage[n], storage[left_child]);
 	return bubbledw(storage, left_child, actual_size);
       }
     }
     // right is smaller
-    if (weight(storage, right_child) < current) {
+    if (weight_right_child < current) {
       std::swap(storage[n], storage[right_child]);
       return bubbledw(storage, right_child, actual_size);
     }
@@ -121,6 +130,7 @@ namespace Acts {
     if (n == 0) return;
     
     // parent: (n - 1) / 2;
+    // this works because it is an integer operation
     std::size_t parent_idx = (n - 1) / 2;
 
     float weight_current = weight(storage, n);
