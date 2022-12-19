@@ -33,12 +33,12 @@ namespace Acts {
     ~CandidatesForSpM() = default;
 
     void setMaxElements(std::size_t n);
-    void setMediumSp(sp_type);
-    void setBottomSp(sp_type);
+    void setMediumSp(sp_type&);
+    void setBottomSp(sp_type&);
     const std::vector<value_type>& storage() const;
     const sp_type& spM() const;
     
-    void push(sp_type SpT, float weight, float zOrigin);
+    void push(sp_type& SpT, float weight, float zOrigin);
     void clear();
     
   private:
@@ -50,8 +50,8 @@ namespace Acts {
     void bubbleup(std::size_t);
     void bubbledw(std::size_t);
     
-    void addToCollection(sp_type SpB, sp_type SpT, float weight, float zOrigin);
-    void insertToCollection(sp_type SpB, sp_type SpT, float weight, float zOrigin);
+    void addToCollection(sp_type& SpB, sp_type& SpT, float weight, float zOrigin);
+    void insertToCollection(sp_type& SpB, sp_type& SpT, float weight, float zOrigin);
     
   public:
     std::size_t m_max_size;
@@ -86,11 +86,11 @@ namespace Acts {
   }
 
   template<typename external_space_point_t>
-  inline void CandidatesForSpM<external_space_point_t>::setMediumSp(typename CandidatesForSpM<external_space_point_t>::sp_type idx)
+  inline void CandidatesForSpM<external_space_point_t>::setMediumSp(typename CandidatesForSpM<external_space_point_t>::sp_type& idx)
   { m_SpM = idx; }
 
   template<typename external_space_point_t>
-  inline void CandidatesForSpM<external_space_point_t>::setBottomSp(typename CandidatesForSpM<external_space_point_t>::sp_type idx)
+  inline void CandidatesForSpM<external_space_point_t>::setBottomSp(typename CandidatesForSpM<external_space_point_t>::sp_type& idx)
   { m_SpB = idx; }
 
   template<typename external_space_point_t>
