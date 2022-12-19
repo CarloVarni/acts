@@ -1,4 +1,4 @@
-// This file is part of the Acts project.AA
+// This file is part of the Acts project.
 //
 // Copyright (C) 2022 CERN for the benefit of the Acts project
 //
@@ -59,9 +59,10 @@ namespace Acts {
     // function called when space in storage is not full
     auto toAdd = std::make_tuple(SpB, SpT, weight, zOrigin);
     storage.push_back( toAdd );
-    std::size_t added_index = isQuality ? m_n_high++ : m_n_low++;
+    std::size_t& added_index = isQuality ? m_n_high : m_n_low;
     bubbleup(storage, added_index);
-  }  
+    ++added_index;
+}  
 
   template<typename external_space_point_t>
   void CandidatesForSpM<external_space_point_t>::insertToCollection(std::vector< typename CandidatesForSpM<external_space_point_t>::value_type >& storage,
@@ -71,10 +72,11 @@ namespace Acts {
 					    bool isQuality)
   {
     auto toAdd = std::make_tuple(SpB, SpT, weight, zOrigin);
-    std::size_t added_index = isQuality ? m_n_high++ : m_n_low++;
+    std::size_t& added_index = isQuality ? m_n_high : m_n_low;
     storage[added_index] = toAdd;
     bubbleup(storage, added_index);
-  }
+    ++added_index;
+}
 
   template<typename external_space_point_t>
   void CandidatesForSpM<external_space_point_t>::bubbledw(std::vector< value_type >& storage,
@@ -135,7 +137,8 @@ namespace Acts {
        						     std::size_t& current_size,
 						     const std::size_t& current_max_size)
   {
-    storage[0] = storage[--current_size];
+    storage[0] = storage[current_size - 1];
+    --current_size;
     bubbledw(storage, 0, current_max_size);
   }
   
