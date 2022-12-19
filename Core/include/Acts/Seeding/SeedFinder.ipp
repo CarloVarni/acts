@@ -442,18 +442,18 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     const auto& collection_quality = state.manager_sps_quality.storage();
     const auto& collection_no_quality = state.manager_sps_no_quality.storage();
 
-    for (const auto& [bottom, medium, top, weight, origin] : collection_quality) {
+    for (const auto& [bottom, top, weight, origin] : collection_quality) {
       	state.seedsPerSpM.push_back(std::make_pair(
 		weight,
           	std::make_unique<const InternalSeed<external_spacepoint_t>>(
-              	     *bottom, *medium, *top, origin, true)));
+              	     *bottom, *spM, *top, origin, true)));
     }
 
-    for (const auto& [bottom, medium, top, weight, origin] : collection_no_quality) {
+    for (const auto& [bottom, top, weight, origin] : collection_no_quality) {
       	state.seedsPerSpM.push_back(std::make_pair(
 		weight,
           	std::make_unique<const InternalSeed<external_spacepoint_t>>(
-              	     *bottom, *medium, *top, origin, false)));
+              	     *bottom, *spM, *top, origin, false)));
     }
 
     m_config.seedFilter->filterSeeds_1SpFixed(

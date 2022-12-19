@@ -18,12 +18,11 @@ namespace Acts {
   template<typename external_space_point_t>
   class CandidatesForSpM {
     using sp_type = external_space_point_t*;
-    using value_type = std::tuple<sp_type, sp_type, sp_type, float, float>;
+    using value_type = std::tuple<sp_type, sp_type, float, float>;
     static constexpr sp_type default_value = nullptr;
     
     enum Components : int {
       BSP=0,
-      MSP,
       TSP,
       WEIGHT,
       ZORIGIN
@@ -37,7 +36,8 @@ namespace Acts {
     void setMediumSp(sp_type);
     void setBottomSp(sp_type);
     const std::vector<value_type>& storage() const;
-
+    const sp_type& spM() const;
+    
     void push(sp_type SpT, float weight, float zOrigin);
     void clear();
     
@@ -50,8 +50,8 @@ namespace Acts {
     void bubbleup(std::size_t);
     void bubbledw(std::size_t);
     
-    void addToCollection(sp_type SpB, sp_type SpM, sp_type SpT, float weight, float zOrigin);
-    void insertToCollection(sp_type SpB, sp_type SpM, sp_type SpT, float weight, float zOrigin);
+    void addToCollection(sp_type SpB, sp_type SpT, float weight, float zOrigin);
+    void insertToCollection(sp_type SpB, sp_type SpT, float weight, float zOrigin);
     
   public:
     std::size_t m_max_size;
@@ -72,6 +72,12 @@ namespace Acts {
   CandidatesForSpM<external_space_point_t>::storage() const
   { return m_storage; }
 
+  template<typename external_space_point_t>
+  inline
+  const typename CandidatesForSpM<external_space_point_t>::sp_type&
+  CandidatesForSpM<external_space_point_t>::spM() const
+  { return m_SpM; }
+  
   template<typename external_space_point_t>
   inline void CandidatesForSpM<external_space_point_t>::setMaxElements(std::size_t n)
   {
