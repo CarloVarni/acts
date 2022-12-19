@@ -40,8 +40,8 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
   const std::size_t max_num_quality_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxQualitySeedsPerSpMConf;
   const std::size_t max_num_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxSeedsPerSpMConf;
 
-  state.manager_sps_quality.setMaxElements(max_num_quality_seeds_per_spm);
-  state.manager_sps_no_quality.setMaxElements(max_num_seeds_per_spm);
+  state.candidates_collector.setMaxElements(max_num_seeds_per_spm,
+					    max_num_quality_seeds_per_spm);
 
 
 
@@ -152,12 +152,10 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 
 
     // candidates per sp medium
-    state.manager_sps_quality.setMediumSp(spM);
-    state.manager_sps_no_quality.setMediumSp(spM);
+    state.candidates_collector.setMediumSp(spM);
 
     // clear previous results and then loop on bottoms and tops
-    state.manager_sps_quality.clear();
-    state.manager_sps_no_quality.clear();
+    state.candidates_collector.clear();
 
 
 
@@ -427,20 +425,19 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 
 
 
-      state.manager_sps_quality.setBottomSp(state.compatBottomSP[b]);
-      state.manager_sps_no_quality.setBottomSp(state.compatBottomSP[b]);
+      state.candidates_collector.setBottomSp(state.compatBottomSP[b]);
 
       m_config.seedFilter->filterSeeds_2SpFixed(
          *state.compatBottomSP[b], *spM, state.topSpVec, state.curvatures,
          state.impactParameters, seedFilterState, state.seedsPerSpM,
-	 state.manager_sps_quality, state.manager_sps_no_quality);
+	 state.candidates_collector);
 
      
     } // loop on bottoms
 
     // make seeds and save candidates to state.seedsPerSpM
-    const auto& collection_quality = state.manager_sps_quality.storage();
-    const auto& collection_no_quality = state.manager_sps_no_quality.storage();
+    const auto& collection_quality = state.candidates_collector.storage(true);
+    const auto& collection_no_quality = state.candidates_collector.storage(false);
 
     for (const auto& [bottom, top, weight, origin] : collection_quality) {
       	state.seedsPerSpM.push_back(std::make_pair(

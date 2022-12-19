@@ -32,45 +32,61 @@ namespace Acts {
     CandidatesForSpM();
     ~CandidatesForSpM() = default;
 
-    void setMaxElements(std::size_t n);
-    void setMediumSp(sp_type&);
-    void setBottomSp(sp_type&);
-    const std::vector<value_type>& storage() const;
+    void setMaxElements(std::size_t n_low = 0,
+			std::size_t n_high = 0);
+    void setMediumSp(sp_type);
+    void setBottomSp(sp_type);
+    const std::vector<value_type>& storage(bool isQuality) const;
     const sp_type& spM() const;
     
-    void push(sp_type& SpT, float weight, float zOrigin);
+    void push(sp_type& SpT, float weight, float zOrigin, bool isQuality);
     void clear();
     
   private:
-    void pop();
-    float top() const;
-    bool exists(std::size_t) const;
-    float weight(std::size_t) const;
+    bool exists(std::size_t, std::size_t) const;
 
-    void bubbleup(std::size_t);
-    void bubbledw(std::size_t);
+    void pop(std::vector< value_type >&, std::size_t&, const std::size_t&);
+    float top(const std::vector< value_type >&) const;
+    float weight(const std::vector< value_type >&, std::size_t) const;
+
+    void bubbleup(std::vector< value_type >&, std::size_t);
+    void bubbledw(std::vector< value_type >&, std::size_t, std::size_t);
     
-    void addToCollection(sp_type& SpB, sp_type& SpT, float weight, float zOrigin);
-    void insertToCollection(sp_type& SpB, sp_type& SpT, float weight, float zOrigin);
+    void addToCollection(std::vector< value_type >&,
+			 sp_type& SpB, sp_type& SpT, float weight, float zOrigin,
+			 bool isQuality);
+    void insertToCollection(std::vector< value_type >&,
+			    sp_type& SpB, sp_type& SpT, float weight, float zOrigin,
+			    bool isQuality);
     
   public:
-    std::size_t m_max_size;
-    std::size_t m_n;
+    // sizes
+    std::size_t m_max_size_high;
+    std::size_t m_max_size_low;
+    std::size_t m_n_high;
+    std::size_t m_n_low;
+
     // space points
     sp_type m_SpB;
     sp_type m_SpM;
-    // This vector is sorted as a min heap tree
+
+    // storage
+    // These vectors are sorted as a min heap tree
     // Each node is lower then its childs
     // Thus, it is guaranteed that the lower elements is at the front
     // Sorting criteria is the seed quality 
-    std::vector< value_type > m_storage;
+
+    // storage for candidates with high quality
+    std::vector< value_type > m_storage_high;
+    // storage for candidates with low quality
+    std::vector< value_type > m_storage_low;
   };
 
   template<typename external_space_point_t>
   inline
   const std::vector<typename CandidatesForSpM<external_space_point_t>::value_type>&
-  CandidatesForSpM<external_space_point_t>::storage() const
-  { return m_storage; }
+  CandidatesForSpM<external_space_point_t>::storage(bool isQuality) const
+  { return isQuality ? m_storage_high : m_storage_low; }
 
   template<typename external_space_point_t>
   inline
@@ -79,42 +95,47 @@ namespace Acts {
   { return m_SpM; }
   
   template<typename external_space_point_t>
-  inline void CandidatesForSpM<external_space_point_t>::setMaxElements(std::size_t n)
+  inline void CandidatesForSpM<external_space_point_t>::setMaxElements(std::size_t n_low,
+								       std::size_t n_high)
   {
-    if (m_storage.capacity() < n ) m_storage.reserve(n);
-    m_max_size = n;
+    if (m_storage_high.capacity() < n_high) m_storage_high.reserve(n_high);
+    if (m_storage_low.capacity() < n_low) m_storage_low.reserve(n_low);
+    m_max_size_high = n_high;
+    m_max_size_low = n_low;
   }
 
   template<typename external_space_point_t>
-  inline void CandidatesForSpM<external_space_point_t>::setMediumSp(typename CandidatesForSpM<external_space_point_t>::sp_type& idx)
+  inline void CandidatesForSpM<external_space_point_t>::setMediumSp(typename CandidatesForSpM<external_space_point_t>::sp_type idx)
   { m_SpM = idx; }
 
   template<typename external_space_point_t>
-  inline void CandidatesForSpM<external_space_point_t>::setBottomSp(typename CandidatesForSpM<external_space_point_t>::sp_type& idx)
+  inline void CandidatesForSpM<external_space_point_t>::setBottomSp(typename CandidatesForSpM<external_space_point_t>::sp_type idx)
   { m_SpB = idx; }
 
   template<typename external_space_point_t>
-  inline float CandidatesForSpM<external_space_point_t>::top() const
-  { return weight(0); }
+  inline float CandidatesForSpM<external_space_point_t>::top(const std::vector<value_type>& storage) const
+  { return weight(storage, 0); }
 
   template<typename external_space_point_t>
-  inline bool CandidatesForSpM<external_space_point_t>::exists(std::size_t n) const
-  { return n < m_n; }
+  inline bool CandidatesForSpM<external_space_point_t>::exists(std::size_t n, std::size_t max_size) const
+  { return n < max_size; }
 
   template<typename external_space_point_t>
-  inline float CandidatesForSpM<external_space_point_t>::weight(std::size_t n) const
-  { return std::get<Components::WEIGHT>(m_storage[n]); }
+  inline float CandidatesForSpM<external_space_point_t>::weight(const std::vector<value_type>& storage, std::size_t n) const
+  { return std::get<Components::WEIGHT>(storage[n]); }
 
   template<typename external_space_point_t>
   inline void CandidatesForSpM<external_space_point_t>::clear()
   {
     // do not clear max size, this is set only once
-    m_n = 0;
+    m_n_high = 0;
+    m_n_low = 0;
     // clean bottom so that we understand there is a problem
     // if in cicle this is not manullay set
     m_SpB = default_value;
     // do not clear spm
-    m_storage.clear();
+    m_storage_high.clear();
+    m_storage_low.clear();
   }
   
 }  // namespace Acts

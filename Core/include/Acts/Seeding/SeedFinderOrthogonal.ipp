@@ -256,11 +256,9 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
 
   // Managers for the candidates
   // these will handle the registry replacing/adding/removing candidates
-  CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> manager_sps_quality; 
-  CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> manager_sps_no_quality; 
+  CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> candidates_collector;
 
-  manager_sps_quality.setMaxElements(max_num_quality_seeds_per_spm);
-  manager_sps_no_quality.setMaxElements(max_num_seeds_per_spm);
+  candidates_collector.setMaxElements(max_num_seeds_per_spm, max_num_quality_seeds_per_spm);
     
   float rM = middle.radius();
   float varianceRM = middle.varianceR();
@@ -451,8 +449,7 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
       m_config.seedFilter->filterSeeds_2SpFixed(*bottom[b], middle, top_valid,
                                                 curvatures, impactParameters,
                                                 seedFilterState, cont,
-						manager_sps_quality,
-						manager_sps_no_quality);
+						candidates_collector);
     }
   }
 }

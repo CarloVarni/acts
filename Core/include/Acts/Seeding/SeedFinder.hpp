@@ -56,8 +56,7 @@ class SeedFinder {
         seedsPerSpM;
 
     // managing seed candidates for SpM
-    CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> manager_sps_quality;
-    CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> manager_sps_no_quality;
+    CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> candidates_collector;
   };
 
   /// The only constructor. Requires a config object.

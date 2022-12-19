@@ -66,7 +66,6 @@ class SeedFilter {
       std::vector<std::pair<
           float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>&
           outCont,
-      CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>&,
       CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>&) const;
 
   /// Filter seeds once all seeds for one middle space point have been created
