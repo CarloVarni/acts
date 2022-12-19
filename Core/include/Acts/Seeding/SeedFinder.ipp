@@ -40,6 +40,12 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
   const std::size_t max_num_quality_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxQualitySeedsPerSpMConf;
   const std::size_t max_num_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxSeedsPerSpMConf;
 
+  state.manager_sps_quality.setMaxElements(max_num_quality_seeds_per_spm);
+  state.manager_sps_no_quality.setMaxElements(max_num_seeds_per_spm);
+
+
+
+  std::size_t m = 0;
   for (auto spM : middleSPs) {
     float rM = spM->radius();
     float zM = spM->z();
@@ -146,9 +152,15 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     size_t t0 = 0;
 
 
-    // Managers for the candidates
-    CandidatesForSpM manager_sps_quality(max_num_quality_seeds_per_spm);
-    CandidatesForSpM manager_sps_no_quality(max_num_seeds_per_spm);
+    // candidates per sp medium
+    state.manager_sps_quality.setMediumSp(m);
+    state.manager_sps_no_quality.setMediumSp(m);
+
+    // clear previous results and then loop on bottoms and tops
+    state.manager_sps_quality.clear();
+    state.manager_sps_no_quality.clear();
+
+
 
     for (const std::size_t b : sorted_bottoms) {
       // break if we reached the last top SP
@@ -414,20 +426,22 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
       if (state.topSpVec.empty()) continue;
 
 
-      manager_sps_quality.setBottomSp(b);
-      manager_sps_no_quality.setBottomSp(b);
+
+
+      state.manager_sps_quality.setBottomSp(b);
+      state.manager_sps_no_quality.setBottomSp(b);
 
       m_config.seedFilter->filterSeeds_2SpFixed(
          *state.compatBottomSP[b], *spM, state.topSpVec, state.curvatures,
          state.impactParameters, seedFilterState, state.seedsPerSpM,
-	 manager_sps_quality, manager_sps_no_quality);
+	 state.manager_sps_quality, state.manager_sps_no_quality);
 
      
     } // loop on bottoms
 
     // make seeds and save candidates to state.seedsPerSpM
-    const auto& collection_quality = manager_sps_quality.storage();
-    const auto& collection_no_quality = manager_sps_no_quality.storage();
+    const auto& collection_quality = state.manager_sps_quality.storage();
+    const auto& collection_no_quality = state.manager_sps_no_quality.storage();
 
     for (const auto& [bottom_idx, top_idx, weight, origin] : collection_quality) {
       	state.seedsPerSpM.push_back(std::make_pair(
@@ -445,7 +459,9 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 
     m_config.seedFilter->filterSeeds_1SpFixed(
         state.seedsPerSpM, seedFilterState.numQualitySeeds, outIt);
-  }
+
+    ++m;
+    } // loop on mediums
 }
 
 template <typename external_spacepoint_t, typename platform_t>

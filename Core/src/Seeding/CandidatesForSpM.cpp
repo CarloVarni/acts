@@ -10,11 +10,12 @@
 
 namespace Acts {
 
-  CandidatesForSpM::CandidatesForSpM(std::size_t n)
-    : m_max_size(n),
+  CandidatesForSpM::CandidatesForSpM()
+    : m_max_size(0),
       m_n(0),
-      m_SpB(std::numeric_limits<std::size_t>::max())
-  { m_storage.reserve(n); }
+      m_SpB(std::numeric_limits<std::size_t>::max()),
+      m_SpM(std::numeric_limits<std::size_t>::max())
+  {}
   
   void CandidatesForSpM::push(std::size_t SpT, float weight, float zOrigin)
   {

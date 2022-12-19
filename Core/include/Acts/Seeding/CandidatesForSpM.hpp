@@ -26,14 +26,17 @@ namespace Acts {
       ZORIGIN=3
     };
 
-    CandidatesForSpM(std::size_t n);
+    CandidatesForSpM();
     ~CandidatesForSpM() = default;
-    
+
+    void setMaxElements(std::size_t n);
+    void setMediumSp(std::size_t idx);
     void setBottomSp(std::size_t idx);
     const std::vector<value_type>& storage();
 
     void push(std::size_t SpT, float weight, float zOrigin);
-
+    void clear();
+    
   private:
     void pop();
     float top() const;
@@ -50,6 +53,7 @@ namespace Acts {
     std::size_t m_max_size;
     std::size_t m_n;
     std::size_t m_SpB;
+    std::size_t m_SpM;
     std::vector< value_type > m_storage;
   };
 
@@ -58,6 +62,15 @@ namespace Acts {
   CandidatesForSpM::storage()
   { return m_storage; }
 
+  inline void CandidatesForSpM::setMaxElements(std::size_t n)
+  {
+    if (m_storage.capacity() < n ) m_storage.reserve(n);
+    m_max_size = n;
+  }
+  
+  inline void CandidatesForSpM::setMediumSp(std::size_t idx)
+  { m_SpM = idx; }
+  
   inline void CandidatesForSpM::setBottomSp(std::size_t idx)
   { m_SpB = idx; }
 
@@ -69,6 +82,17 @@ namespace Acts {
 
   inline float CandidatesForSpM::weight(std::size_t n) const
   { return std::get<Components::WEIGHT>(m_storage[n]); }
+
+  inline void CandidatesForSpM::clear()
+  {
+    // do not clear max size, this is set only once
+    m_n = 0;
+    // clean bottom so that we understand there is a problem
+    // if in cicle this is not manullay set
+    m_SpB = std::numeric_limits<std::size_t>::max();
+    // do not clear spm
+    m_storage.clear();
+  }
   
 }  // namespace Acts
 

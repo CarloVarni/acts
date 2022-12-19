@@ -14,6 +14,7 @@
 #include "Acts/Seeding/InternalSpacePoint.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SeedFinderUtils.hpp"
+#include "Acts/Seeding/CandidatesForSpM.hpp"
 
 #include <array>
 #include <list>
@@ -53,6 +54,10 @@ class SeedFinder {
     std::vector<std::pair<
         float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>
         seedsPerSpM;
+
+    // managing seed candidates for SpM
+    CandidatesForSpM manager_sps_quality;
+    CandidatesForSpM manager_sps_no_quality;
   };
 
   /// The only constructor. Requires a config object.
