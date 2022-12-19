@@ -21,7 +21,7 @@ namespace Acts {
   {
     // if there is still space, add anything
     if (m_n < m_max_size) {
-      addToCollection(m_SpB, SpT, weight, zOrigin);
+      addToCollection(m_SpB, m_SpM, SpT, weight, zOrigin);
       return;
     }
 
@@ -33,20 +33,20 @@ namespace Acts {
     
     // remove element with lower weight and add this one  
     pop();
-    insertToCollection(m_SpB, SpT, weight, zOrigin);
+    insertToCollection(m_SpB, m_SpM, SpT, weight, zOrigin);
   }
   
-  void CandidatesForSpM::addToCollection(std::size_t SpB, std::size_t SpT, float weight, float zOrigin)
+  void CandidatesForSpM::addToCollection(std::size_t SpB, std::size_t SpM, std::size_t SpT, float weight, float zOrigin)
   {
-    auto toAdd = std::make_tuple(SpB, SpT, weight, zOrigin);
+    auto toAdd = std::make_tuple(SpB, SpM, SpT, weight, zOrigin);
     m_storage.push_back( toAdd );
     std::size_t added_index = m_n++;
     bubbleup(added_index);
   }  
 
-  void CandidatesForSpM::insertToCollection(std::size_t SpB, std::size_t SpT, float weight, float zOrigin)
+  void CandidatesForSpM::insertToCollection(std::size_t SpB, std::size_t SpM, std::size_t SpT, float weight, float zOrigin)
   {
-    auto toAdd = std::make_tuple(SpB, SpT, weight, zOrigin);
+    auto toAdd = std::make_tuple(SpB, SpM, SpT, weight, zOrigin);
     m_storage[m_n] = toAdd;
     std::size_t added_index = m_n++;
     bubbleup(added_index);

@@ -17,13 +17,14 @@ namespace Acts {
 
   class CandidatesForSpM {
   public:
-    using value_type = std::tuple<std::size_t, std::size_t, float, float>;
+    using value_type = std::tuple<std::size_t, std::size_t, std::size_t, float, float>;
     
     enum Components : int {
       BSP=0,
-      TSP=1,
-      WEIGHT=2,
-      ZORIGIN=3
+      MSP,
+      TSP,
+      WEIGHT,
+      ZORIGIN
     };
 
     CandidatesForSpM();
@@ -32,7 +33,7 @@ namespace Acts {
     void setMaxElements(std::size_t n);
     void setMediumSp(std::size_t idx);
     void setBottomSp(std::size_t idx);
-    const std::vector<value_type>& storage();
+    const std::vector<value_type>& storage() const;
 
     void push(std::size_t SpT, float weight, float zOrigin);
     void clear();
@@ -46,20 +47,24 @@ namespace Acts {
     void bubbleup(std::size_t);
     void bubbledw(std::size_t);
     
-    void addToCollection(std::size_t SpB, std::size_t SpT, float weight, float zOrigin);
-    void insertToCollection(std::size_t SpB, std::size_t SpT, float weight, float zOrigin);
+    void addToCollection(std::size_t SpB, std::size_t SpM, std::size_t SpT, float weight, float zOrigin);
+    void insertToCollection(std::size_t SpB, std::size_t SpM, std::size_t SpT, float weight, float zOrigin);
     
   public:
     std::size_t m_max_size;
     std::size_t m_n;
     std::size_t m_SpB;
     std::size_t m_SpM;
+    // This vector is sorted as a min heap tree
+    // Each node is lower then its childs
+    // Thus, it is guaranteed that the lower elements is at the front
+    // Sorting criteria is the seed quality 
     std::vector< value_type > m_storage;
   };
 
   inline
   const std::vector<typename CandidatesForSpM::value_type>&
-  CandidatesForSpM::storage()
+  CandidatesForSpM::storage() const
   { return m_storage; }
 
   inline void CandidatesForSpM::setMaxElements(std::size_t n)
