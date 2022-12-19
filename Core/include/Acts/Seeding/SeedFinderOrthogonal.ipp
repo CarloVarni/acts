@@ -448,7 +448,7 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
     if (!top_valid.empty()) {
       m_config.seedFilter->filterSeeds_2SpFixed(*bottom[b], middle, top_valid,
                                                 curvatures, impactParameters,
-                                                seedFilterState, cont,
+                                                seedFilterState, //cont,
 						candidates_collector);
     }
   }
@@ -620,9 +620,11 @@ void SeedFinderOrthogonal<external_spacepoint_t>::processFromMiddleSP(
   /*
    * Run a seed filter, just like in other seeding algorithms.
    */
+   /*
   m_config.seedFilter->filterSeeds_1SpFixed(protoseeds,
                                             seedFilterState.numQualitySeeds,
                                             std::back_inserter(out_cont));
+					    */
 }
 
 template <typename external_spacepoint_t>

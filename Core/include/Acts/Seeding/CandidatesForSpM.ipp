@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
+#include <iostream>
 namespace Acts {
 
   template<typename external_space_point_t>
@@ -49,7 +49,7 @@ namespace Acts {
   }
 
   template<typename external_space_point_t>
-  void CandidatesForSpM<external_space_point_t>::addToCollection(std::vector< typename CandidatesForSpM<external_space_point_t>::value_type >& storage,
+  void CandidatesForSpM<external_space_point_t>::addToCollection(std::vector< value_type >& storage,
        					 typename CandidatesForSpM<external_space_point_t>::sp_type& SpB,
 					 typename CandidatesForSpM<external_space_point_t>::sp_type& SpT,
 					 float weight, float zOrigin,
@@ -65,7 +65,7 @@ namespace Acts {
 }  
 
   template<typename external_space_point_t>
-  void CandidatesForSpM<external_space_point_t>::insertToCollection(std::vector< typename CandidatesForSpM<external_space_point_t>::value_type >& storage,
+  void CandidatesForSpM<external_space_point_t>::insertToCollection(std::vector< value_type >& storage,
                                             typename CandidatesForSpM<external_space_point_t>::sp_type& SpB,
 					    typename CandidatesForSpM<external_space_point_t>::sp_type& SpT,
 					    float weight, float zOrigin,
@@ -150,6 +150,63 @@ namespace Acts {
     storage[0] = storage[current_size - 1];
     --current_size;
     bubbledw(storage, 0, current_size);
+  }
+
+  template<typename external_space_point_t>
+  std::vector< typename CandidatesForSpM<external_space_point_t>::output_type >
+  CandidatesForSpM<external_space_point_t>::extendedStorage() const
+  {
+    // this will retrieve the entire storage, first high and then low quality
+    // the resulting vector is not sorted!
+    std::vector< output_type > output;
+    output.reserve(m_n_high + m_n_low);
+
+    for (std::size_t idx(0); idx < m_n_high; idx++) {
+    	const auto& [bottom, top, weight, zOrigin] = m_storage_high[idx];
+	output.emplace_back( bottom, m_SpM, top, weight, zOrigin, true );
+    }
+	
+    for (std::size_t idx(0); idx < m_n_low; idx++) {
+       const auto& [bottom, top, weight, zOrigin] = m_storage_low[idx];
+       output.emplace_back( bottom, m_SpM, top, weight, zOrigin, false );
+    }
+
+    // sort output according to weight and sps
+    std::sort(output.begin(), output.end(),
+            [] (const auto& i1, const auto& i2) -> bool
+        {
+            const float weight_l1 = std::get<3>(i1);
+            const float weight_l2 = std::get<3>(i2);
+
+	    if (weight_l1 != weight_l2)
+	       return weight_l1 > weight_l1;
+
+	    // This is for the case when the weights from different seeds
+	    // are same. This makes cpu & cuda results same
+
+	    const auto& bottom_l1 = std::get<0>(i1);
+	    const auto& top_l1 = std::get<2>(i1);
+
+	    const auto& bottom_l2 = std::get<0>(i2);
+	    const auto& top_l2 = std::get<2>(i2);
+
+	    // medium is the same for all candidates
+	    const auto& medium = std::get<1>(i1);
+	    float sum_medium = medium->y() * medium->y() + medium->z() * medium->z();
+
+	    float seed1_sum = sum_medium;
+	    float seed2_sum = sum_medium;
+
+	    seed1_sum += bottom_l1->y() * bottom_l1->y() + bottom_l1->z() * bottom_l1->z();
+	    seed1_sum += top_l1->y() * top_l1->y() + top_l1->z() * top_l1->z();
+
+	    seed2_sum += bottom_l2->y() * bottom_l2->y() + bottom_l2->z() * bottom_l2->z();
+	    seed2_sum += top_l2->y() * top_l2->y() + top_l2->z() * top_l2->z();
+
+	    return seed1_sum > seed2_sum;
+      });
+
+    return output;
   }
   
 } //namespace

@@ -16,8 +16,10 @@ namespace Acts {
 
   template<typename external_space_point_t>
   class CandidatesForSpM {
+
     using sp_type = external_space_point_t*;
     using value_type = std::tuple<sp_type, sp_type, float, float>;
+    using output_type = std::tuple<sp_type, sp_type, sp_type, float, float, bool>;
     static constexpr sp_type default_value = nullptr;
     
     enum Components : int {
@@ -26,7 +28,7 @@ namespace Acts {
       WEIGHT,
       ZORIGIN
     };
-    
+
   public:
     CandidatesForSpM();
     ~CandidatesForSpM() = default;
@@ -36,6 +38,7 @@ namespace Acts {
     void setMediumSp(sp_type&);
     void setBottomSp(sp_type&);
     const std::vector<value_type>& storage(bool isQuality) const;
+    std::vector< output_type > extendedStorage() const;
     const sp_type& spM() const;
     
     void push(sp_type& SpT, float weight, float zOrigin, bool isQuality);
@@ -132,7 +135,7 @@ namespace Acts {
     // clean fixed space points
     m_SpB = default_value;
     m_SpM = default_value;
-    // do not clear spm
+    // clean storage
     m_storage_high.clear();
     m_storage_low.clear();
   }

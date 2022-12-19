@@ -63,10 +63,7 @@ class SeedFilter {
       std::vector<InternalSpacePoint<external_spacepoint_t>*>& topSpVec,
       std::vector<float>& invHelixDiameterVec,
       std::vector<float>& impactParametersVec, SeedFilterState& seedFilterState,
-      std::vector<std::pair<
-          float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>&
-          outCont,
-      CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>&) const;
+      CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>& candidates_collector) const;
 
   /// Filter seeds once all seeds for one middle space point have been created
   /// @param seedsPerSpM vector of pairs containing weight and seed for all
@@ -74,9 +71,7 @@ class SeedFilter {
   /// @param outIt Output iterator for the seeds
   /// for all seeds with the same middle space point
   virtual void filterSeeds_1SpFixed(
-      std::vector<std::pair<
-          float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>&
-          seedsPerSpM,
+      CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>& candidates_collector,
       int& numQualitySeeds,
       std::back_insert_iterator<std::vector<Seed<external_spacepoint_t>>> outIt)
       const;

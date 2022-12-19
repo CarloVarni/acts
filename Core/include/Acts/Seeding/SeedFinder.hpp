@@ -51,10 +51,6 @@ class SeedFinder {
     std::vector<float> etaVec;
     std::vector<float> ptVec;
 
-    std::vector<std::pair<
-        float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>
-        seedsPerSpM;
-
     // managing seed candidates for SpM
     CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> candidates_collector;
   };
