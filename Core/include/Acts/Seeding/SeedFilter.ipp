@@ -37,8 +37,8 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
     std::vector<std::pair<
         float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>&
         /*outCont*/,
-    CandidatesForSpM& manager_sps_quality,
-    CandidatesForSpM& manager_sps_no_quality) const {
+    CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>& manager_sps_quality,
+    CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>& manager_sps_no_quality) const {
 
   // seed confirmation
   SeedConfirmationRangeConfig seedConfRange;
@@ -195,7 +195,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
         // if we have not yet reached our max number of quality seeds we add the
         // new seed to outCont
 
-	manager_sps_quality.push(topSPIndex,  weight, zOrigin);
+	manager_sps_quality.push(topSpVec[topSPIndex],  weight, zOrigin);
         if (seedFilterState.numQualitySeeds < m_cfg.maxQualitySeedsPerSpMConf) {
           // fill high quality seed
           seedFilterState.numQualitySeeds++;
@@ -212,7 +212,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
       // if we have not yet reached our max number of seeds we add the new seed
       // to outCont
 
-      manager_sps_no_quality.push(topSPIndex,  weight, zOrigin);
+      manager_sps_no_quality.push(topSpVec[topSPIndex],  weight, zOrigin);
       if (seedFilterState.numSeeds < m_cfg.maxSeedsPerSpMConf) {
         // fill seed
         seedFilterState.numSeeds++;
@@ -226,7 +226,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
     // if we have not yet reached our max number of seeds we add the new seed to
     // outCont
 
-    manager_sps_no_quality.push(maxWeightSeedIndex,  weightMax, zOrigin);
+    manager_sps_no_quality.push(topSpVec[maxWeightSeedIndex],  weightMax, zOrigin);
 
     if (seedFilterState.numSeeds < m_cfg.maxSeedsPerSpMConf) {
       // fill seed

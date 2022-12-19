@@ -15,12 +15,12 @@
 
 namespace Acts {
 
+  template<typename external_space_point_t>
   class CandidatesForSpM {
-    using sp_type = std::size_t;
+    using sp_type = external_space_point_t*;
     using value_type = std::tuple<sp_type, sp_type, sp_type, float, float>;
-    static const sp_type default_value = std::numeric_limits<sp_type>::max();
+    static constexpr sp_type default_value = nullptr;
     
-  public:    
     enum Components : int {
       BSP=0,
       MSP,
@@ -28,7 +28,8 @@ namespace Acts {
       WEIGHT,
       ZORIGIN
     };
-
+    
+  public:
     CandidatesForSpM();
     ~CandidatesForSpM() = default;
 
@@ -65,33 +66,41 @@ namespace Acts {
     std::vector< value_type > m_storage;
   };
 
+  template<typename external_space_point_t>
   inline
-  const std::vector<typename CandidatesForSpM::value_type>&
-  CandidatesForSpM::storage() const
+  const std::vector<typename CandidatesForSpM<external_space_point_t>::value_type>&
+  CandidatesForSpM<external_space_point_t>::storage() const
   { return m_storage; }
 
-  inline void CandidatesForSpM::setMaxElements(std::size_t n)
+  template<typename external_space_point_t>
+  inline void CandidatesForSpM<external_space_point_t>::setMaxElements(std::size_t n)
   {
     if (m_storage.capacity() < n ) m_storage.reserve(n);
     m_max_size = n;
   }
-  
-  inline void CandidatesForSpM::setMediumSp(typename CandidatesForSpM::sp_type idx)
+
+  template<typename external_space_point_t>
+  inline void CandidatesForSpM<external_space_point_t>::setMediumSp(typename CandidatesForSpM<external_space_point_t>::sp_type idx)
   { m_SpM = idx; }
-  
-  inline void CandidatesForSpM::setBottomSp(typename CandidatesForSpM::sp_type idx)
+
+  template<typename external_space_point_t>
+  inline void CandidatesForSpM<external_space_point_t>::setBottomSp(typename CandidatesForSpM<external_space_point_t>::sp_type idx)
   { m_SpB = idx; }
 
-  inline float CandidatesForSpM::top() const
+  template<typename external_space_point_t>
+  inline float CandidatesForSpM<external_space_point_t>::top() const
   { return weight(0); }
-  
-  inline bool CandidatesForSpM::exists(std::size_t n) const
+
+  template<typename external_space_point_t>
+  inline bool CandidatesForSpM<external_space_point_t>::exists(std::size_t n) const
   { return n < m_n; }
 
-  inline float CandidatesForSpM::weight(std::size_t n) const
+  template<typename external_space_point_t>
+  inline float CandidatesForSpM<external_space_point_t>::weight(std::size_t n) const
   { return std::get<Components::WEIGHT>(m_storage[n]); }
 
-  inline void CandidatesForSpM::clear()
+  template<typename external_space_point_t>
+  inline void CandidatesForSpM<external_space_point_t>::clear()
   {
     // do not clear max size, this is set only once
     m_n = 0;
@@ -104,3 +113,4 @@ namespace Acts {
   
 }  // namespace Acts
 
+#include "Acts/Seeding/CandidatesForSpM.ipp"

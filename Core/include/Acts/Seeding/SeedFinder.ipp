@@ -45,7 +45,6 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 
 
 
-  std::size_t m = 0;
   for (auto spM : middleSPs) {
     float rM = spM->radius();
     float zM = spM->z();
@@ -153,8 +152,8 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 
 
     // candidates per sp medium
-    state.manager_sps_quality.setMediumSp(m);
-    state.manager_sps_no_quality.setMediumSp(m);
+    state.manager_sps_quality.setMediumSp(spM);
+    state.manager_sps_no_quality.setMediumSp(spM);
 
     // clear previous results and then loop on bottoms and tops
     state.manager_sps_quality.clear();
@@ -428,8 +427,8 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 
 
 
-      state.manager_sps_quality.setBottomSp(b);
-      state.manager_sps_no_quality.setBottomSp(b);
+      state.manager_sps_quality.setBottomSp(state.compatBottomSP[b]);
+      state.manager_sps_no_quality.setBottomSp(state.compatBottomSP[b]);
 
       m_config.seedFilter->filterSeeds_2SpFixed(
          *state.compatBottomSP[b], *spM, state.topSpVec, state.curvatures,
@@ -443,24 +442,23 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     const auto& collection_quality = state.manager_sps_quality.storage();
     const auto& collection_no_quality = state.manager_sps_no_quality.storage();
 
-    for (const auto& [bottom_idx, medium_idx, top_idx, weight, origin] : collection_quality) {
+    for (const auto& [bottom, medium, top, weight, origin] : collection_quality) {
       	state.seedsPerSpM.push_back(std::make_pair(
 		weight,
           	std::make_unique<const InternalSeed<external_spacepoint_t>>(
-              	     *state.compatBottomSP[bottom_idx], *spM, *state.topSpVec[top_idx], origin, true)));
+              	     *bottom, *medium, *top, origin, true)));
     }
 
-    for (const auto& [bottom_idx, medium_idx, top_idx, weight, origin] : collection_no_quality) {
+    for (const auto& [bottom, medium, top, weight, origin] : collection_no_quality) {
       	state.seedsPerSpM.push_back(std::make_pair(
 		weight,
           	std::make_unique<const InternalSeed<external_spacepoint_t>>(
-              	     *state.compatBottomSP[bottom_idx], *spM, *state.topSpVec[top_idx], origin, false)));
+              	     *bottom, *medium, *top, origin, false)));
     }
 
     m_config.seedFilter->filterSeeds_1SpFixed(
         state.seedsPerSpM, seedFilterState.numQualitySeeds, outIt);
 
-    ++m;
     } // loop on mediums
 }
 

@@ -256,8 +256,8 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
 
   // Managers for the candidates
   // these will handle the registry replacing/adding/removing candidates
-  CandidatesForSpM manager_sps_quality; 
-  CandidatesForSpM manager_sps_no_quality; 
+  CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> manager_sps_quality; 
+  CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> manager_sps_no_quality; 
 
   manager_sps_quality.setMaxElements(max_num_quality_seeds_per_spm);
   manager_sps_no_quality.setMaxElements(max_num_seeds_per_spm);

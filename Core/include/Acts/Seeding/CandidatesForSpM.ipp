@@ -6,18 +6,18 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "Acts/Seeding/CandidatesForSpM.hpp"
-
 namespace Acts {
 
-  CandidatesForSpM::CandidatesForSpM()
+  template<typename external_space_point_t>
+  CandidatesForSpM<external_space_point_t>::CandidatesForSpM()
     : m_max_size(0),
       m_n(0),
-      m_SpB(CandidatesForSpM::default_value),
-      m_SpM(CandidatesForSpM::default_value)
+      m_SpB(CandidatesForSpM<external_space_point_t>::default_value),
+      m_SpM(CandidatesForSpM<external_space_point_t>::default_value)
   {}
-  
-  void CandidatesForSpM::push(typename CandidatesForSpM::sp_type SpT,
+
+  template<typename external_space_point_t>
+  void CandidatesForSpM<external_space_point_t>::push(typename CandidatesForSpM<external_space_point_t>::sp_type SpT,
 			      float weight, float zOrigin)
   {
     // if there is still space, add anything
@@ -36,10 +36,11 @@ namespace Acts {
     pop();
     insertToCollection(m_SpB, m_SpM, SpT, weight, zOrigin);
   }
-  
-  void CandidatesForSpM::addToCollection(typename CandidatesForSpM::sp_type SpB,
-					 typename CandidatesForSpM::sp_type SpM,
-					 typename CandidatesForSpM::sp_type SpT,
+
+  template<typename external_space_point_t>
+  void CandidatesForSpM<external_space_point_t>::addToCollection(typename CandidatesForSpM<external_space_point_t>::sp_type SpB,
+					 typename CandidatesForSpM<external_space_point_t>::sp_type SpM,
+					 typename CandidatesForSpM<external_space_point_t>::sp_type SpT,
 					 float weight, float zOrigin)
   {
     auto toAdd = std::make_tuple(SpB, SpM, SpT, weight, zOrigin);
@@ -48,9 +49,10 @@ namespace Acts {
     bubbleup(added_index);
   }  
 
-  void CandidatesForSpM::insertToCollection(typename CandidatesForSpM::sp_type SpB,
-					    typename CandidatesForSpM::sp_type SpM,
-					    typename CandidatesForSpM::sp_type SpT,
+  template<typename external_space_point_t>
+  void CandidatesForSpM<external_space_point_t>::insertToCollection(typename CandidatesForSpM<external_space_point_t>::sp_type SpB,
+					    typename CandidatesForSpM<external_space_point_t>::sp_type SpM,
+					    typename CandidatesForSpM<external_space_point_t>::sp_type SpT,
 					    float weight, float zOrigin)
   {
     auto toAdd = std::make_tuple(SpB, SpM, SpT, weight, zOrigin);
@@ -58,8 +60,9 @@ namespace Acts {
     std::size_t added_index = m_n++;
     bubbleup(added_index);
   }
-  
-  void CandidatesForSpM::bubbledw(std::size_t n)
+
+  template<typename external_space_point_t>
+  void CandidatesForSpM<external_space_point_t>::bubbledw(std::size_t n)
   {
     // left child : 2 * n + 1
     // right child: 2 * n + 2
@@ -91,8 +94,9 @@ namespace Acts {
     }
     
   }
-  
-  void CandidatesForSpM::bubbleup(std::size_t n)
+
+  template<typename external_space_point_t>	
+  void CandidatesForSpM<external_space_point_t>::bubbleup(std::size_t n)
   {
     if (n == 0) return;
     
@@ -107,8 +111,9 @@ namespace Acts {
     std::swap(m_storage[n], m_storage[parent_idx]);
     bubbleup(parent_idx);
   }
-  
-  void CandidatesForSpM::pop()
+
+  template<typename external_space_point_t>
+  void CandidatesForSpM<external_space_point_t>::pop()
   {
     m_storage[0] = m_storage[m_n - 1];
     --m_n;
