@@ -291,14 +291,15 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
   tanLM.reserve(bottom.size());
   tanMT.reserve(top.size());
 
+  size_t numBotSP = bottom.size();
   size_t numTopSP = top.size();
 
-  for (const std::size_t b : sorted_bottoms) {
+  for (size_t b = 0; b < numBotSP; b++) {
     tanLM.push_back(std::atan2(middle.radius() - bottom[b]->radius(),
                                middle.z() - bottom[b]->z()));
   }
 
-  for (const std::size_t t : sorted_tops) {
+  for (size_t t = 0; t < numTopSP; t++) {
     tanMT.push_back(std::atan2(top[t]->radius() - middle.radius(),
                                top[t]->z() - middle.z()));
   }
