@@ -250,7 +250,7 @@ SeedFinder<external_spacepoint_t, Acts::Cuda>::createSeedsForGroup(
 
     if (i_m > 0) {
       const auto m_experimentCuts = m_config.seedFilter->getExperimentCuts();
-      std::vector< CandidatesForSpM<external_spacepoint_t>::output_type > candidates;
+      std::vector< typename CandidatesForSpM<external_spacepoint_t>::output_type > candidates;
 
       for (int i = 0; i < *nTrplPerSpM_cpu.get(i_m - 1); i++) {
         auto& triplet = *TripletsPerSpM_cpu.get(i, i_m - 1);
