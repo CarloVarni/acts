@@ -8,10 +8,10 @@
 
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <tuple>
 #include <vector>
-#include <algorithm>
 
 namespace Acts {
 
@@ -29,7 +29,7 @@ class CandidatesForSpM {
   using value_type = std::tuple<sp_type, sp_type, float, float>;
   using output_type = std::tuple<sp_type, sp_type, sp_type, float, float, bool>;
   static constexpr sp_type default_value = nullptr;
-  
+
   CandidatesForSpM();
   ~CandidatesForSpM() = default;
 
@@ -43,7 +43,7 @@ class CandidatesForSpM {
   void clear();
 
   static bool greaterSort(const output_type& i1, const output_type& i2);
-  
+
  private:
   bool exists(std::size_t, std::size_t) const;
 

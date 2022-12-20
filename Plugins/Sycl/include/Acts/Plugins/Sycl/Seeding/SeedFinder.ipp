@@ -15,9 +15,9 @@
 #include "vecmem/containers/vector.hpp"
 
 // Acts include(s).
+#include "Acts/Seeding/CandidatesForSpM.hpp"
 #include "Acts/Seeding/InternalSeed.hpp"
 #include "Acts/Seeding/InternalSpacePoint.hpp"
-#include "Acts/Seeding/CandidatesForSpM.hpp"
 
 // SYCL plugin include(s)
 #include "Acts/Plugins/Sycl/Seeding/CreateSeedsForGroupSycl.hpp"
@@ -117,7 +117,9 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
 
   // Iterate through seeds returned by the SYCL algorithm and perform the last
   // step of filtering for fixed middle SP.
-  std::vector< typename CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>::output_type > candidates;
+  std::vector<typename CandidatesForSpM<
+      InternalSpacePoint<external_spacepoint_t>>::output_type>
+      candidates;
 
   for (size_t mi = 0; mi < seeds.size(); ++mi) {
     candidates.clear();
@@ -127,10 +129,11 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
       auto& topSP = *(topSPvec[seeds[mi][j].top]);
       float weight = seeds[mi][j].weight;
 
-      candidates.emplace_back( &bottomSP, &middleSP, &topSP, weight, 0, false);
+      candidates.emplace_back(&bottomSP, &middleSP, &topSP, weight, 0, false);
     }
     std::sort(candidates.begin(), candidates.end(),
-              CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>::greaterSort);
+              CandidatesForSpM<
+                  InternalSpacePoint<external_spacepoint_t>>::greaterSort);
     int numQualitySeeds = 0;  // not used but needs to be fixed
     m_config.seedFilter->filterSeeds_1SpFixed(candidates, numQualitySeeds,
                                               std::back_inserter(outputVec));

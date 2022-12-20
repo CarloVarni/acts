@@ -231,8 +231,6 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
 
 // after creating all seeds with a common middle space point, filter again
 
-
-
 template <typename external_spacepoint_t>
 void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
     CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>&
@@ -249,14 +247,13 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
 
 template <typename external_spacepoint_t>
 void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
-      std::vector< typename CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>::output_type >& candidates,
-      int& numQualitySeeds,
-      std::back_insert_iterator<std::vector<Seed<external_spacepoint_t>>> outIt)
-      const {
-
+    std::vector<typename CandidatesForSpM<
+        InternalSpacePoint<external_spacepoint_t>>::output_type>& candidates,
+    int& numQualitySeeds,
+    std::back_insert_iterator<std::vector<Seed<external_spacepoint_t>>> outIt)
+    const {
   if (m_experimentCuts != nullptr) {
-    candidates =
-        m_experimentCuts->cutPerMiddleSP(std::move(candidates));
+    candidates = m_experimentCuts->cutPerMiddleSP(std::move(candidates));
   }
 
   unsigned int maxSeeds = candidates.size();

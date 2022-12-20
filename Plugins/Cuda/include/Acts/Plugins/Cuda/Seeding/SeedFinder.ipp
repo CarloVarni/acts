@@ -250,7 +250,9 @@ SeedFinder<external_spacepoint_t, Acts::Cuda>::createSeedsForGroup(
 
     if (i_m > 0) {
       const auto m_experimentCuts = m_config.seedFilter->getExperimentCuts();
-      std::vector< typename CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>::output_type > candidates;
+      std::vector<typename CandidatesForSpM<
+          InternalSpacePoint<external_spacepoint_t>>::output_type>
+          candidates;
 
       for (int i = 0; i < *nTrplPerSpM_cpu.get(i_m - 1); i++) {
         auto& triplet = *TripletsPerSpM_cpu.get(i, i_m - 1);
@@ -274,12 +276,14 @@ SeedFinder<external_spacepoint_t, Acts::Cuda>::createSeedsForGroup(
 
         float Zob = 0;  // It is not used in the seed filter but needs to be
                         // fixed anyway...
-			
-        candidates.emplace_back( &bottomSP, &middleSP, &middleSP, triplet.weight, Zob, false);
+
+        candidates.emplace_back(&bottomSP, &middleSP, &middleSP, triplet.weight,
+                                Zob, false);
       }
 
       std::sort(candidates.begin(), candidates.end(),
-                CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>::greaterSort);
+                CandidatesForSpM<
+                    InternalSpacePoint<external_spacepoint_t>>::greaterSort);
       int numQualitySeeds = 0;  // not used but needs to be fixed
       m_config.seedFilter->filterSeeds_1SpFixed(candidates, numQualitySeeds,
                                                 std::back_inserter(outputVec));

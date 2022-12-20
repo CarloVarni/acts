@@ -18,9 +18,9 @@
 #include "Acts/Plugins/Cuda/Utilities/MemoryManager.hpp"
 
 // Acts include(s).
+#include "Acts/Seeding/CandidatesForSpM.hpp"
 #include "Acts/Seeding/InternalSeed.hpp"
 #include "Acts/Seeding/InternalSpacePoint.hpp"
-#include "Acts/Seeding/CandidatesForSpM.hpp"
 
 // System include(s).
 #include <cstring>
@@ -189,7 +189,9 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
   auto triplet_itr = tripletCandidates.begin();
   auto triplet_end = tripletCandidates.end();
   for (; triplet_itr != triplet_end; ++triplet_itr, ++middleIndex) {
-    std::vector< typename CandidatesForSpM<CandidatesForSpM<external_spacepoint_t>>::output_type > candidates;
+    std::vector<typename CandidatesForSpM<
+        CandidatesForSpM<external_spacepoint_t>>::output_type>
+        candidates;
 
     auto& middleSP = *(middleSPVec[middleIndex]);
     for (const Details::Triplet& triplet : *triplet_itr) {
@@ -197,10 +199,12 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
       auto& bottomSP = *(bottomSPVec[triplet.bottomIndex]);
       assert(triplet.topIndex < topSPVec.size());
       auto& topSP = *(topSPVec[triplet.topIndex]);
-      candidates.emplace_back(&bottomSP, &middleSP, &topSP, triplet.weight, 0, false);
+      candidates.emplace_back(&bottomSP, &middleSP, &topSP, triplet.weight, 0,
+                              false);
     }
     std::sort(candidates.begin(), candidates.end(),
-              CandidatesForSpM<CandidatesForSpM<external_spacepoint_t>>::::greaterSort);
+              CandidatesForSpM<
+                  CandidatesForSpM<external_spacepoint_t>>:: ::greaterSort);
     int numQualitySeeds = 0;  // not used but needs to be fixed
     m_commonConfig.seedFilter->filterSeeds_1SpFixed(
         candidates, numQualitySeeds, std::back_inserter(outputVec));

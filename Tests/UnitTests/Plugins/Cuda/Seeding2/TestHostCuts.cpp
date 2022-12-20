@@ -31,15 +31,15 @@ bool TestHostCuts::singleSeedCut(
 }
 
 std::vector<
-  typename CandidatesForSpM<InternalSpacePoint<SpacePoint>>::output_type>
-    ATLASCuts<SpacePoint>::cutPerMiddleSP(
-        std::vector<
+    typename CandidatesForSpM<InternalSpacePoint<SpacePoint>>::output_type>
+ATLASCuts<SpacePoint>::cutPerMiddleSP(
+    std::vector<
         typename CandidatesForSpM<InternalSpacePoint<SpacePoint>>::output_type>
         seedCandidates) const {
   std::vector<
       typename CandidatesForSpM<InternalSpacePoint<SpacePoint>>::output_type>
       newSeedsVector;
-    if (seedCandidates.size() <= 1)
+  if (seedCandidates.size() <= 1)
     return seedCandidates;
 
   newSeedsVector.push_back(std::move(seedCandidates[0]));
