@@ -243,23 +243,11 @@ SeedFinderOrthogonal<external_spacepoint_t>::SeedFinderOrthogonal(
 }
 
 template <typename external_spacepoint_t>
-template <typename output_container_t>
 void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
     internal_sp_t &middle, std::vector<internal_sp_t *> &bottom,
     std::vector<internal_sp_t *> &top, SeedFilterState seedFilterState,
-    output_container_t &cont) const {
+    CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> &candidates_collector) const {
 
-
-// This is used for seed filtering later
-  std::size_t max_num_quality_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxQualitySeedsPerSpMConf;
-  std::size_t max_num_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxSeedsPerSpMConf;
-
-  // Managers for the candidates
-  // these will handle the registry replacing/adding/removing candidates
-  CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> candidates_collector;
-
-  candidates_collector.setMaxElements(max_num_seeds_per_spm, max_num_quality_seeds_per_spm);
-    
   float rM = middle.radius();
   float varianceRM = middle.varianceR();
   float varianceZM = middle.varianceZ();
@@ -445,13 +433,14 @@ void SeedFinderOrthogonal<external_spacepoint_t>::filterCandidates(
       }
     }
 
+    candidates_collector.setBottomSp(bottom[b]);
     if (!top_valid.empty()) {
       m_config.seedFilter->filterSeeds_2SpFixed(*bottom[b], middle, top_valid,
                                                 curvatures, impactParameters,
-                                                seedFilterState, //cont,
+                                                seedFilterState,
 						candidates_collector);
     }
-  }
+  } // loop on bottoms
 }
 
 template <typename external_spacepoint_t>
@@ -473,6 +462,16 @@ void SeedFinderOrthogonal<external_spacepoint_t>::processFromMiddleSP(
    * decreasing z track.
    */
   std::vector<internal_sp_t *> bottom_lh_v, bottom_hl_v, top_lh_v, top_hl_v;
+
+  /*
+   * Storage for seed candidates
+   */
+  std::size_t max_num_quality_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxQualitySeedsPerSpMConf;
+  std::size_t max_num_seeds_per_spm = m_config.seedFilter->getSeedFilterConfig().maxSeedsPerSpMConf;
+
+  CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>> candidates_collector;
+  candidates_collector.setMaxElements(max_num_seeds_per_spm, max_num_quality_seeds_per_spm);
+  candidates_collector.setMediumSp(&middle);
 
   /*
    * Calculate the search ranges for bottom and top candidates for this middle
@@ -591,13 +590,6 @@ void SeedFinderOrthogonal<external_spacepoint_t>::processFromMiddleSP(
         });
   }
 
-  /*
-   * Create a vector to contain protoseeds.
-   */
-  std::vector<std::pair<
-      float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>
-      protoseeds;
-
   // TODO: add seed confirmation
   SeedFilterState seedFilterState;
 
@@ -606,7 +598,7 @@ void SeedFinderOrthogonal<external_spacepoint_t>::processFromMiddleSP(
    */
   if (!bottom_lh_v.empty() && !top_lh_v.empty()) {
     filterCandidates(middle, bottom_lh_v, top_lh_v, seedFilterState,
-                     protoseeds);
+                     candidates_collector);
   }
 
   /*
@@ -614,17 +606,15 @@ void SeedFinderOrthogonal<external_spacepoint_t>::processFromMiddleSP(
    */
   if (!bottom_hl_v.empty() && !top_hl_v.empty()) {
     filterCandidates(middle, bottom_hl_v, top_hl_v, seedFilterState,
-                     protoseeds);
+                     candidates_collector);
   }
 
   /*
    * Run a seed filter, just like in other seeding algorithms.
    */
-   /*
-  m_config.seedFilter->filterSeeds_1SpFixed(protoseeds,
+  m_config.seedFilter->filterSeeds_1SpFixed(candidates_collector,
                                             seedFilterState.numQualitySeeds,
                                             std::back_inserter(out_cont));
-					    */
 }
 
 template <typename external_spacepoint_t>
