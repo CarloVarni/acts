@@ -199,6 +199,8 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
       auto& topSP = *(topSPVec[triplet.topIndex]);
       candidates.emplace_back(&bottomSP, &middleSP, &topSP, triplet.weight, 0, false);
     }
+    std::sort(candidates.begin(), candidates.end(),
+              CandidatesForSpM<external_spacepoint_t>::::greaterSort);
     int numQualitySeeds = 0;  // not used but needs to be fixed
     m_commonConfig.seedFilter->filterSeeds_1SpFixed(
         candidates, numQualitySeeds, std::back_inserter(outputVec));
