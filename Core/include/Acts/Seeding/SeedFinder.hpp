@@ -15,6 +15,7 @@
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SeedFinderUtils.hpp"
 #include "Acts/Seeding/CandidatesForSpM.hpp"
+#include "Acts/Seeding/SeedFilter.hpp"
 
 #include <array>
 #include <list>
@@ -114,6 +115,11 @@ class SeedFinder {
 			   const sp_range_element_t* otherSP,
 			   const sp_range_element_t* mediumSP,
 			   bool isBottom) const;
+
+  void filterCandidates(InternalSpacePoint<external_spacepoint_t>& SpM,
+			const Acts::SeedFinderOptions& options,
+			SeedFilterState& seedFilterState,
+			SeedingState& state) const;
   
  private:
   Acts::SeedFinderConfig<external_spacepoint_t> m_config;
