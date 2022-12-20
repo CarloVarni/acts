@@ -117,7 +117,7 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
 
   // Iterate through seeds returned by the SYCL algorithm and perform the last
   // step of filtering for fixed middle SP.
-  std::vector< typename CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>::output_type >& candidates;
+  std::vector< typename CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>::output_type > candidates;
 
   auto sorting_function = [] (const auto& i1, const auto& i2) -> bool
   {
@@ -158,7 +158,7 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
       auto& topSP = *(topSPvec[seeds[mi][j].top]);
       float weight = seeds[mi][j].weight;
 
-      candidates.emplace_back( bottomSP, middleSP, topSP, weight, 0);
+      candidates.emplace_back( &bottomSP, &middleSP, topSP&, weight, 0);
     }
     std::sort(candidates.begin(), candidates.end(), sorting_function);
     int numQualitySeeds = 0;  // not used but needs to be fixed
