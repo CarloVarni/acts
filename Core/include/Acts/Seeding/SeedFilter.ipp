@@ -240,11 +240,6 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
   // this collection is alredy sorted
   auto extended_collection = candidates_collector.extendedStorage(); 
 
-  for (const auto& [bottom, medium, top, weight, zOrigin, isQuality] : extended_collection)
-  {
-	std::cout << "DEBUG: " << weight << " " << zOrigin << " " << isQuality << std::endl;
-  }
-
   /*
   if (m_experimentCuts != nullptr) {
     seedsPerSpM = m_experimentCuts->cutPerMiddleSP(std::move(seedsPerSpM));

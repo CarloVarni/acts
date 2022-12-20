@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#include <iostream>
+
 namespace Acts {
 
   template<typename external_space_point_t>
@@ -175,24 +175,17 @@ namespace Acts {
     std::sort(output.begin(), output.end(),
             [] (const auto& i1, const auto& i2) -> bool
         {
-            const float weight_l1 = std::get<3>(i1);
-            const float weight_l2 = std::get<3>(i2);
+	    const auto& [bottom_l1, medium_l1, top_l1, weight_l1, zOrigin_l1, isQuality_l1] = i1;
+	    const auto& [bottom_l2, medium_l2, top_l2, weight_l2, zOrigin_l2, isQuality_l2] = i2;
 
 	    if (weight_l1 != weight_l2)
-	       return weight_l1 > weight_l1;
+	       return weight_l1 > weight_l2;
 
 	    // This is for the case when the weights from different seeds
 	    // are same. This makes cpu & cuda results same
 
-	    const auto& bottom_l1 = std::get<0>(i1);
-	    const auto& top_l1 = std::get<2>(i1);
-
-	    const auto& bottom_l2 = std::get<0>(i2);
-	    const auto& top_l2 = std::get<2>(i2);
-
 	    // medium is the same for all candidates
-	    const auto& medium = std::get<1>(i1);
-	    float sum_medium = medium->y() * medium->y() + medium->z() * medium->z();
+	    float sum_medium = medium_l1->y() * medium_l1->y() + medium_l1->z() * medium_l1->z();
 
 	    float seed1_sum = sum_medium;
 	    float seed2_sum = sum_medium;
