@@ -30,14 +30,14 @@ bool TestHostCuts::singleSeedCut(
   return !(b.radius() > 150. && weight < 380.);
 }
 
-std::vector<
-  typename Acts::CandidatesForSpM<Acts::InternalSpacePoint<TestSpacePoint>>::output_type>
+std::vector<typename Acts::CandidatesForSpM<
+    Acts::InternalSpacePoint<TestSpacePoint>>::output_type>
 TestHostCuts::cutPerMiddleSP(
-    std::vector<
-    typename Acts::CandidatesForSpM<Acts::InternalSpacePoint<TestSpacePoint>>::output_type>
+    std::vector<typename Acts::CandidatesForSpM<
+        Acts::InternalSpacePoint<TestSpacePoint>>::output_type>
         seedCandidates) const {
-  std::vector<
-    typename Acts::CandidatesForSpM<Acts::InternalSpacePoint<TestSpacePoint>>::output_type>
+  std::vector<typename Acts::CandidatesForSpM<
+      Acts::InternalSpacePoint<TestSpacePoint>>::output_type>
       newSeedsVector;
   if (seedCandidates.size() <= 1)
     return seedCandidates;
