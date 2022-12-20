@@ -172,6 +172,7 @@ namespace Acts {
     }
 
     // sort output according to weight and sps
+    // should we collect inputs according to this criterion instead?
     std::sort(output.begin(), output.end(),
             [] (const auto& i1, const auto& i2) -> bool
         {

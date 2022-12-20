@@ -17,19 +17,30 @@ namespace Acts {
   template<typename external_space_point_t>
   class CandidatesForSpM {
 
+    // Internal collection, we store only the components that are different and useful
+    enum InternalComponents : int {
+      I_BSP=0,
+      I_TSP,
+      I_WEIGHT,
+      I_ZORIGIN
+    };
+
+  public:
+    // more complete collection of variables, used by external seeding code
+    enum Components : int {
+      BSP=0,
+      MSP,
+      TSP,
+      WEIGHT,
+      ZORIGIN,
+      QUALITY
+    };
+
     using sp_type = external_space_point_t*;
     using value_type = std::tuple<sp_type, sp_type, float, float>;
     using output_type = std::tuple<sp_type, sp_type, sp_type, float, float, bool>;
     static constexpr sp_type default_value = nullptr;
     
-    enum Components : int {
-      BSP=0,
-      TSP,
-      WEIGHT,
-      ZORIGIN
-    };
-
-  public:
     CandidatesForSpM();
     ~CandidatesForSpM() = default;
 
@@ -124,7 +135,7 @@ namespace Acts {
 
   template<typename external_space_point_t>
   inline float CandidatesForSpM<external_space_point_t>::weight(const std::vector<value_type>& storage, std::size_t n) const
-  { return std::get<Components::WEIGHT>(storage[n]); }
+  { return std::get<InternalComponents::I_WEIGHT>(storage[n]); }
 
   template<typename external_space_point_t>
   inline void CandidatesForSpM<external_space_point_t>::clear()

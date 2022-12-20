@@ -238,13 +238,12 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
     
   // retrieve all candidates
   // this collection is alredy sorted
+  // higher weights first
   auto extended_collection = candidates_collector.extendedStorage(); 
 
-  /*
   if (m_experimentCuts != nullptr) {
-    seedsPerSpM = m_experimentCuts->cutPerMiddleSP(std::move(seedsPerSpM));
+    extended_collection = m_experimentCuts->cutPerMiddleSP(std::move(extended_collection));
   }
-  */
   
   unsigned int maxSeeds = extended_collection.size();
 
