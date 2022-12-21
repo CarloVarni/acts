@@ -76,6 +76,13 @@ class SeedFilter {
       std::back_insert_iterator<std::vector<Seed<external_spacepoint_t>>> outIt)
       const;
 
+  virtual void filterSeeds_1SpFixed(
+      std::vector<typename CandidatesForSpM<
+          InternalSpacePoint<external_spacepoint_t>>::output_type>& candidates,
+      int& numQualitySeeds,
+      std::back_insert_iterator<std::vector<Seed<external_spacepoint_t>>> outIt)
+      const;
+
   const SeedFilterConfig getSeedFilterConfig() const { return m_cfg; }
   const IExperimentCuts<external_spacepoint_t>* getExperimentCuts() const {
     return m_experimentCuts;
