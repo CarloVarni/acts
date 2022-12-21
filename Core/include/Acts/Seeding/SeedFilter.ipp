@@ -242,7 +242,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
   // this collection is alredy sorted
   // higher weights first
   auto extended_collection = candidates_collector.storage();
-  return filterSeeds_1SpFixed(extended_collection, numQualitySeeds, outIt);
+  filterSeeds_1SpFixed(extended_collection, numQualitySeeds, outIt);
 }
 
 template <typename external_spacepoint_t>

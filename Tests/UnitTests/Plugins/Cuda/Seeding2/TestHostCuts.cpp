@@ -47,7 +47,7 @@ TestHostCuts::cutPerMiddleSP(
   // don't cut first element
   for (std::size_t i(1); i < itLength; i++) {
     float weight = std::get<Acts::CandidatesForSpM<
-        Acts::InternalSpacePoit<TestSpacePoint>>::Components::WEIGHT>(
+        Acts::InternalSpacePoint<TestSpacePoint>>::Components::WEIGHT>(
         seedCandidates[i]);
     const auto& bottom = std::get<Acts::CandidatesForSpM<
         Acts::InternalSpacePoint<TestSpacePoint>>::Components::BSP>(
