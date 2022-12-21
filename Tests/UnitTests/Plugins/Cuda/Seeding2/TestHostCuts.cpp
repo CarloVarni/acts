@@ -58,4 +58,3 @@ TestHostCuts::cutPerMiddleSP(
   }
   return newSeedsVector;
 }
-}
