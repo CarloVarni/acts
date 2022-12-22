@@ -10,8 +10,10 @@
 
 #include "Acts/Definitions/Units.hpp"
 #include "Acts/Geometry/Extent.hpp"
+#include "Acts/Seeding/CandidatesForSpM.hpp"
 #include "Acts/Seeding/InternalSeed.hpp"
 #include "Acts/Seeding/InternalSpacePoint.hpp"
+#include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SeedFinderUtils.hpp"
 
@@ -50,9 +52,9 @@ class SeedFinder {
     std::vector<float> etaVec;
     std::vector<float> ptVec;
 
-    std::vector<std::pair<
-        float, std::unique_ptr<const InternalSeed<external_spacepoint_t>>>>
-        seedsPerSpM;
+    // managing seed candidates for SpM
+    CandidatesForSpM<InternalSpacePoint<external_spacepoint_t>>
+        candidates_collector;
   };
 
   /// The only constructor. Requires a config object.
@@ -107,6 +109,18 @@ class SeedFinder {
   std::vector<Seed<external_spacepoint_t>> createSeedsForGroup(
       const Acts::SeedFinderOptions& options, sp_range_t bottomSPs,
       sp_range_t middleSPs, sp_range_t topSPs) const;
+
+ private:
+  template <typename sp_range_element_t>
+  bool isCompatibleDoublet(const Acts::SeedFinderOptions& options,
+                           const sp_range_element_t* otherSP,
+                           const sp_range_element_t* mediumSP,
+                           bool isBottom) const;
+
+  void filterCandidates(InternalSpacePoint<external_spacepoint_t>& SpM,
+                        const Acts::SeedFinderOptions& options,
+                        SeedFilterState& seedFilterState,
+                        SeedingState& state) const;
 
  private:
   Acts::SeedFinderConfig<external_spacepoint_t> m_config;
