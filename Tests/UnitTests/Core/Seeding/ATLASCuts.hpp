@@ -36,8 +36,8 @@ class ATLASCuts : public IExperimentCuts<SpacePoint> {
   /// @param seedCandidates contains collection of seed candidates created for one middle
   /// space point in a std::tuple format
   /// @return vector of seeds that pass the cut
-  std::vector<
-      typename CandidatesForMiddleSp<InternalSpacePoint<SpacePoint>>::value_type>
+  std::vector<typename CandidatesForMiddleSp<
+      InternalSpacePoint<SpacePoint>>::value_type>
   cutPerMiddleSP(std::vector<typename CandidatesForMiddleSp<
                      InternalSpacePoint<SpacePoint>>::value_type>
                      seedCandidates) const override;
@@ -70,11 +70,11 @@ template <typename SpacePoint>
 std::vector<
     typename CandidatesForMiddleSp<InternalSpacePoint<SpacePoint>>::value_type>
 ATLASCuts<SpacePoint>::cutPerMiddleSP(
-    std::vector<
-        typename CandidatesForMiddleSp<InternalSpacePoint<SpacePoint>>::value_type>
+    std::vector<typename CandidatesForMiddleSp<
+        InternalSpacePoint<SpacePoint>>::value_type>
         seedCandidates) const {
-  std::vector<
-      typename CandidatesForMiddleSp<InternalSpacePoint<SpacePoint>>::value_type>
+  std::vector<typename CandidatesForMiddleSp<
+      InternalSpacePoint<SpacePoint>>::value_type>
       newSeedsVector;
   if (seedCandidates.size() <= 1) {
     return seedCandidates;
@@ -84,8 +84,9 @@ ATLASCuts<SpacePoint>::cutPerMiddleSP(
   std::size_t itLength = std::min(seedCandidates.size(), std::size_t(5));
   // don't cut first element
   for (std::size_t i(1); i < itLength; i++) {
-    float weight = std::get<CandidatesForMiddleSp<SpacePoint>::Components::WEIGHT>(
-        seedCandidates[i]);
+    float weight =
+        std::get<CandidatesForMiddleSp<SpacePoint>::Components::WEIGHT>(
+            seedCandidates[i]);
     const auto& bottom =
         std::get<CandidatesForMiddleSp<SpacePoint>::Components::BSP>(
             seedCandidates[i]);

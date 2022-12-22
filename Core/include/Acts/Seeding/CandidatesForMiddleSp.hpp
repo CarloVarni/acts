@@ -18,7 +18,8 @@ namespace Acts {
 template <typename external_space_point_t>
 class CandidatesForMiddleSp {
  public:
-  // variables contained in the collection of variables, used by external seeding code
+  // variables contained in the collection of variables, used by external
+  // seeding code
   enum Components : int { BSP = 0, MSP, TSP, WEIGHT, ZORIGIN, QUALITY };
 
   using sp_type = external_space_point_t*;
@@ -81,7 +82,7 @@ class CandidatesForMiddleSp {
 
 template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
-  std::size_t n_low, std::size_t n_high) {
+    std::size_t n_low, std::size_t n_high) {
   // protection against default numbers
   if (m_storage_high.capacity() < n_high and
       n_high != std::numeric_limits<int>::max()) {

@@ -149,7 +149,7 @@ void CandidatesForMiddleSp<external_space_point_t>::pop(
 }
 
 template <typename external_space_point_t>
-std::vector< typename CandidatesForMiddleSp<external_space_point_t>::value_type >
+std::vector<typename CandidatesForMiddleSp<external_space_point_t>::value_type>
 CandidatesForMiddleSp<external_space_point_t>::storage() const {
   // this will retrieve the entire storage, first high and then low quality
   // the resulting vector is not sorted!
@@ -157,12 +157,14 @@ CandidatesForMiddleSp<external_space_point_t>::storage() const {
   output.reserve(m_n_high + m_n_low);
 
   for (std::size_t idx(0); idx < m_n_high; idx++) {
-    const auto& [bottom, middle, top, weight, zOrigin, isQuality] = m_storage_high[idx];
+    const auto& [bottom, middle, top, weight, zOrigin, isQuality] =
+        m_storage_high[idx];
     output.emplace_back(bottom, middle, top, weight, zOrigin, isQuality);
   }
 
   for (std::size_t idx(0); idx < m_n_low; idx++) {
-    const auto& [bottom, middle, top, weight, zOrigin, isQuality] = m_storage_low[idx];
+    const auto& [bottom, middle, top, weight, zOrigin, isQuality] =
+        m_storage_low[idx];
     output.emplace_back(bottom, middle, top, weight, zOrigin, isQuality);
   }
 
@@ -175,8 +177,7 @@ CandidatesForMiddleSp<external_space_point_t>::storage() const {
 
 template <typename external_space_point_t>
 bool CandidatesForMiddleSp<external_space_point_t>::greaterSort(
-    const value_type& i1,
-    const value_type& i2) {
+    const value_type& i1, const value_type& i2) {
   const auto& [bottom_l1, medium_l1, top_l1, weight_l1, zOrigin_l1,
                isQuality_l1] = i1;
   const auto& [bottom_l2, medium_l2, top_l2, weight_l2, zOrigin_l2,
