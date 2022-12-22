@@ -81,11 +81,14 @@ class CandidatesForMiddleSp {
 
 template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
-    std::size_t n_low, std::size_t n_high) {
-  if (m_storage_high.capacity() < n_high) {
+  std::size_t n_low, std::size_t n_high) {
+  // protection against default numbers
+  if (m_storage_high.capacity() < n_high and
+      n_high != std::numeric_limits<int>::max()) {
     m_storage_high.reserve(n_high);
   }
-  if (m_storage_low.capacity() < n_low) {
+  if (m_storage_low.capacity() < n_low and
+      n_low != std::numeric_limits<int>::max()) {
     m_storage_low.reserve(n_low);
   }
   m_max_size_high = n_high;
