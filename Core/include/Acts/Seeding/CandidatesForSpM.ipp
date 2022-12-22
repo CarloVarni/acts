@@ -50,6 +50,12 @@ void CandidatesForSpM<external_space_point_t>::addToCollection(
     typename CandidatesForSpM<external_space_point_t>::sp_type& SpB,
     typename CandidatesForSpM<external_space_point_t>::sp_type& SpT,
     float weight, float zOrigin, bool isQuality) {
+
+  if (SpB == nullptr or SpT == nullptr or m_SpM == nullptr) {
+    std::cout << "NULLPTR" << std::endl;
+    return;
+  }
+
   // adds elements to the end of the collection
   // function called when space in storage is not full
   auto toAdd = std::make_tuple(SpB, SpT, weight, zOrigin);
@@ -65,6 +71,10 @@ void CandidatesForSpM<external_space_point_t>::insertToCollection(
     typename CandidatesForSpM<external_space_point_t>::sp_type& SpB,
     typename CandidatesForSpM<external_space_point_t>::sp_type& SpT,
     float weight, float zOrigin, bool isQuality) {
+      if (SpB == nullptr or SpT == nullptr or m_SpM == nullptr) {
+    std::cout << "NULLPTR" << std::endl;
+    return;
+  }
   // inserts elements to the end of the collection
   // function called when space in storage is full
   // before this a pop is called

@@ -31,7 +31,10 @@ class CandidatesForSpM {
   static constexpr sp_type default_value = nullptr;
 
   CandidatesForSpM();
-  ~CandidatesForSpM() = default;
+  ~CandidatesForSpM() {
+    m_SpB = default_value;
+    m_SpM = default_value;
+  }
 
   void setMaxElements(std::size_t n_low, std::size_t n_high);
   void setMediumSp(sp_type idx);
