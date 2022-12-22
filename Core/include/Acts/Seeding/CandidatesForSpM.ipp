@@ -52,7 +52,7 @@ void CandidatesForSpM<external_space_point_t>::addToCollection(
     float weight, float zOrigin, bool isQuality) {
 
   if (SpB == nullptr or SpT == nullptr or m_SpM == nullptr) {
-    std::cout << "NULLPTR" << std::endl;
+//    std::cout << "NULLPTR" << std::endl;
     return;
   }
 
@@ -72,7 +72,7 @@ void CandidatesForSpM<external_space_point_t>::insertToCollection(
     typename CandidatesForSpM<external_space_point_t>::sp_type& SpT,
     float weight, float zOrigin, bool isQuality) {
       if (SpB == nullptr or SpT == nullptr or m_SpM == nullptr) {
-    std::cout << "NULLPTR" << std::endl;
+//    std::cout << "NULLPTR" << std::endl;
     return;
   }
   // inserts elements to the end of the collection
