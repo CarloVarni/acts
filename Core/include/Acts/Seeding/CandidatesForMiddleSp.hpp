@@ -40,6 +40,10 @@ class CandidatesForMiddleSp {
   static bool greaterSort(const value_type& i1, const value_type& i2);
 
  private:
+  void push(std::vector<value_type>& storage, std::size_t& n, const std::size_t& n_max,
+	    sp_type& SpB, sp_type& SpM, sp_type& SpT, 
+	    float weight, float zOrigin, bool isQuality);
+
   bool exists(std::size_t n, std::size_t max_size) const;
 
   void pop(std::vector<value_type>& storage, std::size_t& current_size);
@@ -50,12 +54,10 @@ class CandidatesForMiddleSp {
   void bubbledw(std::vector<value_type>& storage, std::size_t n,
                 std::size_t actual_size);
 
-  void addToCollection(std::vector<value_type>& storage, sp_type& SpB,
-                       sp_type& SpT, float weight, float zOrigin,
-                       bool isQuality);
-  void insertToCollection(std::vector<value_type>& storage, sp_type& SpB,
-                          sp_type& SpT, float weight, float zOrigin,
-                          bool isQuality);
+  void addToCollection(std::vector<value_type>& storage, std::size_t& n,
+		       value_type&& element);
+  void insertToCollection(std::vector<value_type>& storage, std::size_t& n,
+			  value_type&& element);
 
  private:
   // sizes

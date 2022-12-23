@@ -19,18 +19,29 @@ template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::push(
     typename CandidatesForMiddleSp<external_space_point_t>::sp_type& SpT,
     float weight, float zOrigin, bool isQuality) {
-  auto& storage = isQuality ? m_storage_high : m_storage_low;
-  const std::size_t& current_max_size =
-      isQuality ? m_max_size_high : m_max_size_low;
-  std::size_t& current_size = isQuality ? m_n_high : m_n_low;
 
-  // if there is still space, add anything
-  if (current_size < current_max_size) {
-    addToCollection(storage, m_SpB, SpT, weight, zOrigin, isQuality);
+  if (isQuality) {
+    return push(m_storage_high, m_n_high, m_max_size_high,
+    	        m_SpB, m_SpM, SpT, weight, zOrigin, isQuality);
+  }
+  return push(m_storage_low, m_n_low, m_max_size_low,
+              m_SpB, m_SpM, SpT, weight, zOrigin, isQuality);
+}
+
+template <typename external_space_point_t>
+void CandidatesForMiddleSp<external_space_point_t>::push(
+    std::vector<value_type>& storage, std::size_t& n, const std::size_t& n_max,
+    sp_type& SpB, sp_type& SpM, sp_type& SpT,
+    float weight, float zOrigin, bool isQuality) {
+
+  if (n_max == 0) {
     return;
   }
 
-  if (current_max_size == 0) {
+  // if there is still space, add anything
+  if (n < n_max) {
+    addToCollection(storage, n, 
+    		    std::make_tuple(SpB, SpM, SpT, weight, zOrigin, isQuality) );
     return;
   }
 
@@ -42,39 +53,30 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
   }
 
   // remove element with lower weight and add this one
-  pop(storage, current_size);
-  insertToCollection(storage, m_SpB, SpT, weight, zOrigin, isQuality);
+  pop(storage, n);
+  insertToCollection(storage, n, 
+  		     std::make_tuple(SpB, SpM, SpT, weight, zOrigin, isQuality) );
 }
 
 template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::addToCollection(
-    std::vector<value_type>& storage,
-    typename CandidatesForMiddleSp<external_space_point_t>::sp_type& SpB,
-    typename CandidatesForMiddleSp<external_space_point_t>::sp_type& SpT,
-    float weight, float zOrigin, bool isQuality) {
+    std::vector<value_type>& storage, std::size_t& n,
+    value_type&& element) {
   // adds elements to the end of the collection
   // function called when space in storage is not full
-  auto toAdd = std::make_tuple(SpB, m_SpM, SpT, weight, zOrigin, isQuality);
-  storage.push_back(toAdd);
-  std::size_t& added_index = isQuality ? m_n_high : m_n_low;
-  bubbleup(storage, added_index);
-  ++added_index;
+  storage.push_back( std::move(element) );
+  bubbleup(storage, n++);
 }
 
 template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::insertToCollection(
-    std::vector<value_type>& storage,
-    typename CandidatesForMiddleSp<external_space_point_t>::sp_type& SpB,
-    typename CandidatesForMiddleSp<external_space_point_t>::sp_type& SpT,
-    float weight, float zOrigin, bool isQuality) {
+    std::vector<value_type>& storage, std::size_t& n,
+    value_type&& element) {
   // inserts elements to the end of the collection
   // function called when space in storage is full
   // before this a pop is called
-  auto toAdd = std::make_tuple(SpB, m_SpM, SpT, weight, zOrigin, isQuality);
-  std::size_t& added_index = isQuality ? m_n_high : m_n_low;
-  storage[added_index] = toAdd;
-  bubbleup(storage, added_index);
-  ++added_index;
+  storage[n] = std::move(element);
+  bubbleup(storage, n++);
 }
 
 template <typename external_space_point_t>
