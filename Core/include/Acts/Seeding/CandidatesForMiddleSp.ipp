@@ -40,7 +40,7 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
 
   // if there is still space, add anything
   if (n < n_max) {
-    addToCollection(storage, n, 
+    addToCollection(storage, n, n_max,
     		    std::make_tuple(SpB, SpM, SpT, weight, zOrigin, isQuality) );
     return;
   }
@@ -54,92 +54,83 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
 
   // remove element with lower weight and add this one
   pop(storage, n);
-  insertToCollection(storage, n, 
-  		     std::make_tuple(SpB, SpM, SpT, weight, zOrigin, isQuality) );
+  addToCollection(storage, n, n_max,
+  		  std::make_tuple(SpB, SpM, SpT, weight, zOrigin, isQuality) );
 }
 
 template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::addToCollection(
-    std::vector<value_type>& storage, std::size_t& n,
+    std::vector<value_type>& storage, std::size_t& n, const std::size_t& n_max,
     value_type&& element) {
   // adds elements to the end of the collection
   // function called when space in storage is not full
-  storage.push_back( std::move(element) );
-  bubbleup(storage, n++);
-}
-
-template <typename external_space_point_t>
-void CandidatesForMiddleSp<external_space_point_t>::insertToCollection(
-    std::vector<value_type>& storage, std::size_t& n,
-    value_type&& element) {
-  // inserts elements to the end of the collection
-  // function called when space in storage is full
-  // before this a pop is called
-  storage[n] = std::move(element);
+  if (storage.size() == n_max) {
+    storage[n] = std::move(element);
+  } else { 
+    storage.push_back( std::move(element) ); 
+  }
   bubbleup(storage, n++);
 }
 
 template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::bubbledw(
     std::vector<value_type>& storage, std::size_t n, std::size_t actual_size) {
-  // left child : 2 * n + 1
-  // right child: 2 * n + 2
-  float current = weight(storage, n);
-  std::size_t left_child = 2 * n + 1;
-  std::size_t right_child = 2 * n + 2;
 
-  // no left child, we stop
-  if (not exists(left_child, actual_size)) {
-    return;
-  }
+   while (n < actual_size) {
+     // left child : 2 * n + 1
+     // right child: 2 * n + 2
+     float current = weight(storage, n);
+     std::size_t left_child = 2 * n + 1;
+     std::size_t right_child = 2 * n + 2;
 
-  float weight_left_child = weight(storage, left_child);
+     // no left child, we do nothing
+     if (not exists(left_child, actual_size)) {
+        break;
+     }
 
-  // no right child, left wins
-  if (not exists(right_child, actual_size)) {
-    if (weight_left_child < current) {
-      std::swap(storage[n], storage[left_child]);
-      return bubbledw(storage, left_child, actual_size);
-    }
-  }
+     float weight_left_child = weight(storage, left_child);
 
-  float weight_right_child = weight(storage, right_child);
+     std::size_t selected_child = left_child;	
+     float selected_weight = weight_left_child;
 
-  // both childs
-  // left is smaller
-  if (weight_left_child < weight_right_child) {
-    if (weight_left_child < current) {
-      std::swap(storage[n], storage[left_child]);
-      return bubbledw(storage, left_child, actual_size);
-    }
-  }
-  // right is smaller
-  if (weight_right_child < current) {
-    std::swap(storage[n], storage[right_child]);
-    return bubbledw(storage, right_child, actual_size);
-  }
+     if (exists(right_child, actual_size)) {
+     	float weight_right_child = weight(storage, right_child);
+	if (weight_right_child <= weight_left_child) {
+	 selected_child = right_child;
+	 selected_weight = weight_right_child;
+	}
+     }
+
+     if (selected_weight >= current) {
+       break;
+     }
+
+     std::swap(storage[n], storage[selected_child]);	
+     n = selected_child;
+   } // while loop
+
 }
 
 template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::bubbleup(
     std::vector<value_type>& storage, std::size_t n) {
-  if (n == 0) {
-    return;
+
+  while( n != 0) {
+    // parent: (n - 1) / 2;
+    // this works because it is an integer operation
+    std::size_t parent_idx = (n - 1) / 2;
+
+    float weight_current = weight(storage, n);
+    float weight_parent = weight(storage, parent_idx);
+
+    if (weight_parent <= weight_current) {
+      break;
+    }
+
+    std::swap(storage[n], storage[parent_idx]);
+    n = parent_idx;
   }
 
-  // parent: (n - 1) / 2;
-  // this works because it is an integer operation
-  std::size_t parent_idx = (n - 1) / 2;
-
-  float weight_current = weight(storage, n);
-  float weight_parent = weight(storage, parent_idx);
-
-  if (weight_parent <= weight_current) {
-    return;
-  }
-
-  std::swap(storage[n], storage[parent_idx]);
-  bubbleup(storage, parent_idx);
 }
 
 template <typename external_space_point_t>

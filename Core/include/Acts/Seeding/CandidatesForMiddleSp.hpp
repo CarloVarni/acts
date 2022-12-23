@@ -30,8 +30,8 @@ class CandidatesForMiddleSp {
   ~CandidatesForMiddleSp() = default;
 
   void setMaxElements(std::size_t n_low, std::size_t n_high);
-  void setMiddleSp(sp_type idx);
-  void setBottomSp(sp_type idx);
+  void setMiddleSp(const sp_type& idx);
+  void setBottomSp(const sp_type& idx);
   std::vector<value_type> storage() const;
 
   void push(sp_type& SpT, float weight, float zOrigin, bool isQuality);
@@ -54,10 +54,9 @@ class CandidatesForMiddleSp {
   void bubbledw(std::vector<value_type>& storage, std::size_t n,
                 std::size_t actual_size);
 
-  void addToCollection(std::vector<value_type>& storage, std::size_t& n,
+  void addToCollection(std::vector<value_type>& storage, std::size_t& n, 
+		       const std::size_t& n_max,
 		       value_type&& element);
-  void insertToCollection(std::vector<value_type>& storage, std::size_t& n,
-			  value_type&& element);
 
  private:
   // sizes
@@ -100,13 +99,13 @@ inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
 
 template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::setMiddleSp(
-    typename CandidatesForMiddleSp<external_space_point_t>::sp_type idx) {
+    const typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
   m_SpM = idx;
 }
 
 template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::setBottomSp(
-    typename CandidatesForMiddleSp<external_space_point_t>::sp_type idx) {
+    const typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
   m_SpB = idx;
 }
 

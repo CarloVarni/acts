@@ -139,8 +139,8 @@ std::vector<std::size_t> transformCoordinates(
   }
   // sort the SP in order of cotTheta
   std::sort(indexes.begin(), indexes.end(),
-            [&linCircleVec](const std::size_t& a, std::size_t& b) -> bool {
-              return (linCircleVec[a].cotTheta < linCircleVec[b].cotTheta);
+            [&linCircleVec](const std::size_t& a, const std::size_t& b) -> bool {
+              return linCircleVec[a].cotTheta < linCircleVec[b].cotTheta;
             });
   return indexes;
 }
