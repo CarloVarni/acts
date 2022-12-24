@@ -92,7 +92,7 @@ ActsExamples::ProcessCode ActsExamples::SeedingOrthogonalAlgorithm::execute(
   SimSeedContainer seeds = finder.createSeeds(spacePoints);
   auto stop = high_resolution_clock::now();
   auto delta = duration_cast<nanoseconds>(stop - start);
-  std::cout << "time=" << delta.count() << " nsp=" << spacePointPtrs.size() << " nseed=" << seeds.size() << std::endl;
+  std::cout << "time=" << delta.count() << " nsp=" << spacePoints.size() << " nseed=" << seeds.size() << std::endl;
 
   // extract proto tracks, i.e. groups of measurement indices, from tracks seeds
   size_t nSeeds = seeds.size();
