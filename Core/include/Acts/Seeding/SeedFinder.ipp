@@ -150,7 +150,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
   const float& yM = mediumSP.y();
   const float& zM = mediumSP.z();
 
-  for (const auto& otherSP : otherSPs) {
+  for (auto otherSP : otherSPs) {
   const float rO = otherSP->radius();
   float deltaR = sign * (rO - rM);
 
