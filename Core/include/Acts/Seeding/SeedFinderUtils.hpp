@@ -78,7 +78,7 @@ std::vector<std::size_t> transformCoordinates(
 /// @param[out] outputCoordinates The output vector to write to.
 /// @returns Boolean that says if spacepoint is compatible with being inside the detector element.
 template <typename external_spacepoint_t, typename sp_range_t>
-bool xyzCoordinateCheck(Acts::SeedFinderConfig<external_spacepoint_t> config,
+bool xyzCoordinateCheck(const Acts::SeedFinderConfig<external_spacepoint_t>& config,
                         sp_range_t sp, const double* spacepointPosition,
                         double* outputCoordinates);
 

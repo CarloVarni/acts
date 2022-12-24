@@ -146,7 +146,7 @@ std::vector<std::size_t> transformCoordinates(
 }
 
 template <typename external_spacepoint_t, typename sp_range_t>
-bool xyzCoordinateCheck(Acts::SeedFinderConfig<external_spacepoint_t> m_config,
+bool xyzCoordinateCheck(const Acts::SeedFinderConfig<external_spacepoint_t>& m_config,
                         sp_range_t sp, const double* spacepointPosition,
                         double* outputCoordinates) {
   // check the compatibility of SPs coordinates in xyz assuming the

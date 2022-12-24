@@ -88,7 +88,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
       }
     }
 
-    getCompatibleDoublet(options, topSPs, *spM, state.compatTopSP, 
+    getCompatibleDoublets(options, topSPs, *spM, state.compatTopSP, 
     			 m_config.deltaRMinTopSP, m_config.deltaRMaxTopSP, false);
 
     // no top SP found -> try next spM
@@ -115,7 +115,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
       }
     }
 
-    getCompatibleDoublet(options, bottomSPs, *spM, state.compatBottomSP, 
+    getCompatibleDoublets(options, bottomSPs, *spM, state.compatBottomSP, 
     			 m_config.deltaRMinBottomSP, m_config.deltaRMaxBottomSP, true);
 
     // no bottom SP found -> try next spM
@@ -134,7 +134,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 
 template <typename external_spacepoint_t, typename platform_t>
 template <typename sp_range_t, typename out_range_t>
-void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublet(
+void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
     const Acts::SeedFinderOptions& options,
     sp_range_t& otherSPs,
     const InternalSpacePoint<external_spacepoint_t>& mediumSP,
@@ -145,10 +145,10 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublet(
 
   outVec.clear();
 
-  const float rM = mediumSP.radius();
-  const float xM = mediumSP.x();
-  const float yM = mediumSP.y();
-  const float zM = mediumSP.z();
+  const float& rM = mediumSP.radius();
+  const float& xM = mediumSP.x();
+  const float& yM = mediumSP.y();
+  const float& zM = mediumSP.z();
   const float ratio_xM_rM = xM / rM;
   const float ratio_yM_rM = yM / rM;
 
@@ -252,9 +252,10 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
   auto sorted_tops =
       transformCoordinates(state.compatTopSP, spM, false, state.linCircleTop);
 
-  state.topSpVec.clear();
-  state.curvatures.clear();
-  state.impactParameters.clear();
+  // Reserve enough space, in case current capacity is too little
+  state.topSpVec.reserve(numTopSP);
+  state.curvatures.reserve(numTopSP);
+  state.impactParameters.reserve(numTopSP);
 
   size_t t0 = 0;
 
