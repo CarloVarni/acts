@@ -118,7 +118,7 @@ std::cout << "======" << std::endl;
 
     getCompatibleDoublets(options, *spM, bottomSPs, state.compatBottomSP,
       m_config.deltaRMinBottomSP, m_config.deltaRMaxBottomSP, true);
-      std::cout << "n compat bottom: " << state.compatTopSP.size() << std::endl;
+      std::cout << "n compat bottom: " << state.compatBottomSP.size() << std::endl;
     // no bottom SP found -> try next spM
     if (state.compatBottomSP.empty()) {
       continue;
