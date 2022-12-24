@@ -35,7 +35,7 @@ class CandidatesForMiddleSp {
   };
 
   static constexpr sp_type default_value = nullptr;
-  using value_type = candidate; //std::tuple<sp_type, sp_type, sp_type, float, float, bool>;
+  using value_type = candidate;
 
   CandidatesForMiddleSp();
   ~CandidatesForMiddleSp() = default;
@@ -55,7 +55,7 @@ class CandidatesForMiddleSp {
 	    sp_type& SpB, sp_type& SpM, sp_type& SpT, 
 	    float weight, float zOrigin, bool isQuality);
 
-  bool exists(std::size_t n, std::size_t max_size) const;
+  bool exists(const std::size_t& n, const std::size_t& max_size) const;
 
   void pop(std::vector<value_type>& storage, std::size_t& current_size);
   float top(const std::vector<value_type>& storage) const;
@@ -91,64 +91,6 @@ class CandidatesForMiddleSp {
   // storage for candidates with low quality
   std::vector<value_type> m_storage_low;
 };
-
-template <typename external_space_point_t>
-inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
-    std::size_t n_low, std::size_t n_high) {
-  m_max_size_high = n_high;
-  m_max_size_low = n_low;
-
-  // protection against default numbers
-  // it may cause std::bad_alloc if we don't protect
-  if (n_high == std::numeric_limits<std::size_t>::max() or 
-      n_low == std::numeric_limits<std::size_t>::max()) {
-    return;
-  }
-
-  m_storage_high.reserve(n_high);
-  m_storage_low.reserve(n_low);
-}
-
-template <typename external_space_point_t>
-inline void CandidatesForMiddleSp<external_space_point_t>::setMiddleSp(
-    const typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
-  m_SpM = idx;
-}
-
-template <typename external_space_point_t>
-inline void CandidatesForMiddleSp<external_space_point_t>::setBottomSp(
-    const typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
-  m_SpB = idx;
-}
-
-template <typename external_space_point_t>
-inline float CandidatesForMiddleSp<external_space_point_t>::top(
-    const std::vector<value_type>& storage) const {
-  return weight(storage, 0);
-}
-
-template <typename external_space_point_t>
-inline bool CandidatesForMiddleSp<external_space_point_t>::exists(
-    std::size_t n, std::size_t max_size) const {
-  return n < max_size;
-}
-
-template <typename external_space_point_t>
-inline float CandidatesForMiddleSp<external_space_point_t>::weight(
-    const std::vector<value_type>& storage, std::size_t n) const {
-  return storage[n].weight;
-}
-
-template <typename external_space_point_t>
-inline void CandidatesForMiddleSp<external_space_point_t>::clear() {
-  // do not clear max size, this is set only once
-  m_n_high = 0;
-  m_n_low = 0;
-  // clean fixed space points
-  m_SpB = default_value;
-  m_SpM = default_value;
-  // no need to clean storage
-}
 
 }  // namespace Acts
 

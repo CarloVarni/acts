@@ -16,6 +16,73 @@ CandidatesForMiddleSp<external_space_point_t>::CandidatesForMiddleSp()
       m_SpM(CandidatesForMiddleSp<external_space_point_t>::default_value) {}
 
 template <typename external_space_point_t>
+inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
+    std::size_t n_low, std::size_t n_high) {
+  m_max_size_high = n_high;
+  m_max_size_low = n_low;
+
+  // protection against default numbers
+  // it may cause std::bad_alloc if we don't protect
+  if (n_high == std::numeric_limits<std::size_t>::max() or
+      n_low == std::numeric_limits<std::size_t>::max()) {
+    return;
+  }
+
+  m_storage_high.reserve(n_high);
+  m_storage_low.reserve(n_low);
+}
+
+template <typename external_space_point_t>
+inline void CandidatesForMiddleSp<external_space_point_t>::setMiddleSp(
+    const typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
+  m_SpM = idx;
+}
+
+template <typename external_space_point_t>
+inline void CandidatesForMiddleSp<external_space_point_t>::setBottomSp(
+    const typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
+  m_SpB = idx;
+}
+
+template <typename external_space_point_t>
+inline float CandidatesForMiddleSp<external_space_point_t>::top(
+    const std::vector<value_type>& storage) const {
+  return weight(storage, 0);
+}
+
+template <typename external_space_point_t>
+inline void CandidatesForMiddleSp<external_space_point_t>::pop(
+    std::vector<value_type>& storage, std::size_t& current_size) {
+  storage[0] = storage[current_size - 1];
+  bubbledw(storage, 0, --current_size);
+}
+
+template <typename external_space_point_t>
+inline bool CandidatesForMiddleSp<external_space_point_t>::exists(
+    const std::size_t& n, const std::size_t& max_size) const {
+  return n < max_size;
+}
+
+template <typename external_space_point_t>
+inline float CandidatesForMiddleSp<external_space_point_t>::weight(
+    const std::vector<value_type>& storage, std::size_t n) const {
+  return storage[n].weight;
+}
+
+template <typename external_space_point_t>
+inline void CandidatesForMiddleSp<external_space_point_t>::clear() {
+  // do not clear max size, this is set only once
+  m_n_high = 0;
+  m_n_low = 0;
+  // clean fixed space points
+  m_SpB = default_value;
+  m_SpM = default_value;
+  // no need to clean storage
+}
+
+
+
+template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::push(
     typename CandidatesForMiddleSp<external_space_point_t>::sp_type& SpT,
     float weight, float zOrigin, bool isQuality) {
@@ -134,14 +201,6 @@ void CandidatesForMiddleSp<external_space_point_t>::bubbleup(
 }
 
 template <typename external_space_point_t>
-void CandidatesForMiddleSp<external_space_point_t>::pop(
-    std::vector<value_type>& storage, std::size_t& current_size) {
-  storage[0] = storage[current_size - 1];
-  --current_size;
-  bubbledw(storage, 0, current_size);
-}
-
-template <typename external_space_point_t>
 std::vector<typename CandidatesForMiddleSp<external_space_point_t>::value_type>
 CandidatesForMiddleSp<external_space_point_t>::storage() {
   // this will retrieve the entire storage, first high and then low quality
@@ -149,11 +208,11 @@ CandidatesForMiddleSp<external_space_point_t>::storage() {
   std::vector<value_type> output;
   output.reserve(m_n_high + m_n_low);
 
-  for (std::size_t idx(0); idx < m_n_high; idx++) {
+  for (std::size_t idx(0); idx < m_n_high; ++idx) {
     output.push_back( std::move(m_storage_high[idx]) );
   }
 
-  for (std::size_t idx(0); idx < m_n_low; idx++) {
+  for (std::size_t idx(0); idx < m_n_low; ++idx) {
     output.push_back( std::move(m_storage_low[idx]) );
   }
 
