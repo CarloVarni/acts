@@ -88,10 +88,9 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
       }
     }
 
-    getCompatibleDoublets(options, *spM, topSPs, state.compatTopSP,
-      m_config.deltaRMinTopSP, m_config.deltaRMaxTopSP, false);
-std::cout << "======" << std::endl;
-      std::cout << "n compat top: " << state.compatTopSP.size() << std::endl;
+    getCompatibleDoublet(options, topSPs, *spM, state.compatTopSP, 
+    			 m_config.deltaRMinTopSP, m_config.deltaRMaxTopSP, false);
+
     // no top SP found -> try next spM
     if (state.compatTopSP.empty()) {
       continue;
@@ -116,9 +115,9 @@ std::cout << "======" << std::endl;
       }
     }
 
-    getCompatibleDoublets(options, *spM, bottomSPs, state.compatBottomSP,
-      m_config.deltaRMinBottomSP, m_config.deltaRMaxBottomSP, true);
-      std::cout << "n compat bottom: " << state.compatBottomSP.size() << std::endl;
+    getCompatibleDoublet(options, bottomSPs, *spM, state.compatBottomSP, 
+    			 m_config.deltaRMinBottomSP, m_config.deltaRMaxBottomSP, true);
+
     // no bottom SP found -> try next spM
     if (state.compatBottomSP.empty()) {
       continue;
@@ -134,17 +133,22 @@ std::cout << "======" << std::endl;
 }
 
 template <typename external_spacepoint_t, typename platform_t>
-template <typename sp_range_t>
-void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
-    const Acts::SeedFinderOptions& options, 
-    const InternalSpacePoint<external_spacepoint_t>& mediumSP, 
+template <typename sp_range_t, typename out_range_t>
+void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublet(
+    const Acts::SeedFinderOptions& options,
     sp_range_t& otherSPs,
-    std::vector<InternalSpacePoint<external_spacepoint_t>*>& outvec,
-    const float& deltaRMinSP,
-    const float& deltaRMaxSP, bool isBottom) const {
-
-  outvec.clear();
+    const InternalSpacePoint<external_spacepoint_t>& mediumSP,
+    out_range_t& outVec,
+    const float deltaRMinSP, const float deltaRMaxSP,
+    bool isBottom) const {
   const int sign = isBottom ? -1 : 1;
+/*
+  const float deltaRMinSP =
+      isBottom ? m_config.deltaRMinBottomSP : m_config.deltaRMinTopSP;
+  const float deltaRMaxSP =
+      isBottom ? m_config.deltaRMaxBottomSP : m_config.deltaRMaxTopSP;
+*/
+  outVec.clear();
 
   const float rM = mediumSP.radius();
   const float xM = mediumSP.x();
@@ -183,28 +187,21 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
   if (deltaZ > m_config.deltaZMax or deltaZ < -m_config.deltaZMax) {
     continue;
   }
-
-  // cut on the max curvature between top SP and interaction point
-  // first transform the space point coordinates into a frame such that the
-  // central space point SPm is in the origin of the frame and the x axis
-  // points away from the interaction point in addition to a translation
-  // transformation we also perform a rotation in order to keep the
-  // curvature of the circle tangent to the x axis
   if (not m_config.interactionPointCut) {
-    outvec.push_back(otherSP);
-    continue;
+  outVec.push_back(otherSP);
+continue;
   }
 
   const float xVal = (otherSP->x() - xM) * (xM / rM) +
                      (otherSP->y() - yM) * (yM / rM);
-  const float yVal = (otherSP->y() - yM) * (xM / rM) +
+  const float yVal = (otherSP->y() - yM) * (xM / rM) -
                      (otherSP->x() - xM) * (yM / rM);
 
   if (std::abs(rM * yVal) <= sign * m_config.impactMax * xVal) {
-    outvec.push_back(otherSP);
-    continue;
+    outVec.push_back(otherSP);
+continue;
   }
-     
+
   // conformal transformation u=x/(x²+y²) v=y/(x²+y²) transform the
   // circle into straight lines in the u/v plane the line equation can
   // be described in terms of aCoef and bCoef, where v = aCoef * u +
@@ -212,7 +209,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
   const float uT = xVal / (xVal * xVal + yVal * yVal);
   const float vT = yVal / (xVal * xVal + yVal * yVal);
   // in the rotated frame the interaction point is positioned at x = -rM
-  // and y ~= impactParam  	
+  // and y ~= impactParam
   const float uIP = -1. / rM;
   float vIP = m_config.impactMax / (rM * rM);
   if (sign * yVal > 0.) {
@@ -229,9 +226,8 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
   if ((bCoef * bCoef) > (1 + aCoef * aCoef) / options.minHelixDiameter2) {
     continue;
   }
-
-  outvec.push_back(otherSP);
-  } // loop on other
+  outVec.push_back(otherSP);
+  }
 }
 
 template <typename external_spacepoint_t, typename platform_t>
