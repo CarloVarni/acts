@@ -142,12 +142,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublet(
     const float deltaRMinSP, const float deltaRMaxSP,
     bool isBottom) const {
   const int sign = isBottom ? -1 : 1;
-/*
-  const float deltaRMinSP =
-      isBottom ? m_config.deltaRMinBottomSP : m_config.deltaRMinTopSP;
-  const float deltaRMaxSP =
-      isBottom ? m_config.deltaRMaxBottomSP : m_config.deltaRMaxTopSP;
-*/
+
   outVec.clear();
 
   const float rM = mediumSP.radius();
