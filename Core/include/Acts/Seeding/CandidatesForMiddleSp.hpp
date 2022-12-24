@@ -23,8 +23,22 @@ class CandidatesForMiddleSp {
   enum Components : int { BSP = 0, MSP, TSP, WEIGHT, ZORIGIN, QUALITY };
 
   using sp_type = external_space_point_t*;
-  using value_type = std::tuple<sp_type, sp_type, sp_type, float, float, bool>;
   static constexpr sp_type default_value = nullptr;
+
+  struct candidate {
+    //    candidate() = default;
+    candidate(sp_type b, sp_type m, sp_type t,
+              float w, float z, bool q) : bottom(b), middle(m), top(t),
+					  weight(w), zOrigin(z), isQ(q) {};
+    sp_type bottom;
+    sp_type middle;
+    sp_type top;
+    float weight;
+    float zOrigin;
+    bool isQ;
+  };
+
+  using value_type = candidate; //std::tuple<sp_type, sp_type, sp_type, float, float, bool>;
 
   CandidatesForMiddleSp();
   ~CandidatesForMiddleSp() = default;
@@ -124,7 +138,7 @@ inline bool CandidatesForMiddleSp<external_space_point_t>::exists(
 template <typename external_space_point_t>
 inline float CandidatesForMiddleSp<external_space_point_t>::weight(
     const std::vector<value_type>& storage, std::size_t n) const {
-  return std::get<Components::WEIGHT>(storage[n]);
+  return storage[n].weight;
 }
 
 template <typename external_space_point_t>

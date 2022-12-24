@@ -41,7 +41,7 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
   // if there is still space, add anything
   if (n < n_max) {
     addToCollection(storage, n, n_max,
-    		    std::make_tuple(SpB, SpM, SpT, weight, zOrigin, isQuality) );
+    		    candidate(SpB, SpM, SpT, weight, zOrigin, isQuality) );
     return;
   }
 
@@ -55,7 +55,7 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
   // remove element with lower weight and add this one
   pop(storage, n);
   addToCollection(storage, n, n_max,
-  		  std::make_tuple(SpB, SpM, SpT, weight, zOrigin, isQuality) );
+  		  candidate(SpB, SpM, SpT, weight, zOrigin, isQuality) );
 }
 
 template <typename external_space_point_t>
@@ -171,17 +171,19 @@ CandidatesForMiddleSp<external_space_point_t>::storage() const {
 template <typename external_space_point_t>
 bool CandidatesForMiddleSp<external_space_point_t>::greaterSort(
     const value_type& i1, const value_type& i2) {
-  const auto& [bottom_l1, medium_l1, top_l1, weight_l1, zOrigin_l1,
-               isQuality_l1] = i1;
-  const auto& [bottom_l2, medium_l2, top_l2, weight_l2, zOrigin_l2,
-               isQuality_l2] = i2;
-
-  if (weight_l1 != weight_l2) {
-    return weight_l1 > weight_l2;
+  if (i1.weight != i2.weight) {
+    return i1.weight > i2.weight;
   }
 
   // This is for the case when the weights from different seeds
   // are same. This makes cpu & cuda results same
+
+  const auto& bottom_l1 = i1.bottom;
+  const auto& medium_l1 = i1.middle;
+  const auto& top_l1 = i1.top;
+
+  const auto& bottom_l2 = i2.bottom;
+  const auto& top_l2 = i2.top;
 
   // medium is the same for all candidates
   float sum_medium =
