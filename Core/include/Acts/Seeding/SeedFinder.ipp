@@ -90,7 +90,8 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 
     getCompatibleDoublets(options, *spM, topSPs, state.compatTopSP,
       m_config.deltaRMinTopSP, m_config.deltaRMaxTopSP, false);
-
+std::cout << "======" << std::endl;
+      std::cout << "n compat top: " << state.compatTopSP.size() << std::endl;
     // no top SP found -> try next spM
     if (state.compatTopSP.empty()) {
       continue;
@@ -117,7 +118,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 
     getCompatibleDoublets(options, *spM, bottomSPs, state.compatBottomSP,
       m_config.deltaRMinBottomSP, m_config.deltaRMaxBottomSP, true);
-
+      std::cout << "n compat bottom: " << state.compatTopSP.size() << std::endl;
     // no bottom SP found -> try next spM
     if (state.compatBottomSP.empty()) {
       continue;
@@ -145,10 +146,10 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
   outvec.clear();
   const int sign = isBottom ? -1 : 1;
 
-  const float& rM = mediumSP.radius();
-  const float& xM = mediumSP.x();
-  const float& yM = mediumSP.y();
-  const float& zM = mediumSP.z();
+  const float rM = mediumSP.radius();
+  const float xM = mediumSP.x();
+  const float yM = mediumSP.y();
+  const float zM = mediumSP.z();
 
   for (auto otherSP : otherSPs) {
   const float rO = otherSP->radius();
