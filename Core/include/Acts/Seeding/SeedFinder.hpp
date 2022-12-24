@@ -111,12 +111,11 @@ class SeedFinder {
       sp_range_t middleSPs, sp_range_t topSPs) const;
 
  private:
-  template <typename sp_range_t, typename sp_range_element_t,
-	    typename out_range_t>
+  template <typename sp_range_t>
   void getCompatibleDoublets(const Acts::SeedFinderOptions& options,
-			     const sp_range_element_t& mediumSP,
+			     const InternalSpacePoint<external_spacepoint_t>& mediumSP,
 			     sp_range_t& otherSP,
-			     out_range_t& outvec,
+			     std::vector<InternalSpacePoint<external_spacepoint_t>*>& outvec,
 			     const float& deltaRMinSP, 
 			     const float& deltaRMaxSP,
 			     bool isBottom) const;
