@@ -149,6 +149,8 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublet(
   const float xM = mediumSP.x();
   const float yM = mediumSP.y();
   const float zM = mediumSP.z();
+  const float ratio_xM_rM = xM / rM;
+  const float ratio_yM_rM = yM / rM;
 
   for (auto otherSP : otherSPs) {
   const float rO = otherSP->radius();
@@ -166,6 +168,10 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublet(
 
   const float zO = otherSP->z();
   float deltaZ = sign * (zO - zM);
+  if (deltaZ > m_config.deltaZMax or deltaZ < -m_config.deltaZMax) {
+    continue;
+  }
+
   // ratio Z/R (forward angle) of space point duplet
   float cotTheta = deltaZ / deltaR;
   if (cotTheta > m_config.cotThetaMax or cotTheta < -m_config.cotThetaMax) {
@@ -179,18 +185,15 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublet(
     continue;
   }
 
-  if (deltaZ > m_config.deltaZMax or deltaZ < -m_config.deltaZMax) {
-    continue;
-  }
   if (not m_config.interactionPointCut) {
   outVec.push_back(otherSP);
-continue;
+  continue;
   }
 
-  const float xVal = (otherSP->x() - xM) * (xM / rM) +
-                     (otherSP->y() - yM) * (yM / rM);
-  const float yVal = (otherSP->y() - yM) * (xM / rM) -
-                     (otherSP->x() - xM) * (yM / rM);
+  const float xVal = (otherSP->x() - xM) * ratio_xM_rM +
+                     (otherSP->y() - yM) * ratio_yM_rM;
+  const float yVal = (otherSP->y() - yM) * ratio_xM_rM -
+                     (otherSP->x() - xM) * ratio_yM_rM;
 
   if (std::abs(rM * yVal) <= sign * m_config.impactMax * xVal) {
     outVec.push_back(otherSP);
@@ -218,7 +221,7 @@ continue;
   // the distance of the straight line from the origin (radius of the
   // circle) is related to aCoef and bCoef by d^2 = bCoef^2 / (1 +
   // aCoef^2) = 1 / (radius^2) and we can apply the cut on the curvature
-  if ((bCoef * bCoef) > (1 + aCoef * aCoef) / options.minHelixDiameter2) {
+  if ((bCoef * bCoef) * options.minHelixDiameter2 > (1 + aCoef * aCoef)) {
     continue;
   }
   outVec.push_back(otherSP);
@@ -237,6 +240,13 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
   state.linCircleBottom.clear();
   state.linCircleTop.clear();
 
+  std::size_t numTopSP = state.compatTopSP.size();
+  std::size_t numBottomSP = state.compatBottomSP.size();
+
+  // Reserve enough space, in case current capacity is too little
+  state.linCircleBottom.reserve(numBottomSP);
+  state.linCircleTop.reserve(numTopSP);
+
   auto sorted_bottoms = transformCoordinates(state.compatBottomSP, spM, true,
                                              state.linCircleBottom);
   auto sorted_tops =
@@ -245,8 +255,6 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
   state.topSpVec.clear();
   state.curvatures.clear();
   state.impactParameters.clear();
-
-  size_t numTopSP = state.compatTopSP.size();
 
   size_t t0 = 0;
 

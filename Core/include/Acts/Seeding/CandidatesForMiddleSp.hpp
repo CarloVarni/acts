@@ -18,26 +18,23 @@ namespace Acts {
 template <typename external_space_point_t>
 class CandidatesForMiddleSp {
  public:
-  // variables contained in the collection of variables, used by external
-  // seeding code
-  enum Components : int { BSP = 0, MSP, TSP, WEIGHT, ZORIGIN, QUALITY };
-
   using sp_type = external_space_point_t*;
-  static constexpr sp_type default_value = nullptr;
 
   struct candidate {
-    //    candidate() = default;
     candidate(sp_type b, sp_type m, sp_type t,
-              float w, float z, bool q) : bottom(b), middle(m), top(t),
-					  weight(w), zOrigin(z), isQ(q) {};
+              float w, float z, bool q) 
+      : bottom(b), middle(m), top(t),
+	weight(w), zOrigin(z), isQuality(q) {};
+
     sp_type bottom;
     sp_type middle;
     sp_type top;
     float weight;
     float zOrigin;
-    bool isQ;
+    bool isQuality;
   };
 
+  static constexpr sp_type default_value = nullptr;
   using value_type = candidate; //std::tuple<sp_type, sp_type, sp_type, float, float, bool>;
 
   CandidatesForMiddleSp();
@@ -46,7 +43,7 @@ class CandidatesForMiddleSp {
   void setMaxElements(std::size_t n_low, std::size_t n_high);
   void setMiddleSp(const sp_type& idx);
   void setBottomSp(const sp_type& idx);
-  std::vector<value_type> storage() const;
+  std::vector<value_type> storage();
 
   void push(sp_type& SpT, float weight, float zOrigin, bool isQuality);
   void clear();
@@ -98,17 +95,18 @@ class CandidatesForMiddleSp {
 template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
     std::size_t n_low, std::size_t n_high) {
-  // protection against default numbers
-  if (m_storage_high.capacity() < n_high and
-      n_high != std::numeric_limits<int>::max()) {
-    m_storage_high.reserve(n_high);
-  }
-  if (m_storage_low.capacity() < n_low and
-      n_low != std::numeric_limits<int>::max()) {
-    m_storage_low.reserve(n_low);
-  }
   m_max_size_high = n_high;
   m_max_size_low = n_low;
+
+  // protection against default numbers
+  // it may cause std::bad_alloc if we don't protect
+  if (n_high == std::numeric_limits<std::size_t>::max() or 
+      n_low == std::numeric_limits<std::size_t>::max()) {
+    return;
+  }
+
+  m_storage_high.reserve(n_high);
+  m_storage_low.reserve(n_low);
 }
 
 template <typename external_space_point_t>
@@ -149,9 +147,7 @@ inline void CandidatesForMiddleSp<external_space_point_t>::clear() {
   // clean fixed space points
   m_SpB = default_value;
   m_SpM = default_value;
-  // clean storage
-  m_storage_high.clear();
-  m_storage_low.clear();
+  // no need to clean storage
 }
 
 }  // namespace Acts

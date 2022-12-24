@@ -143,28 +143,26 @@ void CandidatesForMiddleSp<external_space_point_t>::pop(
 
 template <typename external_space_point_t>
 std::vector<typename CandidatesForMiddleSp<external_space_point_t>::value_type>
-CandidatesForMiddleSp<external_space_point_t>::storage() const {
+CandidatesForMiddleSp<external_space_point_t>::storage() {
   // this will retrieve the entire storage, first high and then low quality
   // the resulting vector is not sorted!
   std::vector<value_type> output;
   output.reserve(m_n_high + m_n_low);
 
   for (std::size_t idx(0); idx < m_n_high; idx++) {
-    const auto& [bottom, middle, top, weight, zOrigin, isQuality] =
-        m_storage_high[idx];
-    output.emplace_back(bottom, middle, top, weight, zOrigin, isQuality);
+    output.push_back( std::move(m_storage_high[idx]) );
   }
 
   for (std::size_t idx(0); idx < m_n_low; idx++) {
-    const auto& [bottom, middle, top, weight, zOrigin, isQuality] =
-        m_storage_low[idx];
-    output.emplace_back(bottom, middle, top, weight, zOrigin, isQuality);
+    output.push_back( std::move(m_storage_low[idx]) );
   }
 
   // sort output according to weight and sps
   // should we collect inputs according to this criterion instead?
   std::sort(output.begin(), output.end(),
             CandidatesForMiddleSp<external_space_point_t>::greaterSort);
+
+  clear();
   return output;
 }
 

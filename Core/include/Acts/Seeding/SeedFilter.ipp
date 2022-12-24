@@ -235,7 +235,7 @@ template <typename external_spacepoint_t>
 void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
     CandidatesForMiddleSp<InternalSpacePoint<external_spacepoint_t>>&
         candidates_collector,
-    int& numQualitySeeds,
+    std::size_t& numQualitySeeds,
     std::back_insert_iterator<std::vector<Seed<external_spacepoint_t>>> outIt)
     const {
   // retrieve all candidates
@@ -249,7 +249,7 @@ template <typename external_spacepoint_t>
 void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
     std::vector<typename CandidatesForMiddleSp<
         InternalSpacePoint<external_spacepoint_t>>::value_type>& candidates,
-    int& numQualitySeeds,
+    std::size_t& numQualitySeeds,
     std::back_insert_iterator<std::vector<Seed<external_spacepoint_t>>> outIt)
     const {
   if (m_experimentCuts != nullptr) {
