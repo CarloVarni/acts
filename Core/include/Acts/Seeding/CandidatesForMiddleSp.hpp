@@ -52,7 +52,7 @@ class CandidatesForMiddleSp {
   /// @brief constructor
   CandidatesForMiddleSp();
   /// @brief Destructor
-  ~CandidatesForMiddleSp();
+  ~CandidatesForMiddleSp() = default;
 
   /// @brief Setting maximum number of candidates to keep
   /// @param n_low Maximum number of candidates in the low-quality collection

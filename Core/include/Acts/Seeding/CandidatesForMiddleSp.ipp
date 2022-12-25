@@ -12,14 +12,6 @@ template <typename external_space_point_t>
 CandidatesForMiddleSp<external_space_point_t>::CandidatesForMiddleSp() {}
 
 template <typename external_space_point_t>
-CandidatesForMiddleSp<external_space_point_t>::~CandidatesForMiddleSp() {
-  // We do not take ownership, so we can simply clean the collection
-  // without deleting anything
-  m_storage_high.clear();
-  m_storage_low.clear();
-}
-
-template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
     std::size_t n_low, std::size_t n_high) {
   m_max_size_high = n_high;
@@ -72,6 +64,10 @@ inline void CandidatesForMiddleSp<external_space_point_t>::clear() {
   // reset to 0 the number of stored elements
   m_n_high = 0;
   m_n_low = 0;
+  // We do not take ownership, so we can simply clean the collection
+  // without deleting anything
+  m_storage_high.clear();
+  m_storage_low.clear();
 }
 
 template <typename external_space_point_t>
