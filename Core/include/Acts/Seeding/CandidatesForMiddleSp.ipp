@@ -225,7 +225,7 @@ bool CandidatesForMiddleSp<external_space_point_t>::greaterSort(
   const auto& top_l1 = i1.top;
 
   const auto& bottom_l2 = i2.bottom;
-  const auto& middle_l1 = i2.middle;
+  const auto& middle_l2 = i2.middle;
   const auto& top_l2 = i2.top;
 
   float seed1_sum = 0.;
