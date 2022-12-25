@@ -158,7 +158,7 @@ void CandidatesForMiddleSp<external_space_point_t>::bubbledw(
       }
     }
 
-    // If weight of the childs is higher then parents we stop
+    // If weight of the childs is higher we stop
     if (selected_weight >= current) {
       break;
     }
@@ -221,25 +221,26 @@ bool CandidatesForMiddleSp<external_space_point_t>::greaterSort(
   // are same. This makes cpu & cuda results same
 
   const auto& bottom_l1 = i1.bottom;
-  const auto& medium_l1 = i1.middle;
+  const auto& middle_l1 = i1.middle;
   const auto& top_l1 = i1.top;
 
   const auto& bottom_l2 = i2.bottom;
+  const auto& middle_l1 = i2.middle;
   const auto& top_l2 = i2.top;
 
-  // medium is the same for all candidates
-  float sum_medium =
-      medium_l1->y() * medium_l1->y() + medium_l1->z() * medium_l1->z();
-
-  float seed1_sum = sum_medium;
-  float seed2_sum = sum_medium;
+  float seed1_sum = 0.;
+  float seed2_sum = 0.;
 
   seed1_sum +=
       bottom_l1->y() * bottom_l1->y() + bottom_l1->z() * bottom_l1->z();
+  seed1_sum += 
+      middle_l1->y() * middle_l1->y() + middle_l1->z() * middle_l1->z();
   seed1_sum += top_l1->y() * top_l1->y() + top_l1->z() * top_l1->z();
 
   seed2_sum +=
       bottom_l2->y() * bottom_l2->y() + bottom_l2->z() * bottom_l2->z();
+  seed2_sum += 
+      middle_l2->y() * middle_l2->y() + middle_l2->z() * middle_l2->z();
   seed2_sum += top_l2->y() * top_l2->y() + top_l2->z() * top_l2->z();
 
   return seed1_sum > seed2_sum;
