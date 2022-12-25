@@ -233,13 +233,13 @@ bool CandidatesForMiddleSp<external_space_point_t>::greaterSort(
 
   seed1_sum +=
       bottom_l1->y() * bottom_l1->y() + bottom_l1->z() * bottom_l1->z();
-  seed1_sum += 
+  seed1_sum +=
       middle_l1->y() * middle_l1->y() + middle_l1->z() * middle_l1->z();
   seed1_sum += top_l1->y() * top_l1->y() + top_l1->z() * top_l1->z();
 
   seed2_sum +=
       bottom_l2->y() * bottom_l2->y() + bottom_l2->z() * bottom_l2->z();
-  seed2_sum += 
+  seed2_sum +=
       middle_l2->y() * middle_l2->y() + middle_l2->z() * middle_l2->z();
   seed2_sum += top_l2->y() * top_l2->y() + top_l2->z() * top_l2->z();
 
