@@ -129,7 +129,7 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
       auto& topSP = *(topSPvec[seeds[mi][j].top]);
       float weight = seeds[mi][j].weight;
 
-      candidates.emplace_back(&bottomSP, &middleSP, &topSP, weight, 0, false);
+      candidates.emplace_back(bottomSP, middleSP, topSP, weight, 0, false);
     }
     std::sort(candidates.begin(), candidates.end(),
               CandidatesForMiddleSp<

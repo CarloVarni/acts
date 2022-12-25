@@ -199,7 +199,7 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
       auto& bottomSP = *(bottomSPVec[triplet.bottomIndex]);
       assert(triplet.topIndex < topSPVec.size());
       auto& topSP = *(topSPVec[triplet.topIndex]);
-      candidates.emplace_back(&bottomSP, &middleSP, &topSP, triplet.weight, 0,
+      candidates.emplace_back(bottomSP, middleSP, topSP, triplet.weight, 0,
                               false);
     }
     std::sort(candidates.begin(), candidates.end(),
