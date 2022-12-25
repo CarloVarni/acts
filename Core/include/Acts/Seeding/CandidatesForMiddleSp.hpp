@@ -18,31 +18,30 @@ namespace Acts {
 template <typename external_space_point_t>
 class CandidatesForMiddleSp {
  public:
-  using sp_type = external_space_point_t*;
+  using sp_type = external_space_point_t;
 
   struct candidate {
-    candidate(sp_type b, sp_type m, sp_type t,
+    candidate(sp_type& b, sp_type& m, sp_type& t,
               float w, float z, bool q) 
-      : bottom(b), middle(m), top(t),
+      : bottom(&b), middle(&m), top(&t),
 	weight(w), zOrigin(z), isQuality(q) {};
 
-    sp_type bottom;
-    sp_type middle;
-    sp_type top;
+    sp_type* bottom;
+    sp_type* middle;
+    sp_type* top;
     float weight;
     float zOrigin;
     bool isQuality;
   };
 
-  static constexpr sp_type default_value = nullptr;
   using value_type = candidate;
 
   CandidatesForMiddleSp();
   ~CandidatesForMiddleSp() = default;
 
   void setMaxElements(std::size_t n_low, std::size_t n_high);
-  void setMiddleSp(const sp_type& idx);
-  void setBottomSp(const sp_type& idx);
+  void setMiddleSp(sp_type& idx);
+  void setBottomSp(sp_type& idx);
   std::vector<value_type> storage();
 
   void push(sp_type& SpT, float weight, float zOrigin, bool isQuality);
@@ -77,8 +76,8 @@ class CandidatesForMiddleSp {
   std::size_t m_n_low{0};
 
   // space points
-  sp_type m_SpB;
-  sp_type m_SpM;
+  sp_type *m_SpB = nullptr;
+  sp_type *m_SpM = nullptr;
 
   // storage
   // These vectors are sorted as a min heap tree
@@ -87,9 +86,9 @@ class CandidatesForMiddleSp {
   // Sorting criteria is the seed quality
 
   // storage for candidates with high quality
-  std::vector<value_type> m_storage_high;
+  std::vector<value_type> m_storage_high {};
   // storage for candidates with low quality
-  std::vector<value_type> m_storage_low;
+  std::vector<value_type> m_storage_low {};
 };
 
 }  // namespace Acts

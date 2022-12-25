@@ -11,9 +11,7 @@
 namespace Acts {
 
 template <typename external_space_point_t>
-CandidatesForMiddleSp<external_space_point_t>::CandidatesForMiddleSp()
-    : m_SpB(CandidatesForMiddleSp<external_space_point_t>::default_value),
-      m_SpM(CandidatesForMiddleSp<external_space_point_t>::default_value) {}
+CandidatesForMiddleSp<external_space_point_t>::CandidatesForMiddleSp() {}
 
 template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
@@ -34,14 +32,14 @@ inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
 
 template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::setMiddleSp(
-    const typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
-  m_SpM = idx;
+    typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
+  m_SpM = &idx;
 }
 
 template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::setBottomSp(
-    const typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
-  m_SpB = idx;
+    typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
+  m_SpB = &idx;
 }
 
 template <typename external_space_point_t>
@@ -75,8 +73,8 @@ inline void CandidatesForMiddleSp<external_space_point_t>::clear() {
   m_n_high = 0;
   m_n_low = 0;
   // clean fixed space points
-  m_SpB = default_value;
-  m_SpM = default_value;
+  m_SpB = nullptr;
+  m_SpM = nullptr;
   // no need to clean storage
 }
 
@@ -89,10 +87,10 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
 
   if (isQuality) {
     return push(m_storage_high, m_n_high, m_max_size_high,
-    	        m_SpB, m_SpM, SpT, weight, zOrigin, isQuality);
+    	        *m_SpB, *m_SpM, SpT, weight, zOrigin, isQuality);
   }
   return push(m_storage_low, m_n_low, m_max_size_low,
-              m_SpB, m_SpM, SpT, weight, zOrigin, isQuality);
+              *m_SpB, *m_SpM, SpT, weight, zOrigin, isQuality);
 }
 
 template <typename external_space_point_t>
@@ -215,11 +213,6 @@ CandidatesForMiddleSp<external_space_point_t>::storage() {
   for (std::size_t idx(0); idx < m_n_low; ++idx) {
     output.push_back( std::move(m_storage_low[idx]) );
   }
-
-  // sort output according to weight and sps
-  // should we collect inputs according to this criterion instead?
-  std::sort(output.begin(), output.end(),
-            CandidatesForMiddleSp<external_space_point_t>::greaterSort);
 
   clear();
   return output;

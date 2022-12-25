@@ -262,7 +262,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
   // clear previous results and then loop on bottoms and tops
   state.candidates_collector.clear();
   // candidates per sp medium
-  state.candidates_collector.setMiddleSp(&spM);
+  state.candidates_collector.setMiddleSp(spM);
 
   for (const std::size_t& b : sorted_bottoms) {
     // break if we reached the last top SP
@@ -532,7 +532,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
       continue;
     }
 
-    state.candidates_collector.setBottomSp(state.compatBottomSP[b]);
+    state.candidates_collector.setBottomSp(*state.compatBottomSP[b]);
 
     m_config.seedFilter->filterSeeds_2SpFixed(
         *state.compatBottomSP[b], spM, state.topSpVec, state.curvatures,
