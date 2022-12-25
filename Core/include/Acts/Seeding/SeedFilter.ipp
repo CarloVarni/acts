@@ -58,12 +58,14 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
 
   // initialize original index locations
   std::vector<size_t> topSPIndexVec(topSpVec.size());
-  std::iota(topSPIndexVec.begin(), topSPIndexVec.end(), 0);
+  for (std::size_t i(0); i<topSPIndexVec.size(); ++i) {
+    topSPIndexVec[i] = i;
+  }
 
   if (m_cfg.curvatureSortingInFilter and topSpVec.size() > 2) {
     // sort indexes based on comparing values in invHelixDiameterVec
     std::sort(topSPIndexVec.begin(), topSPIndexVec.end(),
-              [&invHelixDiameterVec](size_t i1, size_t i2) {
+              [&invHelixDiameterVec](const size_t& i1, const size_t& i2) {
                 return invHelixDiameterVec[i1] < invHelixDiameterVec[i2];
               });
   }

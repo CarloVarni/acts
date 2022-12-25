@@ -264,7 +264,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
   // candidates per sp medium
   state.candidates_collector.setMiddleSp(&spM);
 
-  for (const std::size_t b : sorted_bottoms) {
+  for (const std::size_t& b : sorted_bottoms) {
     // break if we reached the last top SP
     if (t0 == numTopSP) {
       break;
@@ -310,7 +310,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
     }
 
     for (size_t index_t = t0; index_t < numTopSP; index_t++) {
-      const std::size_t t = sorted_tops[index_t];
+      const std::size_t& t = sorted_tops[index_t];
 
       auto lt = state.linCircleTop[t];
 
