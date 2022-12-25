@@ -17,14 +17,9 @@ namespace Acts {
 
 template <typename external_space_point_t>
 struct Triplet {
-  Triplet(external_space_point_t& b, external_space_point_t& m, external_space_point_t& t, 
-	    float w, float z, bool q)
-      : bottom(&b),
-        middle(&m),
-        top(&t),
-        weight(w),
-        zOrigin(z),
-        isQuality(q){};
+  Triplet(external_space_point_t& b, external_space_point_t& m,
+          external_space_point_t& t, float w, float z, bool q)
+      : bottom(&b), middle(&m), top(&t), weight(w), zOrigin(z), isQuality(q){};
 
   external_space_point_t* bottom;
   external_space_point_t* middle;
@@ -33,7 +28,6 @@ struct Triplet {
   float zOrigin;
   bool isQuality;
 };
-
 
 template <typename external_space_point_t>
 class CandidatesForMiddleSp {
@@ -46,15 +40,17 @@ class CandidatesForMiddleSp {
   void setMaxElements(std::size_t n_low, std::size_t n_high);
   std::vector<value_type> storage() const;
 
-  void push(external_space_point_t& SpB, external_space_point_t& SpM, external_space_point_t& SpT, 
-	    float weight, float zOrigin, bool isQuality);
+  void push(external_space_point_t& SpB, external_space_point_t& SpM,
+            external_space_point_t& SpT, float weight, float zOrigin,
+            bool isQuality);
   void clear();
 
   static bool greaterSort(const value_type& i1, const value_type& i2);
 
  private:
   void push(std::vector<value_type>& storage, std::size_t& n,
-            const std::size_t& n_max, external_space_point_t& SpB, external_space_point_t& SpM, external_space_point_t& SpT,
+            const std::size_t& n_max, external_space_point_t& SpB,
+            external_space_point_t& SpM, external_space_point_t& SpT,
             float weight, float zOrigin, bool isQuality);
 
   bool exists(const std::size_t& n, const std::size_t& max_size) const;

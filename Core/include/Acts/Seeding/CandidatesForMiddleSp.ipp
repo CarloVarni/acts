@@ -57,21 +57,21 @@ inline void CandidatesForMiddleSp<external_space_point_t>::clear() {
 
 template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::push(
-   external_space_point_t& SpB, external_space_point_t& SpM, external_space_point_t& SpT,
-    float weight, float zOrigin, bool isQuality) {
+    external_space_point_t& SpB, external_space_point_t& SpM,
+    external_space_point_t& SpT, float weight, float zOrigin, bool isQuality) {
   if (isQuality) {
     return push(m_storage_high, m_n_high, m_max_size_high, SpB, SpM, SpT,
                 weight, zOrigin, isQuality);
   }
-  return push(m_storage_low, m_n_low, m_max_size_low, SpB, SpM, SpT,
-              weight, zOrigin, isQuality);
+  return push(m_storage_low, m_n_low, m_max_size_low, SpB, SpM, SpT, weight,
+              zOrigin, isQuality);
 }
 
 template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::push(
     std::vector<value_type>& storage, std::size_t& n, const std::size_t& n_max,
-    external_space_point_t& SpB, external_space_point_t& SpM, external_space_point_t& SpT, 
-    float weight, float zOrigin, bool isQuality) {
+    external_space_point_t& SpB, external_space_point_t& SpM,
+    external_space_point_t& SpT, float weight, float zOrigin, bool isQuality) {
   if (n_max == 0) {
     return;
   }
@@ -85,7 +85,7 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
 
   // if no space, replace one if quality is enough
   // compare to element with lower weight
-  const auto& lower_weight = weight(storage, 0);
+  const auto& lower_weight = this->weight(storage, 0);
   if (weight <= lower_weight) {
     return;
   }
