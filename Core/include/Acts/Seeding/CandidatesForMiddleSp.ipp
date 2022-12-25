@@ -85,7 +85,7 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
 
   // if no space, replace one if quality is enough
   // compare to element with lower weight
-  const auto& lower_weight = weight(storage, 0)l
+  const auto& lower_weight = weight(storage, 0);
   if (weight <= lower_weight) {
     return;
   }
