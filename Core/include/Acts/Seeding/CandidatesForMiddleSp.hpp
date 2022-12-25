@@ -42,7 +42,7 @@ class CandidatesForMiddleSp {
   void setMaxElements(std::size_t n_low, std::size_t n_high);
   void setMiddleSp(sp_type& idx);
   void setBottomSp(sp_type& idx);
-  std::vector<value_type> storage();
+  std::vector<value_type> storage() const;
 
   void push(sp_type& SpT, float weight, float zOrigin, bool isQuality);
   void clear();

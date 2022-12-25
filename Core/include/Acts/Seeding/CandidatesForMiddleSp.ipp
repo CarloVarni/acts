@@ -200,7 +200,7 @@ void CandidatesForMiddleSp<external_space_point_t>::bubbleup(
 
 template <typename external_space_point_t>
 std::vector<typename CandidatesForMiddleSp<external_space_point_t>::value_type>
-CandidatesForMiddleSp<external_space_point_t>::storage() {
+CandidatesForMiddleSp<external_space_point_t>::storage() const {
   // this will retrieve the entire storage, first high and then low quality
   // the resulting vector is not sorted!
   std::vector<value_type> output;
@@ -214,7 +214,6 @@ CandidatesForMiddleSp<external_space_point_t>::storage() {
     output.push_back( std::move(m_storage_low[idx]) );
   }
 
-  clear();
   return output;
 }
 
