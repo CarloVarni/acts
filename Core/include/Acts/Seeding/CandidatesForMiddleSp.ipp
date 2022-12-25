@@ -31,18 +31,6 @@ inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
 }
 
 template <typename external_space_point_t>
-inline void CandidatesForMiddleSp<external_space_point_t>::setMiddleSp(
-    typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
-  m_SpM = &idx;
-}
-
-template <typename external_space_point_t>
-inline void CandidatesForMiddleSp<external_space_point_t>::setBottomSp(
-    typename CandidatesForMiddleSp<external_space_point_t>::sp_type& idx) {
-  m_SpB = &idx;
-}
-
-template <typename external_space_point_t>
 inline float CandidatesForMiddleSp<external_space_point_t>::top(
     const std::vector<value_type>& storage) const {
   return weight(storage, 0);
@@ -72,29 +60,26 @@ inline void CandidatesForMiddleSp<external_space_point_t>::clear() {
   // do not clear max size, this is set only once
   m_n_high = 0;
   m_n_low = 0;
-  // clean fixed space points
-  m_SpB = nullptr;
-  m_SpM = nullptr;
   // no need to clean storage
 }
 
 template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::push(
-    typename CandidatesForMiddleSp<external_space_point_t>::sp_type& SpT,
+   external_space_point_t& SpB, external_space_point_t& SpM, external_space_point_t& SpT,
     float weight, float zOrigin, bool isQuality) {
   if (isQuality) {
-    return push(m_storage_high, m_n_high, m_max_size_high, *m_SpB, *m_SpM, SpT,
+    return push(m_storage_high, m_n_high, m_max_size_high, SpB, SpM, SpT,
                 weight, zOrigin, isQuality);
   }
-  return push(m_storage_low, m_n_low, m_max_size_low, *m_SpB, *m_SpM, SpT,
+  return push(m_storage_low, m_n_low, m_max_size_low, SpB, SpM, SpT,
               weight, zOrigin, isQuality);
 }
 
 template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::push(
     std::vector<value_type>& storage, std::size_t& n, const std::size_t& n_max,
-    sp_type& SpB, sp_type& SpM, sp_type& SpT, float weight, float zOrigin,
-    bool isQuality) {
+    external_space_point_t& SpB, external_space_point_t& SpM, external_space_point_t& SpT, 
+    float weight, float zOrigin, bool isQuality) {
   if (n_max == 0) {
     return;
   }
@@ -102,7 +87,7 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
   // if there is still space, add anything
   if (n < n_max) {
     addToCollection(storage, n, n_max,
-                    candidate(SpB, SpM, SpT, weight, zOrigin, isQuality));
+                    value_type(SpB, SpM, SpT, weight, zOrigin, isQuality));
     return;
   }
 
@@ -116,7 +101,7 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
   // remove element with lower weight and add this one
   pop(storage, n);
   addToCollection(storage, n, n_max,
-                  candidate(SpB, SpM, SpT, weight, zOrigin, isQuality));
+                  value_type(SpB, SpM, SpT, weight, zOrigin, isQuality));
 }
 
 template <typename external_space_point_t>

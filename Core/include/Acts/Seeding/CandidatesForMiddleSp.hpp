@@ -16,45 +16,45 @@
 namespace Acts {
 
 template <typename external_space_point_t>
+struct triplet {
+  triplet(external_space_point_t& b, external_space_point_t& m, external_space_point_t& t, 
+	    float w, float z, bool q)
+      : bottom(&b),
+        middle(&m),
+        top(&t),
+        weight(w),
+        zOrigin(z),
+        isQuality(q){};
+
+  external_space_point_t* bottom;
+  external_space_point_t* middle;
+  external_space_point_t* top;
+  float weight;
+  float zOrigin;
+  bool isQuality;
+};
+
+
+template <typename external_space_point_t>
 class CandidatesForMiddleSp {
  public:
-  using sp_type = external_space_point_t;
-
-  struct candidate {
-    candidate(sp_type& b, sp_type& m, sp_type& t, float w, float z, bool q)
-        : bottom(&b),
-          middle(&m),
-          top(&t),
-          weight(w),
-          zOrigin(z),
-          isQuality(q){};
-
-    sp_type* bottom;
-    sp_type* middle;
-    sp_type* top;
-    float weight;
-    float zOrigin;
-    bool isQuality;
-  };
-
-  using value_type = candidate;
+  using value_type = triplet<external_space_point_t>;
 
   CandidatesForMiddleSp();
   ~CandidatesForMiddleSp() = default;
 
   void setMaxElements(std::size_t n_low, std::size_t n_high);
-  void setMiddleSp(sp_type& idx);
-  void setBottomSp(sp_type& idx);
   std::vector<value_type> storage() const;
 
-  void push(sp_type& SpT, float weight, float zOrigin, bool isQuality);
+  void push(external_space_point_t& SpB, external_space_point_t& SpM, external_space_point_t& SpT, 
+	    float weight, float zOrigin, bool isQuality);
   void clear();
 
   static bool greaterSort(const value_type& i1, const value_type& i2);
 
  private:
   void push(std::vector<value_type>& storage, std::size_t& n,
-            const std::size_t& n_max, sp_type& SpB, sp_type& SpM, sp_type& SpT,
+            const std::size_t& n_max, external_space_point_t& SpB, external_space_point_t& SpM, external_space_point_t& SpT,
             float weight, float zOrigin, bool isQuality);
 
   bool exists(const std::size_t& n, const std::size_t& max_size) const;
@@ -76,10 +76,6 @@ class CandidatesForMiddleSp {
   std::size_t m_max_size_low{0};
   std::size_t m_n_high{0};
   std::size_t m_n_low{0};
-
-  // space points
-  sp_type* m_SpB = nullptr;
-  sp_type* m_SpM = nullptr;
 
   // storage
   // These vectors are sorted as a min heap tree

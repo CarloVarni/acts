@@ -191,7 +191,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
         // if we have not yet reached our max number of quality seeds we add the
         // new seed to outCont
 
-        candidates_collector.push(*topSpVec[topSPIndex], weight, zOrigin, true);
+        candidates_collector.push(bottomSP, middleSP, *topSpVec[topSPIndex], weight, zOrigin, true);
         if (seedFilterState.numQualitySeeds < m_cfg.maxQualitySeedsPerSpMConf) {
           // fill high quality seed
           seedFilterState.numQualitySeeds++;
@@ -208,7 +208,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
       // if we have not yet reached our max number of seeds we add the new seed
       // to outCont
 
-      candidates_collector.push(*topSpVec[topSPIndex], weight, zOrigin, false);
+      candidates_collector.push(bottomSP, middleSP, *topSpVec[topSPIndex], weight, zOrigin, false);
       if (seedFilterState.numSeeds < m_cfg.maxSeedsPerSpMConf) {
         // fill seed
         seedFilterState.numSeeds++;
@@ -222,7 +222,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
     // if we have not yet reached our max number of seeds we add the new seed to
     // outCont
 
-    candidates_collector.push(*topSpVec[maxWeightSeedIndex], weightMax, zOrigin,
+    candidates_collector.push(bottomSP, middleSP, *topSpVec[maxWeightSeedIndex], weightMax, zOrigin,
                               false);
     if (seedFilterState.numSeeds < m_cfg.maxSeedsPerSpMConf) {
       // fill seed
