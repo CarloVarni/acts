@@ -277,8 +277,8 @@ SeedFinder<external_spacepoint_t, Acts::Cuda>::createSeedsForGroup(
         float Zob = 0;  // It is not used in the seed filter but needs to be
                         // fixed anyway...
 
-        candidates.emplace_back(bottomSP, middleSP, topSP, triplet.weight,
-                                Zob, false);
+        candidates.emplace_back(bottomSP, middleSP, topSP, triplet.weight, Zob,
+                                false);
       }
 
       std::sort(candidates.begin(), candidates.end(),
