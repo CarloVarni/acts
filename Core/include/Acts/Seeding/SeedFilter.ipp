@@ -58,7 +58,7 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_2SpFixed(
 
   // initialize original index locations
   std::vector<size_t> topSPIndexVec(topSpVec.size());
-  for (std::size_t i(0); i<topSPIndexVec.size(); ++i) {
+  for (std::size_t i(0); i < topSPIndexVec.size(); ++i) {
     topSPIndexVec[i] = i;
   }
 
@@ -248,7 +248,8 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
   // sort output according to weight and sps
   // should we collect inputs according to this criterion instead?
   std::sort(extended_collection.begin(), extended_collection.end(),
-            CandidatesForMiddleSp<InternalSpacePoint<external_spacepoint_t>>::greaterSort);
+            CandidatesForMiddleSp<
+                InternalSpacePoint<external_spacepoint_t>>::greaterSort);
 
   filterSeeds_1SpFixed(extended_collection, numQualitySeeds, outIt);
 }

@@ -88,8 +88,9 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
       }
     }
 
-    getCompatibleDoublets(options, topSPs, *spM, state.compatTopSP, 
-    			 m_config.deltaRMinTopSP, m_config.deltaRMaxTopSP, false);
+    getCompatibleDoublets(options, topSPs, *spM, state.compatTopSP,
+                          m_config.deltaRMinTopSP, m_config.deltaRMaxTopSP,
+                          false);
 
     // no top SP found -> try next spM
     if (state.compatTopSP.empty()) {
@@ -115,8 +116,9 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
       }
     }
 
-    getCompatibleDoublets(options, bottomSPs, *spM, state.compatBottomSP, 
-    			 m_config.deltaRMinBottomSP, m_config.deltaRMaxBottomSP, true);
+    getCompatibleDoublets(options, bottomSPs, *spM, state.compatBottomSP,
+                          m_config.deltaRMinBottomSP,
+                          m_config.deltaRMaxBottomSP, true);
 
     // no bottom SP found -> try next spM
     if (state.compatBottomSP.empty()) {
@@ -135,11 +137,9 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
 template <typename external_spacepoint_t, typename platform_t>
 template <typename sp_range_t, typename out_range_t>
 void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
-    const Acts::SeedFinderOptions& options,
-    sp_range_t& otherSPs,
+    const Acts::SeedFinderOptions& options, sp_range_t& otherSPs,
     const InternalSpacePoint<external_spacepoint_t>& mediumSP,
-    out_range_t& outVec,
-    const float deltaRMinSP, const float deltaRMaxSP,
+    out_range_t& outVec, const float deltaRMinSP, const float deltaRMaxSP,
     bool isBottom) const {
   const int sign = isBottom ? -1 : 1;
 
@@ -153,78 +153,78 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
   const float ratio_yM_rM = yM / rM;
 
   for (auto otherSP : otherSPs) {
-  const float rO = otherSP->radius();
-  float deltaR = sign * (rO - rM);
+    const float rO = otherSP->radius();
+    float deltaR = sign * (rO - rM);
 
-  // if r-distance is too small, try next SP in bin
-  if (deltaR < deltaRMinSP) {
-    continue;
-  }
+    // if r-distance is too small, try next SP in bin
+    if (deltaR < deltaRMinSP) {
+      continue;
+    }
 
-  // if r-distance is too big, try next SP in bin
-  if (deltaR > deltaRMaxSP) {
-    continue;
-  }
+    // if r-distance is too big, try next SP in bin
+    if (deltaR > deltaRMaxSP) {
+      continue;
+    }
 
-  const float zO = otherSP->z();
-  float deltaZ = sign * (zO - zM);
-  if (deltaZ > m_config.deltaZMax or deltaZ < -m_config.deltaZMax) {
-    continue;
-  }
+    const float zO = otherSP->z();
+    float deltaZ = sign * (zO - zM);
+    if (deltaZ > m_config.deltaZMax or deltaZ < -m_config.deltaZMax) {
+      continue;
+    }
 
-  // ratio Z/R (forward angle) of space point duplet
-  float cotTheta = deltaZ / deltaR;
-  if (cotTheta > m_config.cotThetaMax or cotTheta < -m_config.cotThetaMax) {
-    continue;
-  }
+    // ratio Z/R (forward angle) of space point duplet
+    float cotTheta = deltaZ / deltaR;
+    if (cotTheta > m_config.cotThetaMax or cotTheta < -m_config.cotThetaMax) {
+      continue;
+    }
 
-  // check if duplet origin on z axis within collision region
-  float zOrigin = zM - rM * cotTheta;
-  if (zOrigin < m_config.collisionRegionMin ||
-      zOrigin > m_config.collisionRegionMax) {
-    continue;
-  }
+    // check if duplet origin on z axis within collision region
+    float zOrigin = zM - rM * cotTheta;
+    if (zOrigin < m_config.collisionRegionMin ||
+        zOrigin > m_config.collisionRegionMax) {
+      continue;
+    }
 
-  if (not m_config.interactionPointCut) {
-  outVec.push_back(otherSP);
-  continue;
-  }
+    if (not m_config.interactionPointCut) {
+      outVec.push_back(otherSP);
+      continue;
+    }
 
-  const float xVal = (otherSP->x() - xM) * ratio_xM_rM +
-                     (otherSP->y() - yM) * ratio_yM_rM;
-  const float yVal = (otherSP->y() - yM) * ratio_xM_rM -
-                     (otherSP->x() - xM) * ratio_yM_rM;
+    const float xVal =
+        (otherSP->x() - xM) * ratio_xM_rM + (otherSP->y() - yM) * ratio_yM_rM;
+    const float yVal =
+        (otherSP->y() - yM) * ratio_xM_rM - (otherSP->x() - xM) * ratio_yM_rM;
 
-  if (std::abs(rM * yVal) <= sign * m_config.impactMax * xVal) {
+    if (std::abs(rM * yVal) <= sign * m_config.impactMax * xVal) {
+      outVec.push_back(otherSP);
+      continue;
+    }
+
+    // conformal transformation u=x/(x²+y²) v=y/(x²+y²) transform the
+    // circle into straight lines in the u/v plane the line equation can
+    // be described in terms of aCoef and bCoef, where v = aCoef * u +
+    // bCoef
+    const float uT = xVal / (xVal * xVal + yVal * yVal);
+    const float vT = yVal / (xVal * xVal + yVal * yVal);
+    // in the rotated frame the interaction point is positioned at x = -rM
+    // and y ~= impactParam
+    const float uIP = -1. / rM;
+    float vIP = m_config.impactMax / (rM * rM);
+    if (sign * yVal > 0.) {
+      vIP = -vIP;
+    }
+    // we can obtain aCoef as the slope dv/du of the linear function,
+    // estimated using du and dv between the two SP bCoef is obtained by
+    // inserting aCoef into the linear equation
+    const float aCoef = (vT - vIP) / (uT - uIP);
+    const float bCoef = vIP - aCoef * uIP;
+    // the distance of the straight line from the origin (radius of the
+    // circle) is related to aCoef and bCoef by d^2 = bCoef^2 / (1 +
+    // aCoef^2) = 1 / (radius^2) and we can apply the cut on the curvature
+    if ((bCoef * bCoef) * options.minHelixDiameter2 > (1 + aCoef * aCoef)) {
+      continue;
+    }
     outVec.push_back(otherSP);
-continue;
-  }
-
-  // conformal transformation u=x/(x²+y²) v=y/(x²+y²) transform the
-  // circle into straight lines in the u/v plane the line equation can
-  // be described in terms of aCoef and bCoef, where v = aCoef * u +
-  // bCoef
-  const float uT = xVal / (xVal * xVal + yVal * yVal);
-  const float vT = yVal / (xVal * xVal + yVal * yVal);
-  // in the rotated frame the interaction point is positioned at x = -rM
-  // and y ~= impactParam
-  const float uIP = -1. / rM;
-  float vIP = m_config.impactMax / (rM * rM);
-  if (sign * yVal > 0.) {
-    vIP = -vIP;
-  }
-  // we can obtain aCoef as the slope dv/du of the linear function,
-  // estimated using du and dv between the two SP bCoef is obtained by
-  // inserting aCoef into the linear equation
-  const float aCoef = (vT - vIP) / (uT - uIP);
-  const float bCoef = vIP - aCoef * uIP;
-  // the distance of the straight line from the origin (radius of the
-  // circle) is related to aCoef and bCoef by d^2 = bCoef^2 / (1 +
-  // aCoef^2) = 1 / (radius^2) and we can apply the cut on the curvature
-  if ((bCoef * bCoef) * options.minHelixDiameter2 > (1 + aCoef * aCoef)) {
-    continue;
-  }
-  outVec.push_back(otherSP);
   }
 }
 

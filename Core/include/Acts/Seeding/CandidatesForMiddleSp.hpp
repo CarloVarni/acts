@@ -21,10 +21,13 @@ class CandidatesForMiddleSp {
   using sp_type = external_space_point_t;
 
   struct candidate {
-    candidate(sp_type& b, sp_type& m, sp_type& t,
-              float w, float z, bool q) 
-      : bottom(&b), middle(&m), top(&t),
-	weight(w), zOrigin(z), isQuality(q) {};
+    candidate(sp_type& b, sp_type& m, sp_type& t, float w, float z, bool q)
+        : bottom(&b),
+          middle(&m),
+          top(&t),
+          weight(w),
+          zOrigin(z),
+          isQuality(q){};
 
     sp_type* bottom;
     sp_type* middle;
@@ -50,9 +53,9 @@ class CandidatesForMiddleSp {
   static bool greaterSort(const value_type& i1, const value_type& i2);
 
  private:
-  void push(std::vector<value_type>& storage, std::size_t& n, const std::size_t& n_max,
-	    sp_type& SpB, sp_type& SpM, sp_type& SpT, 
-	    float weight, float zOrigin, bool isQuality);
+  void push(std::vector<value_type>& storage, std::size_t& n,
+            const std::size_t& n_max, sp_type& SpB, sp_type& SpM, sp_type& SpT,
+            float weight, float zOrigin, bool isQuality);
 
   bool exists(const std::size_t& n, const std::size_t& max_size) const;
 
@@ -64,9 +67,8 @@ class CandidatesForMiddleSp {
   void bubbledw(std::vector<value_type>& storage, std::size_t n,
                 std::size_t actual_size);
 
-  void addToCollection(std::vector<value_type>& storage, std::size_t& n, 
-		       const std::size_t& n_max,
-		       value_type&& element);
+  void addToCollection(std::vector<value_type>& storage, std::size_t& n,
+                       const std::size_t& n_max, value_type&& element);
 
  private:
   // sizes
@@ -76,8 +78,8 @@ class CandidatesForMiddleSp {
   std::size_t m_n_low{0};
 
   // space points
-  sp_type *m_SpB = nullptr;
-  sp_type *m_SpM = nullptr;
+  sp_type* m_SpB = nullptr;
+  sp_type* m_SpM = nullptr;
 
   // storage
   // These vectors are sorted as a min heap tree
@@ -86,9 +88,9 @@ class CandidatesForMiddleSp {
   // Sorting criteria is the seed quality
 
   // storage for candidates with high quality
-  std::vector<value_type> m_storage_high {};
+  std::vector<value_type> m_storage_high{};
   // storage for candidates with low quality
-  std::vector<value_type> m_storage_low {};
+  std::vector<value_type> m_storage_low{};
 };
 
 }  // namespace Acts
