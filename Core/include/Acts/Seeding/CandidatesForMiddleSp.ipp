@@ -24,6 +24,7 @@ inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
     return;
   }
 
+  // Reserve enough memory for both collections
   m_storage_high.reserve(n_high);
   m_storage_low.reserve(n_low);
 }
@@ -31,6 +32,13 @@ inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
 template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::pop(
     std::vector<value_type>& storage, std::size_t& current_size) {
+  // Remove the candidate with the lowest weight in the collection
+  // By construction, this element is always the first element in the
+  // collection.
+  // The removal works this way: the first element of the collection
+  // is overwritten with the last element of the collection.
+  // The number of stored elements (current_size) is lowered by 1
+  // The new first element is moved down in the tree to its correct position
   storage[0] = storage[current_size - 1];
   bubbledw(storage, 0, --current_size);
 }
@@ -38,27 +46,34 @@ inline void CandidatesForMiddleSp<external_space_point_t>::pop(
 template <typename external_space_point_t>
 inline bool CandidatesForMiddleSp<external_space_point_t>::exists(
     const std::size_t& n, const std::size_t& max_size) const {
+  // If the element exists, it's index is lower than the current number 
+  // of stored elements
   return n < max_size;
 }
 
 template <typename external_space_point_t>
 inline float CandidatesForMiddleSp<external_space_point_t>::weight(
     const std::vector<value_type>& storage, std::size_t n) const {
+  // Get the weight of the n-th element
   return storage[n].weight;
 }
 
 template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::clear() {
   // do not clear max size, this is set only once
+  // reset to 0 the number of stored elements
   m_n_high = 0;
   m_n_low = 0;
-  // no need to clean storage
+  // clean storages, but capacity remains the same
+  m_storage_high.clear();
+  m_storage_low.clear();
 }
 
 template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::push(
     external_space_point_t& SpB, external_space_point_t& SpM,
     external_space_point_t& SpT, float weight, float zOrigin, bool isQuality) {
+  // Decide in which collection this candidate may be added to according to the isQuality boolean
   if (isQuality) {
     return push(m_storage_high, m_n_high, m_max_size_high, SpB, SpM, SpT,
                 weight, zOrigin, isQuality);
@@ -72,6 +87,7 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
     std::vector<value_type>& storage, std::size_t& n, const std::size_t& n_max,
     external_space_point_t& SpB, external_space_point_t& SpM,
     external_space_point_t& SpT, float weight, float zOrigin, bool isQuality) {
+  // If we do not want to store candidates, returns 
   if (n_max == 0) {
     return;
   }
@@ -107,6 +123,7 @@ void CandidatesForMiddleSp<external_space_point_t>::addToCollection(
   } else {
     storage.push_back(std::move(element));
   }
+  // Move the added element up in the tree to its correct position
   bubbleup(storage, n++);
 }
 
@@ -130,6 +147,7 @@ void CandidatesForMiddleSp<external_space_point_t>::bubbledw(
     std::size_t selected_child = left_child;
     float selected_weight = weight_left_child;
 
+    // Check which child has the lower weight
     if (exists(right_child, actual_size)) {
       float weight_right_child = weight(storage, right_child);
       if (weight_right_child <= weight_left_child) {
@@ -138,10 +156,12 @@ void CandidatesForMiddleSp<external_space_point_t>::bubbledw(
       }
     }
 
+    // If weight of the childs is higher then parents we stop
     if (selected_weight >= current) {
       break;
     }
 
+    // swap and repeat the process
     std::swap(storage[n], storage[selected_child]);
     n = selected_child;
   }  // while loop
@@ -158,10 +178,12 @@ void CandidatesForMiddleSp<external_space_point_t>::bubbleup(
     float weight_current = weight(storage, n);
     float weight_parent = weight(storage, parent_idx);
 
+    // If weight of the parent is lower than this one, we stop
     if (weight_parent <= weight_current) {
       break;
     }
 
+    // swap and repeat the process
     std::swap(storage[n], storage[parent_idx]);
     n = parent_idx;
   }
