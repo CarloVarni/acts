@@ -139,7 +139,7 @@ template <typename sp_range_t, typename out_range_t>
 void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
     const Acts::SeedFinderOptions& options, sp_range_t& otherSPs,
     const InternalSpacePoint<external_spacepoint_t>& mediumSP,
-    out_range_t& outVec, const float deltaRMinSP, const float deltaRMaxSP,
+    out_range_t& outVec, const float& deltaRMinSP, const float& deltaRMaxSP,
     bool isBottom) const {
   const int sign = isBottom ? -1 : 1;
 
