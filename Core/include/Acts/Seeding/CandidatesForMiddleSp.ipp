@@ -12,6 +12,14 @@ template <typename external_space_point_t>
 CandidatesForMiddleSp<external_space_point_t>::CandidatesForMiddleSp() {}
 
 template <typename external_space_point_t>
+CandidatesForMiddleSp<external_space_point_t>::~CandidatesForMiddleSp() {
+  // We do not take ownership, so we can simply clean the collection
+  // without deleting anything
+  m_storage_high.clear();
+  m_storage_low.clear();
+}
+
+template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
     std::size_t n_low, std::size_t n_high) {
   m_max_size_high = n_high;
@@ -46,7 +54,7 @@ inline void CandidatesForMiddleSp<external_space_point_t>::pop(
 template <typename external_space_point_t>
 inline bool CandidatesForMiddleSp<external_space_point_t>::exists(
     const std::size_t& n, const std::size_t& max_size) const {
-  // If the element exists, it's index is lower than the current number 
+  // If the element exists, it's index is lower than the current number
   // of stored elements
   return n < max_size;
 }
@@ -64,16 +72,14 @@ inline void CandidatesForMiddleSp<external_space_point_t>::clear() {
   // reset to 0 the number of stored elements
   m_n_high = 0;
   m_n_low = 0;
-  // clean storages, but capacity remains the same
-  m_storage_high.clear();
-  m_storage_low.clear();
 }
 
 template <typename external_space_point_t>
 void CandidatesForMiddleSp<external_space_point_t>::push(
     external_space_point_t& SpB, external_space_point_t& SpM,
     external_space_point_t& SpT, float weight, float zOrigin, bool isQuality) {
-  // Decide in which collection this candidate may be added to according to the isQuality boolean
+  // Decide in which collection this candidate may be added to according to the
+  // isQuality boolean
   if (isQuality) {
     return push(m_storage_high, m_n_high, m_max_size_high, SpB, SpM, SpT,
                 weight, zOrigin, isQuality);
@@ -87,7 +93,7 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
     std::vector<value_type>& storage, std::size_t& n, const std::size_t& n_max,
     external_space_point_t& SpB, external_space_point_t& SpM,
     external_space_point_t& SpT, float weight, float zOrigin, bool isQuality) {
-  // If we do not want to store candidates, returns 
+  // If we do not want to store candidates, returns
   if (n_max == 0) {
     return;
   }
