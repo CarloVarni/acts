@@ -13,18 +13,12 @@
 #include "Acts/Seeding/Seed.hpp"
 #include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Surfaces/Surface.hpp"
-#include "Acts/Utilities/FpeMonitor.hpp"
 #include "ActsExamples/EventData/IndexSourceLink.hpp"
 #include "ActsExamples/EventData/ProtoTrack.hpp"
 #include "ActsExamples/EventData/SimSeed.hpp"
 #include "ActsExamples/Framework/WhiteBoard.hpp"
 
-#include <csignal>
-#include <limits>
 #include <stdexcept>
-#include <chrono>
-
-using namespace std::chrono;
 
 ActsExamples::SeedingAlgorithm::SeedingAlgorithm(
     ActsExamples::SeedingAlgorithm::Config cfg, Acts::Logging::Level lvl)
@@ -234,22 +228,18 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
       bottomBinFinder, topBinFinder, std::move(grid), rRangeSPExtent,
       m_cfg.seedFinderConfig, m_cfg.seedFinderOptions);
 
-  // safely clamp double to float
-  float up = Acts::clampValue<float>(
-      std::floor(rRangeSPExtent.max(Acts::binR) / 2) * 2);
-
-  /// variable middle SP radial region of interest
+  // variable middle SP radial region of interest
   const Acts::Range1D<float> rMiddleSPRange(
       std::floor(rRangeSPExtent.min(Acts::binR) / 2) * 2 +
           m_cfg.seedFinderConfig.deltaRMiddleMinSPRange,
-      up);
+      std::floor(rRangeSPExtent.max(Acts::binR) / 2) * 2 -
+          m_cfg.seedFinderConfig.deltaRMiddleMaxSPRange);
 
   // run the seeding
   static thread_local SimSeedContainer seeds;
   seeds.clear();
   static thread_local decltype(m_seedFinder)::SeedingState state;
 
-  auto start = high_resolution_clock::now();
   auto group = spacePointsGrouping.begin();
   auto groupEnd = spacePointsGrouping.end();
   for (; !(group == groupEnd); ++group) {
@@ -257,9 +247,6 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
         m_cfg.seedFinderOptions, state, std::back_inserter(seeds),
         group.bottom(), group.middle(), group.top(), rMiddleSPRange);
   }
-  auto stop = high_resolution_clock::now();
-  auto delta = duration_cast<nanoseconds>(stop - start);
-  std::cout << "time=" << delta.count() << " nsp=" << spacePointPtrs.size() << " nseed=" << seeds.size() << std::endl;
 
   // extract proto tracks, i.e. groups of measurement indices, from tracks seeds
   size_t nSeeds = seeds.size();

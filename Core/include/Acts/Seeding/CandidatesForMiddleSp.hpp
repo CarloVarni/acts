@@ -16,8 +16,8 @@
 namespace Acts {
 
 template <typename external_space_point_t>
-struct triplet {
-  triplet(external_space_point_t& b, external_space_point_t& m, external_space_point_t& t, 
+struct Triplet {
+  Triplet(external_space_point_t& b, external_space_point_t& m, external_space_point_t& t, 
 	    float w, float z, bool q)
       : bottom(&b),
         middle(&m),
@@ -38,7 +38,7 @@ struct triplet {
 template <typename external_space_point_t>
 class CandidatesForMiddleSp {
  public:
-  using value_type = triplet<external_space_point_t>;
+  using value_type = Triplet<external_space_point_t>;
 
   CandidatesForMiddleSp();
   ~CandidatesForMiddleSp() = default;
@@ -60,7 +60,6 @@ class CandidatesForMiddleSp {
   bool exists(const std::size_t& n, const std::size_t& max_size) const;
 
   void pop(std::vector<value_type>& storage, std::size_t& current_size);
-  float top(const std::vector<value_type>& storage) const;
   float weight(const std::vector<value_type>& storage, std::size_t n) const;
 
   void bubbleup(std::vector<value_type>& storage, std::size_t n);

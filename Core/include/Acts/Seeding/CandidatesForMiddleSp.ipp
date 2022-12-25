@@ -6,8 +6,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include <iostream>
-
 namespace Acts {
 
 template <typename external_space_point_t>
@@ -28,12 +26,6 @@ inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
 
   m_storage_high.reserve(n_high);
   m_storage_low.reserve(n_low);
-}
-
-template <typename external_space_point_t>
-inline float CandidatesForMiddleSp<external_space_point_t>::top(
-    const std::vector<value_type>& storage) const {
-  return weight(storage, 0);
 }
 
 template <typename external_space_point_t>
@@ -93,7 +85,7 @@ void CandidatesForMiddleSp<external_space_point_t>::push(
 
   // if no space, replace one if quality is enough
   // compare to element with lower weight
-  const auto& lower_weight = top(storage);
+  const auto& lower_weight = weight(storage, 0)l
   if (weight <= lower_weight) {
     return;
   }
