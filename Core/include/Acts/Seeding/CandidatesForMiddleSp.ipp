@@ -9,9 +9,6 @@
 namespace Acts {
 
 template <typename external_space_point_t>
-CandidatesForMiddleSp<external_space_point_t>::CandidatesForMiddleSp() {}
-
-template <typename external_space_point_t>
 inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
     std::size_t n_low, std::size_t n_high) {
   m_max_size_high = n_high;

@@ -50,7 +50,7 @@ class CandidatesForMiddleSp {
   using value_type = TripletCandidate<external_space_point_t>;
 
   /// @brief constructor
-  CandidatesForMiddleSp();
+  CandidatesForMiddleSp() = default;
   /// @brief Destructor
   ~CandidatesForMiddleSp() = default;
 
