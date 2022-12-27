@@ -168,7 +168,7 @@ class CandidatesForMiddleSp {
   std::vector<value_type> m_storage{};
 
   // The following vectors store indexes to elements in the storage
-  // They are sorted as a min heap tree, in which 
+  // They are sorted as a min heap tree, in which
   // Each node is lower then its childs
   // Thus, it is guaranteed that the lower elements is at the front
   // Sorting criteria is the seed quality

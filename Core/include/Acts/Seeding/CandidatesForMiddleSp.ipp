@@ -201,29 +201,30 @@ CandidatesForMiddleSp<external_space_point_t>::storage() {
   // rely on the fact that m_storage_* are both min heap trees
   // Sorting comes noturally by popping elements one by one and
   // placing this element at the end of the output vector
-  while(m_n_high != 0 or m_n_low != 0) {
+  while (m_n_high != 0 or m_n_low != 0) {
     // no entries in collection high, we attach the entire low collection
     if (m_n_high == 0) {
       std::size_t idx = m_n_low;
-      for (std::size_t i(0); i<idx; i++) {
+      for (std::size_t i(0); i < idx; i++) {
         output[out_idx--] = std::move(m_storage[m_storage_low[0]]);
-	pop(m_storage_low, m_n_low);
+        pop(m_storage_low, m_n_low);
       }
       break;
-    } 
-    
+    }
+
     // no entries in collection low, we attach the entire high collection
     if (m_n_low == 0) {
-      std::size_t idx =	m_n_high;
-      for (std::size_t i(0); i<idx; i++) {
+      std::size_t idx = m_n_high;
+      for (std::size_t i(0); i < idx; i++) {
         output[out_idx--] = std::move(m_storage[m_storage_high[0]]);
-	pop(m_storage_high, m_n_high);
+        pop(m_storage_high, m_n_high);
       }
       break;
     }
 
     // Both have entries, get the minimum
-    if ( greaterSort( m_storage[m_storage_low[0]], m_storage[m_storage_high[0]]) ) {
+    if (greaterSort(m_storage[m_storage_low[0]],
+                    m_storage[m_storage_high[0]])) {
       output[out_idx--] = std::move(m_storage[m_storage_high[0]]);
       pop(m_storage_high, m_n_high);
     } else {
@@ -231,7 +232,7 @@ CandidatesForMiddleSp<external_space_point_t>::storage() {
       pop(m_storage_low, m_n_low);
     }
 
-  } // while loop
+  }  // while loop
 
   clear();
   return output;
