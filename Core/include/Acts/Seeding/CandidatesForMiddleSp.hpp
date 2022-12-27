@@ -62,7 +62,8 @@ class CandidatesForMiddleSp {
   /// @param n_high Maximum number of candidates in the high-quality collection
   void setMaxElements(std::size_t n_low, std::size_t n_high);
 
-  /// @brief Retrieve the triplet candidates
+  /// @brief Retrieve the triplet candidates, the resulting vector is already sorted,
+  /// elements with higher quality first
   /// @returns Vector of triplet candidates
   std::vector<value_type> storage();
 
@@ -163,8 +164,11 @@ class CandidatesForMiddleSp {
   std::size_t m_n_high{0};
   std::size_t m_n_low{0};
 
-  // storage
-  // These vectors are sorted as a min heap tree
+  // storage contains the collection of the candidates
+  std::vector<value_type> m_storage{};
+
+  // The following vectors store indexes to elements in the storage
+  // They are sorted as a min heap tree, in which 
   // Each node is lower then its childs
   // Thus, it is guaranteed that the lower elements is at the front
   // Sorting criteria is the seed quality
@@ -172,8 +176,6 @@ class CandidatesForMiddleSp {
   // This is in effect faster sorted container - implementation with std::set
   // and std::priority_queue  were tried and found slower.
 
-  // storage
-  std::vector<value_type> m_storage{};
   // storage for candidates with high quality
   std::vector<std::size_t> m_storage_high{};
   // storage for candidates with low quality

@@ -18,7 +18,6 @@
 
 #include <string>
 #include <vector>
-#include <mutex>
 
 namespace ActsExamples {
 
@@ -72,7 +71,6 @@ class SeedingAlgorithm final : public BareAlgorithm {
  private:
   Acts::SeedFinder<SimSpacePoint> m_seedFinder;
   Config m_cfg;
-  mutable std::mutex m_mutex;
 };
 
 }  // namespace ActsExamples
