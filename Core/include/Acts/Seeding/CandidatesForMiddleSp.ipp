@@ -21,7 +21,7 @@ inline void CandidatesForMiddleSp<external_space_point_t>::setMaxElements(
     return;
   }
 
-  // Resize vectors to accomodate our max need
+  // Reserve enough memory for all collections
   m_storage.reserve(n_low + n_high);
   m_storage_high.reserve(n_high);
   m_storage_low.reserve(n_low);
