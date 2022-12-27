@@ -36,7 +36,7 @@ struct TripletCandidate {
   external_space_point_t* middle{nullptr};
   external_space_point_t* top{nullptr};
   float weight{0.};
-  float zOrigin{.0};
+  float zOrigin{0.};
   bool isQuality{false};
 };
 
