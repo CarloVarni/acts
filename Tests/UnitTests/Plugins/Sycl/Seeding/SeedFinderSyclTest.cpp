@@ -118,8 +118,7 @@ auto setupSeedFinderOptions() {
 }
 
 template <typename external_spacepoint_t>
-std::pair<Acts::SpacePointGridConfig, Acts::SpacePointGridOptions>
-setupSpacePointGridConfig(
+auto setupSpacePointGridConfig(
     const Acts::SeedFinderConfig<external_spacepoint_t>& config,
     const Acts::SeedFinderOptions& options)
     ->std::pair<Acts::SpacePointGridConfig, Acts::SpacePointGridOptions> {
