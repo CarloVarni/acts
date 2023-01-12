@@ -396,6 +396,10 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
           cotThetaAvg2 = std::pow((cotThetaB + cotThetaT) / 2, 2);
         }
 
+	if (cotThetaAvg2 <= 0) {
+	   continue;
+	}
+
         // add errors of spB-spM and spM-spT pairs and add the correlation term
         // for errors on spM
         float error2 = lt.Er + ErB +
