@@ -228,9 +228,10 @@ template <typename external_spacepoint_t>
 SeedFinderOrthogonal<external_spacepoint_t>::SeedFinderOrthogonal(
     const SeedFinderOrthogonalConfig<external_spacepoint_t> &config,
     const SeedFinderOptions &options)
-    : m_config(config), m_options(options) 
+  : m_config(config.toInternalUnits()), m_options(options) 
     {
       std::cout <<" ============= " << std::endl;
+      std::cout <<"config.minPt = " << m_config.minPt << std::endl;
       std::cout <<"Config derived variables:" << std::endl;
       std::cout <<"   * highland : " << m_config.highland << std::endl;
       std::cout <<"   * maxScatteringAngle2 : " << m_config.maxScatteringAngle2 << std::endl;
