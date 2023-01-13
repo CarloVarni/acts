@@ -1,3 +1,4 @@
+//Dear emacs, this is -*- c++ -*-
 // This file is part of the Acts project.
 //
 // Copyright (C) 2022 CERN for the benefit of the Acts project
@@ -16,6 +17,8 @@
 #include <functional>
 #include <numeric>
 #include <type_traits>
+
+#include <iostream>
 
 namespace Acts {
 template <typename external_spacepoint_t>
@@ -225,7 +228,19 @@ template <typename external_spacepoint_t>
 SeedFinderOrthogonal<external_spacepoint_t>::SeedFinderOrthogonal(
     const SeedFinderOrthogonalConfig<external_spacepoint_t> &config,
     const SeedFinderOptions &options)
-    : m_config(config), m_options(options) {}
+    : m_config(config), m_options(options) 
+    {
+      std::cout <<" ============= " << std::endl;
+      std::cout <<"Config derived variables:" << std::endl;
+      std::cout <<"   * highland : " << m_config.highland << std::endl;
+      std::cout <<"   * maxScatteringAngle2 : " << m_config.maxScatteringAngle2 << std::endl;
+      std::cout <<"Options derived variables:" << std::endl; 
+      std::cout <<"   * pTPerHelixRadius : " << m_options.pTPerHelixRadius << std::endl;
+      std::cout <<"   * minHelixDiameter2 : " << m_options.minHelixDiameter2 << std::endl;
+      std::cout <<"   * pT2perRadius : " << m_options.pT2perRadius << std::endl;
+      std::cout <<"   * sigmapT2perRadius : " << m_options.sigmapT2perRadius << std::endl;
+      std::cout <<" ============= " << std::endl;
+    }
 
 template <typename external_spacepoint_t>
 template <typename output_container_t>

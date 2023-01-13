@@ -22,7 +22,7 @@ template <typename T>
 class SeedFilter;
 
 template <typename T>
-class SeedFinderOrthogonalConfig;
+struct SeedFinderOrthogonalConfig;
 
 template <typename SpacePoint>
 struct SeedFinderConfig {
