@@ -108,7 +108,8 @@ struct SeedFinderOrthogonalConfig {
   SeedFinderOrthogonalConfig toInternalUnits() const {
     if (isInInternalUnits) {
       throw std::runtime_error(
-        "Repeated conversion to internal units for SeedFinderOrthogonalConfig");
+          "Repeated conversion to internal units for "
+          "SeedFinderOrthogonalConfig");
     }
     using namespace Acts::UnitLiterals;
     SeedFinderOrthogonalConfig config = *this;
@@ -132,7 +133,8 @@ struct SeedFinderOrthogonalConfig {
   SeedFinderOrthogonalConfig calculateDerivedQuantities() const {
     if (!isInInternalUnits) {
       throw std::runtime_error(
-          "Derived quantities in SeedFinderOrthogonalConfig can only be calculated from "
+          "Derived quantities in SeedFinderOrthogonalConfig can only be "
+          "calculated from "
           "Acts internal units");
     }
     SeedFinderOrthogonalConfig config = *this;
