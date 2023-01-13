@@ -18,8 +18,6 @@
 #include <numeric>
 #include <type_traits>
 
-#include <iostream>
-
 namespace Acts {
 template <typename external_spacepoint_t>
 auto SeedFinderOrthogonal<external_spacepoint_t>::validTupleOrthoRangeLH(
@@ -230,17 +228,18 @@ SeedFinderOrthogonal<external_spacepoint_t>::SeedFinderOrthogonal(
     const SeedFinderOptions &options)
   : m_config(config), m_options(options) 
     {
-      std::cout <<" ============= " << std::endl;
-      std::cout <<"config.minPt = " << m_config.minPt << std::endl;
-      std::cout <<"Config derived variables:" << std::endl;
-      std::cout <<"   * highland : " << m_config.highland << std::endl;
-      std::cout <<"   * maxScatteringAngle2 : " << m_config.maxScatteringAngle2 << std::endl;
-      std::cout <<"Options derived variables:" << std::endl; 
-      std::cout <<"   * pTPerHelixRadius : " << m_options.pTPerHelixRadius << std::endl;
-      std::cout <<"   * minHelixDiameter2 : " << m_options.minHelixDiameter2 << std::endl;
-      std::cout <<"   * pT2perRadius : " << m_options.pT2perRadius << std::endl;
-      std::cout <<"   * sigmapT2perRadius : " << m_options.sigmapT2perRadius << std::endl;
-      std::cout <<" ============= " << std::endl;
+      // Oblige the user to pass objects already in Internal Units
+      // This is beacuse the config object can be set during initialization
+      // and then never changed again during the entire execution.
+      // Thus it will already have derived variables computed, and be a constant object
+      if (not m_config.isInInternalUnits) {
+	throw std::runtime_error(
+	   "SeedFinderOrthogonalConfig not in ACTS internal units in SeedFinderOrthogonal");
+      }
+      if (not m_options.isInInternalUnits) {
+	throw std::runtime_error(
+           "SeedfinderOptions is not in ACTS internal units in SeedFinderOrthogonal");
+      }
     }
 
 template <typename external_spacepoint_t>
