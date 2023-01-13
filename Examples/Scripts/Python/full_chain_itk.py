@@ -33,7 +33,7 @@ detector, trackingGeometry, decorators = acts.examples.itk.buildITkGeometry(geo_
 field = acts.examples.MagneticFieldMapXyz(str(geo_dir / "bfield/ATLAS-BField-xyz.root"))
 rnd = acts.examples.RandomNumbers(seed=42)
 
-s = acts.examples.Sequencer(events=1, numThreads=1, outputDir=str(outputDir))
+s = acts.examples.Sequencer(events=100, numThreads=-1, outputDir=str(outputDir))
 
 if not ttbar_pu200:
     addParticleGun(
@@ -83,7 +83,7 @@ addSeeding(
     TruthSeedRanges(pt=(1.0 * u.GeV, None), eta=(-4.0, 4.0), nHits=(9, None))
     if ttbar_pu200
     else TruthSeedRanges(),
-    seedingAlgorithm=SeedingAlgorithm.Orthogonal, #Default,
+    seedingAlgorithm=SeedingAlgorithm.Default,
     *acts.examples.itk.itkSeedingAlgConfig("PixelSpacePoints"),
     geoSelectionConfigFile=geo_dir / "itk-hgtd/geoSelection-ITk.json",
     outputDirRoot=outputDir,
