@@ -208,9 +208,18 @@ class VectorMultiTrajectoryBase {
                     "Is not const");
     }
     std::cout << "Ready for the switch ..." << std::endl; 
+    
+
     using namespace Acts::HashedStringLiteral;
     switch (key) {
       case "previous"_hash:
+	std::cout << "previous option ..." << std::endl;
+	//	std::cout << "has previous? " << (hasColumn_impl(key)) << std::endl;
+	std::cout << " sure..." << std::endl;
+	std::cout << "size: " << instance.m_index.size() << std::endl;
+	std::cout << "almost there" << std::endl;
+	instance.m_index[istate];
+	std::cout << "gotten index element..." << std::endl;
         return &instance.m_index[istate].iprevious;
       case "predicted"_hash:
         return &instance.m_index[istate].ipredicted;
