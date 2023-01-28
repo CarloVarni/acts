@@ -208,7 +208,8 @@ class VectorMultiTrajectoryBase {
                     "Is not const");
     }
     std::cout << "Ready for the switch ..." << std::endl; 
-    
+    std::cout << "option: " << key << std::endl;
+    std::cout << "here we go"<<std::endl;
 
     using namespace Acts::HashedStringLiteral;
     switch (key) {
@@ -251,6 +252,7 @@ class VectorMultiTrajectoryBase {
       case "typeFlags"_hash:
         return &instance.m_index[istate].typeFlags;
       default:
+	std::cout << "Ostia... il default"<<std::endl;
         auto it = instance.m_dynamic.find(key);
         if (it == instance.m_dynamic.end()) {
           throw std::runtime_error("Unable to handle this component");
