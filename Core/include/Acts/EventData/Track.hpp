@@ -598,22 +598,34 @@ class TrackContainer {
   template <typename T, HashedString key, bool RO = ReadOnly,
             typename = std::enable_if_t<!RO>>
   constexpr T& component(IndexType itrack) {
-    return *std::any_cast<T*>(container().component_impl(key, itrack));
+    std::cout << "Inside component from index Track \n";
+    auto obj = std::any_cast<T*>(container().component_impl(key, itrack));
+    if (not obj) std::cout << "nullptr here... fuck \n";
+    return *obj;
   }
 
   template <typename T, bool RO = ReadOnly, typename = std::enable_if_t<!RO>>
   constexpr T& component(HashedString key, IndexType itrack) {
-    return *std::any_cast<T*>(container().component_impl(key, itrack));
+    std::cout << "Inside component from key + index Track \n";
+    auto obj = std::any_cast<T*>(container().component_impl(key, itrack));
+    if (not obj) std::cout << "nullptr here... fuck \n";
+    return *obj;
   }
 
   template <typename T, HashedString key>
   constexpr const T& component(IndexType itrack) const {
-    return *std::any_cast<const T*>(container().component_impl(key, itrack));
+    std::cout << "Inside const component from index Track \n";
+    auto obj = std::any_cast<const T*>(container().component_impl(key, itrack));
+    if (not obj) std::cout << "nullptr here... fuck \n";
+    return *obj;
   }
 
   template <typename T>
   constexpr const T& component(HashedString key, IndexType itrack) const {
-    return *std::any_cast<const T*>(container().component_impl(key, itrack));
+    std::cout << "Inside const component from key + index Track \n";
+    auto obj = std::any_cast<const T*>(container().component_impl(key, itrack));
+    if (not obj) std::cout << "nullptr here... fuck \n";
+    return *obj;
   }
 
   template <bool RO = ReadOnly, typename = std::enable_if_t<!RO>>

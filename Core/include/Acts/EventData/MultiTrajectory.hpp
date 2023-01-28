@@ -1424,7 +1424,10 @@ class MultiTrajectory {
             typename = std::enable_if_t<!RO>>
   constexpr T& component(IndexType istate) {
     assert(checkOptional(key, istate));
-    return *std::any_cast<T*>(self().component_impl(key, istate));
+    std::cout << "getting component_impl from multitraj\n";
+    auto obj = std::any_cast<T*>(self().component_impl(key, istate));
+    if (not obj) std::cout << "nullptr here\n";
+    return *obj;
   }
 
   /// Retrieve a mutable reference to a component
@@ -1435,7 +1438,10 @@ class MultiTrajectory {
   template <typename T, bool RO = ReadOnly, typename = std::enable_if_t<!RO>>
   constexpr T& component(HashedString key, IndexType istate) {
     assert(checkOptional(key, istate));
-    return *std::any_cast<T*>(self().component_impl(key, istate));
+    std::cout << "getting component_impl from multitraj with key \n";
+    auto obj = std::any_cast<T*>(self().component_impl(key, istate));
+    if (not obj) std::cout << "nullptr here\n";
+    return *obj;
   }
 
   /// Retrieve a const reference to a component
