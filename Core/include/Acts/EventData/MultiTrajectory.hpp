@@ -28,6 +28,7 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <iostream>
 
 namespace Acts {
 
@@ -80,7 +81,9 @@ class TransitiveConstPointer {
     return m_ptr == other.m_ptr;
   }
 
-  const T* operator->() const { return m_ptr; }
+  const T* operator->() const {
+    std::cout << "getting with ->" << std::endl;
+    return m_ptr; }
 
   T* operator->() { return m_ptr; }
 

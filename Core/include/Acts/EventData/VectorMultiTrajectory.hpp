@@ -16,6 +16,7 @@
 #include <unordered_map>
 
 #include <boost/histogram.hpp>
+#include <iostream>
 
 namespace Acts {
 
@@ -206,6 +207,7 @@ class VectorMultiTrajectoryBase {
       static_assert(std::is_const_v<std::remove_reference_t<T>>,
                     "Is not const");
     }
+    std::cout << "Ready for the switch ..." << std::endl; 
     using namespace Acts::HashedStringLiteral;
     switch (key) {
       case "previous"_hash:

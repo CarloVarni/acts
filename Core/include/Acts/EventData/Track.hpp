@@ -14,6 +14,7 @@
 #include <any>
 #include <cstddef>
 #include <iterator>
+#include <iostream>
 
 namespace Acts {
 
@@ -632,6 +633,7 @@ class TrackContainer {
 
   constexpr typename ConstTrackProxy::ConstCovariance covariance(
       IndexType itrack) const {
+    std::cout << "inside covariance method with itrack number"  << std::endl;
     return container().covariance(itrack);
   }
 

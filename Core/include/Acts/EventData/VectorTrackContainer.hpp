@@ -12,6 +12,7 @@
 #include "Acts/EventData/detail/DynamicColumn.hpp"
 
 #include <unordered_map>
+#include <iostream>
 
 namespace Acts {
 
@@ -170,10 +171,12 @@ class VectorTrackContainer final : public detail_vtc::VectorTrackContainerBase {
   }
 
   Covariance covariance(IndexType itrack) {
+    std::cout << "ACTS: inside covariance non-const method" << std::endl;
     return Covariance{m_cov[itrack].data()};
   }
 
   ConstCovariance covariance(IndexType itrack) const {
+    std::cout << "ACTS: inside covariance const method" << std::endl;
     return ConstCovariance{m_cov[itrack].data()};
   }
 
