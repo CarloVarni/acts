@@ -223,33 +223,47 @@ class VectorMultiTrajectoryBase {
 	std::cout << "gotten index element..." << std::endl;
         return &instance.m_index[istate].iprevious;
       case "predicted"_hash:
+	std::cout << "predicted option ..." << std::endl;
         return &instance.m_index[istate].ipredicted;
       case "filtered"_hash:
+	std::cout << "filtered option ..." << std::endl;
         return &instance.m_index[istate].ifiltered;
       case "smoothed"_hash:
+	std::cout << "smoothed option ..." << std::endl;
         return &instance.m_index[istate].ismoothed;
       case "calibrated"_hash:
+	std::cout << "calibrated option ..." << std::endl;
         return &instance.m_measOffset[istate];
       case "calibratedCov"_hash:
+	std::cout << "calibratedCov option ..." << std::endl;
         return &instance.m_measCovOffset[istate];
       case "jacobian"_hash:
+	std::cout << "jacobian option ..." << std::endl;
         return &instance.m_index[istate].ijacobian;
       case "projector"_hash:
+	std::cout << "projector option ..." << std::endl;
         return &instance.m_projectors[instance.m_index[istate].iprojector];
       case "uncalibratedSourceLink"_hash:
+	std::cout << "uncalibratedSourceLink option ..." << std::endl;
         return &instance.m_sourceLinks[instance.m_index[istate].iuncalibrated];
       case "calibratedSourceLink"_hash:
+	std::cout << "calibratedSourceLink option ..." << std::endl;
         return &instance.m_sourceLinks[instance.m_index[istate]
                                            .icalibratedsourcelink];
       case "referenceSurface"_hash:
+	std::cout << "referenceSurface option ..." << std::endl;
         return &instance.m_referenceSurfaces[istate];
       case "measdim"_hash:
+	std::cout << "measdim option ..." << std::endl;
         return &instance.m_index[istate].measdim;
       case "chi2"_hash:
+	std::cout << "chi2 option ..." << std::endl;
         return &instance.m_index[istate].chi2;
       case "pathLength"_hash:
+	std::cout << "pathLength option ..." << std::endl;
         return &instance.m_index[istate].pathLength;
       case "typeFlags"_hash:
+	std::cout << "typeFlags option ..." << std::endl;
         return &instance.m_index[istate].typeFlags;
       default:
 	std::cout << "Ostia... il default"<<std::endl;
