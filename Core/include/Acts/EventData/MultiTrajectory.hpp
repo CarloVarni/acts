@@ -86,7 +86,10 @@ class TransitiveConstPointer {
     if (not m_ptr) std::cout <<"qui c''e un nullptr!!!"<<std::endl;
     return m_ptr; }
 
-  T* operator->() { return m_ptr; }
+  T* operator->() {
+    std::cout << "getting with non const ->" << std::endl;
+    if (not m_ptr) std::cout <<"qui c''e un nullptr!!!"<<std::endl;
+    return m_ptr; }
 
   template <typename U>
   friend class TransitiveConstPointer;
