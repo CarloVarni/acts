@@ -83,6 +83,7 @@ class TransitiveConstPointer {
 
   const T* operator->() const {
     std::cout << "getting with ->" << std::endl;
+    if (not m_ptr) std::cout <<"qui c''e un nullptr!!!"<<std::endl;
     return m_ptr; }
 
   T* operator->() { return m_ptr; }
