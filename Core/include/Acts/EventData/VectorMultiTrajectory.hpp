@@ -230,6 +230,8 @@ class VectorMultiTrajectoryBase {
         return &instance.m_index[istate].ifiltered;
       case "smoothed"_hash:
 	std::cout << "smoothed option ..." << std::endl;
+	instance.m_index[istate].ismoothed;
+	std::cout << "let's return it ..." << std::endl;
         return &instance.m_index[istate].ismoothed;
       case "calibrated"_hash:
 	std::cout << "calibrated option ..." << std::endl;
