@@ -78,8 +78,11 @@ class SingleBoundTrackParameters {
                              const ParametersVector& params,
                              std::optional<CovarianceMatrix> cov = std::nullopt)
       : m_params(params), m_cov(std::move(cov)), m_surface(std::move(surface)) {
+    std::cout << "Got inside the constructor of SingleBoundTrackParameters \n" ;
     assert(m_surface);
+    std::cout << "Passed the assert! \n";
     normalizePhiTheta();
+    std::cout << "I'm exiting now from the constructor ... \n";  
   }
 
   /// Factory to construct from four-position, direction, absolute momentum, and
