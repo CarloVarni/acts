@@ -621,9 +621,11 @@ class TrackStateProxy {
   /// @return The smoothed parameters
   /// @note Const version
   ConstParameters smoothed() const {
+    std::cout << "Checking smoothed exists ... \n"
     assert(has<hashString("smoothed")>());
-    return m_traj->self().parameters(
-        component<IndexType, hashString("smoothed")>());
+    auto idx = component<IndexType, hashString("smoothed")>();
+    std::cout << "smoothed const component idx: " << idx << "\n";
+    return m_traj->self().parameters(idx);
   }
 
   /// Smoothed track parameters vector
@@ -631,9 +633,11 @@ class TrackStateProxy {
   /// @note Mutable version
   template <bool RO = ReadOnly, typename = std::enable_if_t<!RO>>
   Parameters smoothed() {
+    std::cout << "Checking smoothed exists ... \n"
     assert(has<hashString("smoothed")>());
-    return m_traj->self().parameters(
-        component<IndexType, hashString("smoothed")>());
+    auto idx = component<IndexType, hashString("smoothed")>();
+    std::cout << "smoothed component idx: " << idx << "\n";a
+    return m_traj->self().parameters(idx);
   }
 
   /// Smoothed track parameters covariance matrix
