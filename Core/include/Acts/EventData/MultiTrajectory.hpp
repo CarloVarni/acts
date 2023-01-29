@@ -636,7 +636,7 @@ class TrackStateProxy {
     std::cout << "Checking smoothed exists ... \n"
     assert(has<hashString("smoothed")>());
     auto idx = component<IndexType, hashString("smoothed")>();
-    std::cout << "smoothed component idx: " << idx << "\n";a
+    std::cout << "smoothed component idx: " << idx << "\n";
     return m_traj->self().parameters(idx);
   }
 
