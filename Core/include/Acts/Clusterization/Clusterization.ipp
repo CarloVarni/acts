@@ -316,7 +316,7 @@ ClusterCollection createClusters(CellCollection& cells, Connect connect) {
   using Cluster = typename ClusterCollection::value_type;
   internal::staticCheckCellType<Cell, GridDim>();
   internal::staticCheckClusterType<Cluster&, const Cell&>();
-  labelClusters<CellCollection, Connect, GridDim>(cells, connect);
+  labelClusters<CellCollection, GridDim, Connect>(cells, connect);
   return mergeClusters<CellCollection, ClusterCollection, GridDim>(cells);
 }
 
