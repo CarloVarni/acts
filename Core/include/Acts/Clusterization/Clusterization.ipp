@@ -232,7 +232,7 @@ ConnectResult Connect1D<Cell>::operator()(const Cell& ref, const Cell& iter) {
   return deltaCol == 1 ? ConnectResult::eConn : ConnectResult::eNoConnStop;
 }
 
-template <typename CellCollection, typename Connect, size_t GridDim>
+template <typename CellCollection, size_t GridDim, typename Connect>
 void labelClusters(CellCollection& cells, Connect connect) {
   using Cell = typename CellCollection::value_type;
   internal::staticCheckCellType<Cell, GridDim>();
