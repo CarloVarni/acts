@@ -229,6 +229,13 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
                                      m_cfg.numPhiNeighbors));
   auto grid = Acts::SpacePointGridCreator::createGrid<SimSpacePoint>(
       m_cfg.gridConfig, m_cfg.gridOptions);
+
+
+  for (const auto& collection : *grid.get()) {
+    std::cout << "n collection in bin: " << collection.size() << "\n";
+  }
+
+
   auto spacePointsGrouping = Acts::BinnedSPGroup<SimSpacePoint>(
       spacePointPtrs.begin(), spacePointPtrs.end(), extractGlobalQuantities,
       bottomBinFinder, topBinFinder, std::move(grid), rRangeSPExtent,
