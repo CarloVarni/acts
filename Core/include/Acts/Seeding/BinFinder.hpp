@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Acts/Seeding/SpacePointGrid.hpp"
+#include "Acts/EventData/Holders.hpp"
 
 #include <vector>
 
@@ -42,7 +43,7 @@ class BinFinder {
  private:
   // This vector is provided by the user and is supposed to be a contant for
   // all events. No point in making a copy
-  const std::vector<std::pair<int, int> >& m_zBinNeighbors;
+  Acts::detail_tc::RefHolder<const std::vector<std::pair<int, int> >> m_zBinNeighbors;
   int m_numPhiNeighbors = 1;
 };
 }  // namespace Acts

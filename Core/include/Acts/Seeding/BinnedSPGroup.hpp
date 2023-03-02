@@ -87,7 +87,7 @@ class BinnedSPGroupIterator {
     }
 
     size_t this_zIndex = zIndex;
-    if (not customZorder->empty()) {
+    if (customZorder and not customZorder->empty()) {
       this_zIndex = customZorder->at(this_zIndex - 1);
     }
 

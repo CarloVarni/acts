@@ -19,12 +19,12 @@ Acts::BinFinder<external_spacepoint_t>::findBins(
     const Acts::SpacePointGrid<external_spacepoint_t>* binnedSP) const {
   // if zBinNeighbors is not defined, get the indices using
   // neighborHoodIndices
-  if (m_zBinNeighbors.empty()) {
+  if (m_zBinNeighbors->empty()) {
     return binnedSP->neighborHoodIndices({phiBin, zBin}).collect();
   }
   // if the zBinNeighbors is defined, get the indices from there
   std::array<std::pair<int, int>, 2> sizePerAxis;
   sizePerAxis.at(0) = std::make_pair(-m_numPhiNeighbors, m_numPhiNeighbors);
-  sizePerAxis.at(1) = m_zBinNeighbors[zBin - 1];
+  sizePerAxis.at(1) = (*m_zBinNeighbors)[zBin - 1];
   return binnedSP->neighborHoodIndices({phiBin, zBin}, sizePerAxis).collect();
 }
