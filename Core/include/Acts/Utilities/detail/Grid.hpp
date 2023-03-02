@@ -454,6 +454,12 @@ class Grid final {
     return grid_helper::getAxes(m_axes);
   }
 
+  Acts::detail::GridIterator<Acts::detail::Grid<T, Axes...>> begin()
+  { return {*this, 0}; }
+
+  Acts::detail::GridIterator<Acts::detail::Grid<T, Axes...>> end()
+  { return {*this, size()}; }
+  
  private:
   /// set of axis defining the multi-dimensional grid
   std::tuple<Axes...> m_axes;
