@@ -182,6 +182,11 @@ ActsExamples::SeedingAlgorithm::SeedingAlgorithm(
         });
   }
 
+  m_bottomBinFinder = std::make_shared<const Acts::BinFinder<SimSpacePoint>>(
+      m_cfg.zBinNeighborsBottom, m_cfg.numPhiNeighbors);
+  m_topBinFinder = std::make_shared<const Acts::BinFinder<SimSpacePoint>>(
+      m_cfg.zBinNeighborsTop, m_cfg.numPhiNeighbors);
+
   m_cfg.seedFinderConfig.seedFilter =
       std::make_unique<Acts::SeedFilter<SimSpacePoint>>(m_cfg.seedFilterConfig);
   m_seedFinder = Acts::SeedFinder<SimSpacePoint>(m_cfg.seedFinderConfig);
@@ -221,12 +226,6 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   // extent used to store r range for middle spacepoint
   Acts::Extent rRangeSPExtent;
 
-  auto bottomBinFinder = std::make_shared<Acts::BinFinder<SimSpacePoint>>(
-      Acts::BinFinder<SimSpacePoint>(m_cfg.zBinNeighborsBottom,
-                                     m_cfg.numPhiNeighbors));
-  auto topBinFinder = std::make_shared<Acts::BinFinder<SimSpacePoint>>(
-      Acts::BinFinder<SimSpacePoint>(m_cfg.zBinNeighborsTop,
-                                     m_cfg.numPhiNeighbors));
   auto grid = Acts::SpacePointGridCreator::createGrid<SimSpacePoint>(
       m_cfg.gridConfig, m_cfg.gridOptions);
 
@@ -238,7 +237,7 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
 
   auto spacePointsGrouping = Acts::BinnedSPGroup<SimSpacePoint>(
       spacePointPtrs.begin(), spacePointPtrs.end(), extractGlobalQuantities,
-      bottomBinFinder, topBinFinder, std::move(grid), rRangeSPExtent,
+      m_bottomBinFinder, m_topBinFinder, std::move(grid), rRangeSPExtent,
       m_cfg.seedFinderConfig, m_cfg.seedFinderOptions);
 
   // safely clamp double to float
