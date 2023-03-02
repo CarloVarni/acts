@@ -55,7 +55,8 @@ class Grid final {
   /// @brief default constructor
   ///
   /// @param [in] axes actual axis objects spanning the grid
-  Grid(std::tuple<Axes...> axes) : m_axes(std::move(axes)) {
+  Grid(std::tuple<Axes...>& axes) = delete;
+  Grid(std::tuple<Axes...>&& axes) : m_axes(std::move(axes)) {
     m_values.resize(size());
   }
 
@@ -434,16 +435,17 @@ class Grid final {
   size_t size(bool fullCounter = true) const {
     index_t nBinsArray = numLocalBins();
     // add under-and overflow bins for each axis and multiply all bins
+    size_t current_size = 1;
     if (fullCounter) {
-      return std::accumulate(
-          nBinsArray.begin(), nBinsArray.end(), 1,
-          [](const size_t& a, const size_t& b) { return a * (b + 2); });
+      for (const auto& value : nBinsArray) {
+	current_size *= current_size * (value + 2);
+      }
     }
     // ignore under-and overflow bins for each axis and multiply all bins
     else {
-      return std::accumulate(
-          nBinsArray.begin(), nBinsArray.end(), 1,
-          [](const size_t& a, const size_t& b) { return a * b; });
+      for (const auto& value : nBinsArray) {
+	current_size *=	current_size * value;
+      }
     }
   }
 
