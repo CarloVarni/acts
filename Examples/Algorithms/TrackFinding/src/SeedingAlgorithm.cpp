@@ -23,6 +23,8 @@
 #include <limits>
 #include <stdexcept>
 
+#include <chrono>
+
 ActsExamples::SeedingAlgorithm::SeedingAlgorithm(
     ActsExamples::SeedingAlgorithm::Config cfg, Acts::Logging::Level lvl)
     : ActsExamples::BareAlgorithm("SeedingAlgorithm", lvl),
@@ -227,6 +229,13 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
                                      m_cfg.numPhiNeighbors));
   auto grid = Acts::SpacePointGridCreator::createGrid<SimSpacePoint>(
       m_cfg.gridConfig, m_cfg.gridOptions);
+
+
+  // for (const auto& collection : *grid.get()) {
+  //   std::cout << "n collection in bin: " << collection.size() << "\n";
+  // }
+
+
   auto spacePointsGrouping = Acts::BinnedSPGroup<SimSpacePoint>(
       spacePointPtrs.begin(), spacePointPtrs.end(), extractGlobalQuantities,
       bottomBinFinder, topBinFinder, std::move(grid), rRangeSPExtent,
@@ -247,6 +256,7 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   seeds.clear();
   static thread_local decltype(m_seedFinder)::SeedingState state;
 
+  auto start = std::chrono::high_resolution_clock::now();
   auto group = spacePointsGrouping.begin();
   auto groupEnd = spacePointsGrouping.end();
   for (; !(group == groupEnd); ++group) {
@@ -254,7 +264,10 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
         m_cfg.seedFinderOptions, state, std::back_inserter(seeds),
         group.bottom(), group.middle(), group.top(), rMiddleSPRange);
   }
-
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast< std::chrono::nanoseconds >( stop - start ).count();
+  std::cout << "time=" << duration << " nsp=" << spacePointPtrs.size() << "\n";
+  
   // extract proto tracks, i.e. groups of measurement indices, from tracks seeds
   size_t nSeeds = seeds.size();
   static thread_local ProtoTrackContainer protoTracks;
