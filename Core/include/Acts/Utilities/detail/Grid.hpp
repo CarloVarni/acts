@@ -14,7 +14,6 @@
 #include "Acts/Utilities/detail/GridFwd.hpp"
 #include "Acts/Utilities/detail/grid_helper.hpp"
 #include "Acts/Utilities/detail/GridIterator.hpp"
-
 #include <array>
 #include <numeric>
 #include <set>
@@ -435,17 +434,17 @@ class Grid final {
   /// @note This number contains under-and overflow bins along all axes.
   size_t size(bool fullCounter = true) const {
     index_t nBinsArray = numLocalBins();
+    std::size_t current_size = 1;
     // add under-and overflow bins for each axis and multiply all bins
-    size_t current_size = 1;
     if (fullCounter) {
       for (const auto& value : nBinsArray) {
-	current_size *= current_size * (value + 2);
+	current_size *= value + 2;
       }
     }
     // ignore under-and overflow bins for each axis and multiply all bins
     else {
       for (const auto& value : nBinsArray) {
-	current_size *=	current_size * value;
+	current_size *= value;
       }
     }
     return current_size;
