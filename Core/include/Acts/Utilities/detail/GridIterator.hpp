@@ -59,6 +59,8 @@ namespace Acts::detail {
     
     typename grid_type::const_reference operator*() const;
 
+    std::size_t index() const;
+    
   private:
     // The grid
     Acts::detail_tc::RefHolder<grid_type> m_grid;
@@ -136,5 +138,11 @@ namespace Acts::detail {
   typename grid_type::const_reference
   GridIterator<grid_type>::operator*() const
   { return m_grid->at(m_index); }
+
+  template<typename grid_type>
+  inline
+  std::size_t
+  GridIterator<grid_type>::index() const
+  { return m_index; }
 
 }

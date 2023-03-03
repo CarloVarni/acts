@@ -229,12 +229,6 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   auto grid = Acts::SpacePointGridCreator::createGrid<SimSpacePoint>(
       m_cfg.gridConfig, m_cfg.gridOptions);
 
-
-  for (const auto& collection : *grid.get()) {
-    std::cout << "n collection in bin: " << collection.size() << "\n";
-  }
-
-
   auto spacePointsGrouping = Acts::BinnedSPGroup<SimSpacePoint>(
       spacePointPtrs.begin(), spacePointPtrs.end(), extractGlobalQuantities,
       m_bottomBinFinder, m_topBinFinder, std::move(grid), rRangeSPExtent,
@@ -256,13 +250,24 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   static thread_local decltype(m_seedFinder)::SeedingState state;
 
   auto start = std::chrono::high_resolution_clock::now();
-  auto group = spacePointsGrouping.begin();
-  auto groupEnd = spacePointsGrouping.end();
-  for (; !(group == groupEnd); ++group) {
-    m_seedFinder.createSeedsForGroup(
-        m_cfg.seedFinderOptions, state, std::back_inserter(seeds),
-        group.bottom(), group.middle(), group.top(), rMiddleSPRange);
+  // for( const auto group_itr : spacePointsGrouping) {
+  //   const auto& [middle, bottom, top] = *group_itr;
+  for( const auto& [middle, bottom, top] : spacePointsGrouping) {
+    std::cout << "Candidate sizes:\n";
+    std::cout << "   middle: " << middle.size() << "\n";
+    std::cout << "   bottom: " << bottom.size() << "\n";
+    std::cout << "   top: " << top.size() << "\n";
+    m_seedFinder.createSeedsForGroup(m_cfg.seedFinderOptions, state, std::back_inserter(seeds),
+                                     bottom, middle, top, rMiddleSPRange);
   }
+
+  // auto group = spacePointsGrouping.begin();
+  // auto groupEnd = spacePointsGrouping.end();
+  // for (; !(group == groupEnd); ++group) {
+  //   m_seedFinder.createSeedsForGroup(
+  // 				     m_cfg.seedFinderOptions, state, std::back_inserter(seeds),
+  // 				     group.bottom(), group.middle(), group.top(), rMiddleSPRange);
+  // }
   auto stop = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast< std::chrono::nanoseconds >( stop - start ).count();
   std::cout << "time=" << duration << " nsp=" << spacePointPtrs.size() << "\n";
