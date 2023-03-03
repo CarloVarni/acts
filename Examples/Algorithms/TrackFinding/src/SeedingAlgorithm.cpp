@@ -260,10 +260,8 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   std::cout << "N: " << counter << std::endl;
   
   auto start = std::chrono::high_resolution_clock::now();
-  // for( const auto group_itr : spacePointsGrouping) {
-  //   const auto& [middle, bottom, top] = *group_itr;
+
   for( const auto& [middle, bottom, top] : spacePointsGrouping) {
-    if (middle[0]->size() == 0) continue;
     std::cout << "Candidate sizes:\n";
     std::cout << "   middle: " << middle[0]->size() << "\n";
     std::cout << "   bottom: " << bottom.size() << "\n";
@@ -272,13 +270,6 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
                                      bottom, middle, top, rMiddleSPRange);
   }
 
-  // auto group = spacePointsGrouping.begin();
-  // auto groupEnd = spacePointsGrouping.end();
-  // for (; !(group == groupEnd); ++group) {
-  //   m_seedFinder.createSeedsForGroup(
-  // 				     m_cfg.seedFinderOptions, state, std::back_inserter(seeds),
-  // 				     group.bottom(), group.middle(), group.top(), rMiddleSPRange);
-  // }
   auto stop = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast< std::chrono::nanoseconds >( stop - start ).count();
   std::cout << "time=" << duration << " nsp=" << spacePointPtrs.size() << "\n";
