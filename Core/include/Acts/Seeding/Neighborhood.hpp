@@ -14,6 +14,7 @@
 #include "Acts/Seeding/Seed.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
+#include "Acts/EventData/Holders.hpp"
 
 #include <memory>
 #include <vector>
@@ -22,6 +23,66 @@
 
 namespace Acts {
 
+  template<typename external_spacepoint_t>
+  using candidate_collection_t =
+    std::vector<const std::vector<std::unique_ptr<Acts::InternalSpacePoint<external_spacepoint_t>>>*>;
+  
+  template<typename external_spacepoint_t>
+  class SimpleNeighborhoodIterator {
+  public:
+    SimpleNeighborhoodIterator(SimpleNeighborhood<external_spacepoint_t>&& neighborhood,
+			       std::size_t index_collection,
+                               std::size_t index_element) = delete;
+    SimpleNeighborhoodIterator(const SimpleNeighborhood<external_spacepoint_t>& neighborhood,
+			       std::size_t index_collection,
+			       std::size_t index_element)
+      : m_neighborhood( neighborhood ),
+	m_index_collection( index_collection ),
+	m_index_element( index_element )
+    {}
+    
+    SimpleNeighborhood& operator++() const {
+      // Increment element
+      // If we are at the end of the collection, change collection
+      if (++m_index_element == neighborhood->m_candidates[m_index_collection]) {
+	++m_index_collection;
+	m_index_element = 0;
+      }
+      return *this;
+    }
+
+    const Acts::InternalSpacePoint<external_spacepoint_t>* operator*() const {
+      return neighborhood->m_candidates[m_index_collection][m_index_element].get();
+    }
+    
+  private:
+    Acts::detail_tc::RefHolder< const SimpleNeighborhood<external_spacepoint_t> > m_neighborhood;
+    std::size_t m_index_collection;
+    std::size_t m_index_element;
+  };
+  
+  template <typename external_spacepoint_t>
+  class SimpleNeighborhood {
+  public:
+    friend SimpleNeighborhoodIterator<external_spacepoint_t>;
+
+    SimpleNeighborhood(candidate_collection_t<external_spacepoint_t>&& candidates) = delete;
+    SimpleNeighborhood(const candidate_collection_t<external_spacepoint_t>& candidates)
+      : m_candidates( candidates.begin(), candidates.end() )
+    {}
+    
+    SimpleNeighborhoodIterator<external_spacepoint_t> begin() const {
+      return {*this, 0, 0};
+    }
+
+    SimpleNeighborhoodIterator<external_spacepoint_t> end() const {
+      return {*this, m_candidates->size(), m_candidates->back()->size()};
+    }
+
+  private:
+    Acts::details_tc::RefHolder< candidate_collection_t<external_spacepoint_t> > m_candidates;
+  };
+  
 using NeighborhoodVector = boost::container::small_vector<size_t, 9>;
 
 /// Iterates over the elements of all bins given

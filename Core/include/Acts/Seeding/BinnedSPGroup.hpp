@@ -15,16 +15,19 @@
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/Seeding/Neighborhood.hpp"
+#include "Acts/EventData/Holders.hpp"
 
 #include <memory>
 #include <vector>
 
 #include <boost/container/small_vector.hpp>
 
-#include "Acts/EventData/Holders.hpp"
-
 namespace Acts {
 
+  template<typename external_spacepoint_t>
+  using candidate_collection_t =
+    std::vector<const std::vector<std::unique_ptr<Acts::InternalSpacePoint<external_spacepoint_t>>>*>;
+  
   /// @c BinnedSPGroupIterator Allows to iterate over all groups of bins
   /// a provided BinFinder can generate for each bin of a provided SPGrid
 
@@ -33,7 +36,9 @@ namespace Acts {
   /// No need to be too general with this class  
   template <typename external_spacepoint_t>
   class BinnedSPGroupIterator {
+  private:
     enum INDEX : int {PHI=0, Z=1};
+
   public:
     // Never take ownerships
     BinnedSPGroupIterator(SpacePointGrid<external_spacepoint_t>&&,
@@ -66,6 +71,15 @@ namespace Acts {
       findNotEmptyBin();
     }
 
+    BinnedSPGroupIterator(const BinnedSPGroupIterator&) = delete;
+    BinnedSPGroupIterator& operator=(const BinnedSPGroupIterator&) = delete;
+
+    BinnedSPGroupIterator(BinnedSPGroupIterator&&) noexcept = default;
+    BinnedSPGroupIterator& operator=(BinnedSPGroupIterator&&) noexcept = default;
+
+    ~BinnedSPGroupIterator() = default;
+
+    
     BinnedSPGroupIterator& operator--(int) = delete;
     BinnedSPGroupIterator& operator--() = delete;
     
@@ -73,9 +87,8 @@ namespace Acts {
     BinnedSPGroupIterator& operator++()
     {
       // Increase the position by one
-      ++m_current_localBins[INDEX::Z];
       // if we were on the edge, go up one phi bin and reset z bin
-      if (m_current_localBins[INDEX::Z] == m_max_localBins[INDEX::Z]) {
+      if (++m_current_localBins[INDEX::Z] == m_max_localBins[INDEX::Z]) {
 	++m_current_localBins[INDEX::PHI];
 	m_current_localBins[INDEX::Z] = 0;
       }
@@ -92,15 +105,9 @@ namespace Acts {
     }
     inline bool operator!=(const BinnedSPGroupIterator& other) const { return not (*this == other); }
 
-    std::tuple<std::vector<
-		 const std::vector<
-		   std::unique_ptr<Acts::InternalSpacePoint<external_spacepoint_t>>>*>,
-	       std::vector<
-		 const std::vector<
-		   std::unique_ptr<Acts::InternalSpacePoint<external_spacepoint_t>>>*>,
-	       std::vector<
-		 const std::vector<
-		   std::unique_ptr<Acts::InternalSpacePoint<external_spacepoint_t>>>*>>
+    std::tuple< candidate_collection_t<external_spacepoint_t>,
+		candidate_collection_t<external_spacepoint_t>,
+		candidate_collection_t<external_spacepoint_t> >
     operator*() {     
       // Retrieve here 
       // Less expensive then doing it in the operator++
@@ -183,15 +190,9 @@ namespace Acts {
     /// Custom z-navigation
     std::vector<std::size_t> m_customZ {};
     /// All iterators
-    std::vector<const std::vector<
-                  std::unique_ptr<Acts::InternalSpacePoint<external_spacepoint_t>>>*
-                > m_middleIterators;
-    std::vector<const std::vector<
-		  std::unique_ptr<Acts::InternalSpacePoint<external_spacepoint_t>>>*
-		> m_topIterators;
-    std::vector<const std::vector<
-		  std::unique_ptr<Acts::InternalSpacePoint<external_spacepoint_t>>>*
-		> m_bottomIterators;
+    candidate_collection_t<external_spacepoint_t> m_middleIterators;
+    candidate_collection_t<external_spacepoint_t> m_topIterators;
+    candidate_collection_t<external_spacepoint_t> m_bottomIterators;
   };
   
   
