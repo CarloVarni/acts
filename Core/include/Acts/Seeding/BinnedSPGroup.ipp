@@ -105,7 +105,7 @@ Acts::BinnedSPGroup<external_spacepoint_t>::BinnedSPGroup(
       bin.push_back(std::move(isp));
     }
   }
-  m_binnedSP = std::move(grid);
+  m_grid = std::move(grid);
   m_bottomBinFinder = botBinFinder;
   m_topBinFinder = tBinFinder;
 
