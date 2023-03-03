@@ -26,7 +26,7 @@ namespace Acts::detail {
     GridIterator() = delete;
 
     // Constructor
-    GridIterator(grid_type& grid, std::size_t index);
+    GridIterator(const grid_type& grid, std::size_t index);
 
     // Never take the ownerships
     GridIterator(GridIterator&&) noexcept = delete;
@@ -63,13 +63,13 @@ namespace Acts::detail {
     
   private:
     // The grid
-    Acts::detail_tc::RefHolder<grid_type> m_grid;
+    Acts::detail_tc::RefHolder<const grid_type> m_grid;
     // Corresponds to the global index in thr grid
     std::size_t m_index;
   };
 
   template<typename grid_type>
-  GridIterator<grid_type>::GridIterator(grid_type& grid,
+  GridIterator<grid_type>::GridIterator(const grid_type& grid,
 					std::size_t index)
     : m_grid( grid ),
       m_index( index )

@@ -249,12 +249,23 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   seeds.clear();
   static thread_local decltype(m_seedFinder)::SeedingState state;
 
+
+  auto filled_grid = spacePointsGrouping.grid();
+  std::size_t counter = 0;
+  for (const auto& collection : *filled_grid) {
+    if (collection.size() == 0) continue;
+    std::cout << "grid bin collection: " << collection.size() << "\n";
+    counter++;
+  }
+  std::cout << "N: " << counter << std::endl;
+  
   auto start = std::chrono::high_resolution_clock::now();
   // for( const auto group_itr : spacePointsGrouping) {
   //   const auto& [middle, bottom, top] = *group_itr;
   for( const auto& [middle, bottom, top] : spacePointsGrouping) {
+    if (middle[0]->size() == 0) continue;
     std::cout << "Candidate sizes:\n";
-    std::cout << "   middle: " << middle.size() << "\n";
+    std::cout << "   middle: " << middle[0]->size() << "\n";
     std::cout << "   bottom: " << bottom.size() << "\n";
     std::cout << "   top: " << top.size() << "\n";
     m_seedFinder.createSeedsForGroup(m_cfg.seedFinderOptions, state, std::back_inserter(seeds),

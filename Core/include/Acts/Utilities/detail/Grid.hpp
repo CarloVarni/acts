@@ -454,10 +454,10 @@ class Grid final {
     return grid_helper::getAxes(m_axes);
   }
 
-  Acts::detail::GridIterator<Acts::detail::Grid<T, Axes...>> begin()
+  Acts::detail::GridIterator<Acts::detail::Grid<T, Axes...>> begin() const
   { return {*this, 0}; }
 
-  Acts::detail::GridIterator<Acts::detail::Grid<T, Axes...>> end()
+  Acts::detail::GridIterator<Acts::detail::Grid<T, Axes...>> end() const
   { return {*this, size()}; }
   
  private:
