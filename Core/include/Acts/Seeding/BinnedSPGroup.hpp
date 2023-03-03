@@ -118,6 +118,7 @@ namespace Acts {
 								   m_group->m_grid.get());
       bottomIterators.reserve(bottomBinIndices.size());
       for (auto idx : bottomBinIndices) {
+	if (m_group->m_grid->at(idx).size() == 0) continue;
 	bottomIterators.push_back( &(m_group->m_grid->at(idx)) );
       }
       
@@ -127,14 +128,14 @@ namespace Acts {
 							     m_group->m_grid.get());
       topIterators.reserve(topBinIndices.size());
       for (auto idx : topBinIndices) {
+	if (m_group->m_grid->at(idx).size() == 0) continue;
 	topIterators.push_back( &(m_group->m_grid->at(idx)) );
       }
 
-      return std::make_tuple(middleIterators, bottomIterators, topIterators);
-      
-      // return std::make_tuple(SimpleNeighborhood<external_spacepoint_t>(m_middleIterators),
-      // 			     SimpleNeighborhood<external_spacepoint_t>(m_bottomIterators),
-      // 			     SimpleNeighborhood<external_spacepoint_t>(m_topIterators));
+      return std::make_tuple(middleIterators, bottomIterators, topIterators);      
+      // return std::make_tuple(SimpleNeighborhood<external_spacepoint_t>(middleIterators),
+      // 			     SimpleNeighborhood<external_spacepoint_t>(bottomIterators),
+      // 			     SimpleNeighborhood<external_spacepoint_t>(topIterators));
     }
     
   private:

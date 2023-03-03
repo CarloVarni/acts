@@ -36,27 +36,27 @@ namespace Acts {
     friend SimpleNeighborhoodIterator<external_spacepoint_t>;
 
     SimpleNeighborhood(candidate_collection_t<external_spacepoint_t>&& candidates) = delete;
-    SimpleNeighborhood(const candidate_collection_t<external_spacepoint_t>& candidates)
+    SimpleNeighborhood(candidate_collection_t<external_spacepoint_t>& candidates)
       : m_candidates( candidates )
     {}
     
-    SimpleNeighborhoodIterator<external_spacepoint_t> begin() const {
+    SimpleNeighborhoodIterator<external_spacepoint_t> begin() {
       return {*this, 0, 0};
     }
 
-    SimpleNeighborhoodIterator<external_spacepoint_t> end() const {
+    SimpleNeighborhoodIterator<external_spacepoint_t> end() {
       return {*this, m_candidates->size(), m_candidates->back()->size()};
     }
 
   private:
     const std::vector<std::unique_ptr<Acts::InternalSpacePoint<external_spacepoint_t>>>& at(std::size_t collection) const
-    { return *(m_candidates.ptr->at(collection)); }
+    { return *(m_candidates->at(collection)); }
 
-    const Acts::InternalSpacePoint<external_spacepoint_t>& at(std::size_t collection, std::size_t element) const
+    Acts::InternalSpacePoint<external_spacepoint_t>& at(std::size_t collection, std::size_t element)
     { return *(m_candidates.ptr->at(collection)->at(element).get()); }
     
   private:
-    Acts::detail_tc::RefHolder< const candidate_collection_t<external_spacepoint_t> > m_candidates;
+    Acts::detail_tc::RefHolder< candidate_collection_t<external_spacepoint_t> > m_candidates;
   };
 
   template<typename external_spacepoint_t>
@@ -65,7 +65,7 @@ namespace Acts {
     SimpleNeighborhoodIterator(SimpleNeighborhood<external_spacepoint_t>&& neighborhood,
 			       std::size_t index_collection,
                                std::size_t index_element) = delete;
-    SimpleNeighborhoodIterator(const SimpleNeighborhood<external_spacepoint_t>& neighborhood,
+    SimpleNeighborhoodIterator(SimpleNeighborhood<external_spacepoint_t>& neighborhood,
 			       std::size_t index_collection,
 			       std::size_t index_element)
       : m_neighborhood( neighborhood ),
@@ -86,19 +86,23 @@ namespace Acts {
     SimpleNeighborhoodIterator& operator++() {
       // Increment element
       // If we are at the end of the collection, change collection
-      if (++m_index_element == m_neighborhood->at(m_index_collection).size()) {
+      if (++m_index_element == neighborhood().at(m_index_collection).size()) {
 	++m_index_collection;
 	m_index_element = 0;
       }
       return *this;
     }
 
-    const Acts::InternalSpacePoint<external_spacepoint_t>* operator*() {
+    Acts::InternalSpacePoint<external_spacepoint_t>* operator*() {
       return &(m_neighborhood->at(m_index_collection, m_index_element));
     }
+
+  private:
+    const SimpleNeighborhood<external_spacepoint_t>& neighborhood() const
+    { return *m_neighborhood.ptr; }
     
   private:
-    Acts::detail_tc::RefHolder< const SimpleNeighborhood<external_spacepoint_t> > m_neighborhood;
+    Acts::detail_tc::RefHolder< SimpleNeighborhood<external_spacepoint_t> > m_neighborhood;
     std::size_t m_index_collection;
     std::size_t m_index_element;
   };
