@@ -48,18 +48,10 @@ namespace Acts {
     BinnedSPGroupIterator(BinnedSPGroup<external_spacepoint_t>& group,
 			  std::size_t index)
       : m_group(group),
-        m_max_localBins( m_group->m_grid->numLocalBins() ),
-	m_customZ( group.m_bins )
+        m_max_localBins( m_group->m_grid->numLocalBins() )
     {
       if (index == m_group->m_grid->size()) {
 	m_current_localBins = m_max_localBins;
-      }
-
-      // make the default z-index looping
-      if (m_customZ.size() == 0) {
-	m_customZ.reserve(m_max_localBins[INDEX::Z]);
-	for (std::size_t i(0); i<m_max_localBins[INDEX::Z]; ++i)
-	  m_customZ[i] = i;
       }
 
       // Go to the next not-empty bin
@@ -102,19 +94,19 @@ namespace Acts {
 		candidate_collection_t<external_spacepoint_t>,
 		candidate_collection_t<external_spacepoint_t> >
     operator*() {     
-      // Retrieve here 
+      // Retrieve here - this is the heavy lifting
       // Less expensive then doing it in the operator++
       candidate_collection_t<external_spacepoint_t> middleIterators {};
       candidate_collection_t<external_spacepoint_t> topIterators {};
       candidate_collection_t<external_spacepoint_t> bottomIterators {};
       
       // Middles
-      std::size_t global_index = m_group->m_grid->globalBinFromLocalBins({m_current_localBins[INDEX::PHI], m_customZ[m_current_localBins[INDEX::Z]]});
+      std::size_t global_index = m_group->m_grid->globalBinFromLocalBins({m_current_localBins[INDEX::PHI], m_group->m_bins[m_current_localBins[INDEX::Z]]});
       middleIterators.push_back( &(m_group->m_grid->at(global_index)) );
       
       // Bottoms
       auto bottomBinIndices = m_group->m_bottomBinFinder->findBins(m_current_localBins[INDEX::PHI],
-								   m_customZ[m_current_localBins[INDEX::Z]],
+								   m_group->m_bins[m_current_localBins[INDEX::Z]],
 								   m_group->m_grid.get());
       bottomIterators.reserve(bottomBinIndices.size());
       for (auto idx : bottomBinIndices) {
@@ -124,7 +116,7 @@ namespace Acts {
       
       // Tops
       auto topBinIndices = m_group->m_topBinFinder->findBins(m_current_localBins[INDEX::PHI],
-							     m_customZ[m_current_localBins[INDEX::Z]],
+							     m_group->m_bins[m_current_localBins[INDEX::Z]],
 							     m_group->m_grid.get());
       topIterators.reserve(topBinIndices.size());
       for (auto idx : topBinIndices) {
@@ -132,7 +124,9 @@ namespace Acts {
 	topIterators.push_back( &(m_group->m_grid->at(idx)) );
       }
 
-      return std::make_tuple(middleIterators, bottomIterators, topIterators);      
+      return std::make_tuple(std::move(middleIterators),
+			     std::move(bottomIterators),
+			     std::move(topIterators));      
       // return std::make_tuple(SimpleNeighborhood<external_spacepoint_t>(middleIterators),
       // 			     SimpleNeighborhood<external_spacepoint_t>(bottomIterators),
       // 			     SimpleNeighborhood<external_spacepoint_t>(topIterators));
@@ -149,7 +143,9 @@ namespace Acts {
 	     zBin < m_max_localBins[INDEX::Z];
 	     ++zBin) {
 	  
-	  std::size_t zBinIndex = m_customZ[zBin];
+	  std::size_t zBinIndex = m_group->m_bins.size() == 0
+	    ? zBin
+	    : m_group->m_bins[zBin];
 	  std::size_t index = m_group->m_grid->globalBinFromLocalBins({phiBin, zBinIndex});
 
 	  // Check if there are entries in this bin
@@ -177,8 +173,6 @@ namespace Acts {
     std::array< std::size_t, 2 > m_max_localBins;
     /// Current Local Bins
     std::array< std::size_t, 2 > m_current_localBins {0, 0};
-    /// Custom z-navigation
-    std::vector<std::size_t> m_customZ {};
   };
   
 /// @c BinnedSPGroup Provides access to begin and end BinnedSPGroupIterator

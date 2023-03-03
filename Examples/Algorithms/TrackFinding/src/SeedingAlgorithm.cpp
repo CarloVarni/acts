@@ -248,16 +248,6 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   static thread_local SimSeedContainer seeds;
   seeds.clear();
   static thread_local decltype(m_seedFinder)::SeedingState state;
-
-
-  auto filled_grid = spacePointsGrouping.grid();
-  std::size_t counter = 0;
-  for (const auto& collection : *filled_grid) {
-    if (collection.size() == 0) continue;
-    std::cout << "grid bin collection: " << collection.size() << "\n";
-    counter++;
-  }
-  std::cout << "N: " << counter << std::endl;
   
   auto start = std::chrono::high_resolution_clock::now();
 
