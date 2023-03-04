@@ -39,13 +39,21 @@ namespace Acts {
     SimpleNeighborhood(candidate_collection_t<external_spacepoint_t>& candidates)
       : m_candidates( candidates )
     {}
-    
+
+    SimpleNeighborhoodIterator<external_spacepoint_t> begin() const {
+      return {*this, 0, 0};
+    }
+
+    SimpleNeighborhoodIterator<external_spacepoint_t> end() const {
+      return {*this, m_candidates->size(), 0};
+    }
+
     SimpleNeighborhoodIterator<external_spacepoint_t> begin() {
       return {*this, 0, 0};
     }
 
     SimpleNeighborhoodIterator<external_spacepoint_t> end() {
-      return {*this, m_candidates->size(), m_candidates->back()->size()};
+      return {*this, m_candidates->size(), 0};
     }
 
   private:
@@ -103,8 +111,8 @@ namespace Acts {
     
   private:
     Acts::detail_tc::RefHolder< SimpleNeighborhood<external_spacepoint_t> > m_neighborhood;
-    std::size_t m_index_collection;
-    std::size_t m_index_element;
+    std::size_t m_index_collection {0};
+    std::size_t m_index_element {0};
   };
 
   
