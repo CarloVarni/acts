@@ -252,10 +252,6 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   auto start = std::chrono::high_resolution_clock::now();
 
   for( auto [bottom, middle, top] : spacePointsGrouping) {
-
-    // for (auto itr = middle.begin(); itr != middle.end(); ++itr)
-    //   {}
-
     m_seedFinder.createSeedsForGroup(m_cfg.seedFinderOptions, state, std::back_inserter(seeds),
                                      bottom, middle, top, rMiddleSPRange);
   }

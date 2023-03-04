@@ -13,7 +13,7 @@
 #include "Acts/Utilities/Interpolation.hpp"
 #include "Acts/Utilities/detail/GridFwd.hpp"
 #include "Acts/Utilities/detail/grid_helper.hpp"
-#include "Acts/Utilities/detail/GridIterator.hpp"
+
 #include <array>
 #include <numeric>
 #include <set>
@@ -454,12 +454,6 @@ class Grid final {
     return grid_helper::getAxes(m_axes);
   }
 
-  Acts::detail::GridIterator<Acts::detail::Grid<T, Axes...>> begin() const
-  { return {*this, 0}; }
-
-  Acts::detail::GridIterator<Acts::detail::Grid<T, Axes...>> end() const
-  { return {*this, size()}; }
-  
  private:
   /// set of axis defining the multi-dimensional grid
   std::tuple<Axes...> m_axes;
