@@ -35,11 +35,31 @@ namespace Acts {
   public:
     friend NeighborhoodIterator<external_spacepoint_t>;
 
-    Neighborhood(candidate_collection_t<external_spacepoint_t>&& candidates)
-      : m_candidates( std::move(candidates) )
-    {}
-    Neighborhood(candidate_collection_t<external_spacepoint_t>& candidates) = delete;
+    /// Constructors
+    Neighborhood(candidate_collection_t<external_spacepoint_t>&& candidates) = delete;
 
+    Neighborhood(candidate_collection_t<external_spacepoint_t>& candidates) // = delete;
+      : m_candidates( candidates )
+    {}
+    
+    /// Forbid copies
+    Neighborhood(const Neighborhood&) = default;
+    Neighborhood& operator=(const Neighborhood&) = default;
+
+    // /// Move operations
+    Neighborhood(Neighborhood&& other) noexcept
+      : m_candidates( std::exchange(other.m_candidates.ptr, nullptr) )
+    {}
+    
+    Neighborhood& operator=(Neighborhood&& other) noexcept
+    {
+      m_candidates.ptr = std::exchange(other.m_candidates.ptr, nullptr);
+    }
+
+    /// Destructor
+    ~Neighborhood() = default;
+    
+    
     NeighborhoodIterator<external_spacepoint_t> begin() const {
       return {*this, 0, 0};
     }
@@ -61,11 +81,14 @@ namespace Acts {
     { return *(m_candidates->at(collection)); }
 
     Acts::InternalSpacePoint<external_spacepoint_t>& at(std::size_t collection, std::size_t element)
-    { return *(m_candidates.val.at(collection)->at(element).get()); }
+    { return *(m_candidates.ptr->at(collection)->at(element).get()); }
     
   private:
-    Acts::detail_tc::ValueHolder< candidate_collection_t<external_spacepoint_t> > m_candidates;
+    Acts::detail_tc::RefHolder< candidate_collection_t<external_spacepoint_t> > m_candidates;
   };
+
+  
+
 
   template<typename external_spacepoint_t>
   class NeighborhoodIterator {
@@ -111,8 +134,8 @@ namespace Acts {
     
   private:
     Acts::detail_tc::RefHolder< Neighborhood<external_spacepoint_t> > m_neighborhood;
-    std::size_t m_index_collection {0};
-    std::size_t m_index_element {0};
+    std::size_t m_index_collection;
+    std::size_t m_index_element;
   };
 
 }  // namespace Acts

@@ -7,7 +7,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
-#include <iostream>
+
 #include "Acts/Geometry/Extent.hpp"
 #include "Acts/Seeding/BinFinder.hpp"
 #include "Acts/Seeding/InternalSeed.hpp"
@@ -90,16 +90,15 @@ namespace Acts {
     std::tuple< Neighborhood<external_spacepoint_t>,
 		Neighborhood<external_spacepoint_t>,
 		Neighborhood<external_spacepoint_t> >
+    // std::tuple< candidate_collection_t<external_spacepoint_t>,
+    // 		candidate_collection_t<external_spacepoint_t>,
+    // 		candidate_collection_t<external_spacepoint_t> >
     operator*() {     
       // Retrieve here - this is the heavy lifting
       // Less expensive then doing it in the operator++
-      // m_bottomIterators.clear();
-      // m_middleIterators.clear();
-      // m_topIterators.clear();
-
-      candidate_collection_t<external_spacepoint_t> m_bottomIterators {};
-      candidate_collection_t<external_spacepoint_t> m_middleIterators {};
-      candidate_collection_t<external_spacepoint_t> m_topIterators {};
+      m_bottomIterators.clear();
+      m_middleIterators.clear();
+      m_topIterators.clear();
       
       // Middles
       std::size_t global_index = m_group->m_grid->globalBinFromLocalBins({m_current_localBins[INDEX::PHI], m_group->m_bins[m_current_localBins[INDEX::Z]]});
@@ -125,9 +124,10 @@ namespace Acts {
 	m_topIterators.push_back( &(m_group->m_grid->at(idx)) );
       }
 
-      return std::make_tuple(Neighborhood<external_spacepoint_t>(std::move(m_bottomIterators)),
-			     Neighborhood<external_spacepoint_t>(std::move(m_middleIterators)),
-			     Neighborhood<external_spacepoint_t>(std::move(m_topIterators)));
+      //      return std::make_tuple(m_bottomIterators, m_middleIterators, m_topIterators);
+      return std::make_tuple(Neighborhood<external_spacepoint_t>(m_bottomIterators),
+			     Neighborhood<external_spacepoint_t>(m_middleIterators),
+			     Neighborhood<external_spacepoint_t>(m_topIterators));
     }
     
   private:
@@ -171,6 +171,10 @@ namespace Acts {
     std::array< std::size_t, 2 > m_max_localBins;
     /// Current Local Bins
     std::array< std::size_t, 2 > m_current_localBins {0, 0};
+    // Candidates
+    candidate_collection_t<external_spacepoint_t> m_bottomIterators {};
+    candidate_collection_t<external_spacepoint_t> m_middleIterators {};
+    candidate_collection_t<external_spacepoint_t> m_topIterators {};
   };
   
 /// @c BinnedSPGroup Provides access to begin and end BinnedSPGroupIterator
