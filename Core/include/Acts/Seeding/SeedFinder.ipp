@@ -39,7 +39,7 @@ template <template <typename...> typename container_t, typename sp_range_t>
 void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     const Acts::SeedFinderOptions& options, SeedingState& state,
     std::back_insert_iterator<container_t<Seed<external_spacepoint_t>>> outIt,
-    sp_range_t bottomSPs, sp_range_t middleSPs, sp_range_t topSPs,
+    sp_range_t& bottomSPs, sp_range_t& middleSPs, sp_range_t& topSPs,
     const Acts::Range1D<float>& rMiddleSPRange) const {
   if (not options.isInInternalUnits) {
     throw std::runtime_error(
