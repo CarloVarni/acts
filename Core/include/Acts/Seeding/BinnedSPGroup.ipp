@@ -57,43 +57,79 @@ Acts::BinnedSPGroupIterator<external_spacepoint_t>::operator!=(const Acts::Binne
 { return not (*this == other); }
 
 template <typename external_spacepoint_t>
-std::tuple< Acts::Neighborhood<external_spacepoint_t>,
-	    Acts::Neighborhood<external_spacepoint_t>,
-	    Acts::Neighborhood<external_spacepoint_t> >
+// std::tuple< Acts::Neighborhood<external_spacepoint_t>,
+// 	    Acts::Neighborhood<external_spacepoint_t>,
+// 	    Acts::Neighborhood<external_spacepoint_t> >
+std::tuple< std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*>,
+	    std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*>,
+	    std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*> >
 Acts::BinnedSPGroupIterator<external_spacepoint_t>::operator*() {
   // Retrieve here - this is the heavy lifting
   // Less expensive then doing it in the operator++
-  m_bottomIterators.clear();
-  m_middleIterators.clear();
-  m_topIterators.clear();
-  
-  // Middles
+  // m_bottomIterators.clear();
+  // m_middleIterators.clear();
+  // m_topIterators.clear();
+
+  std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*> bottoms;
+  std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*> middles;
+  std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*> tops; 
+
+  std::size_t nBottoms = 0;
+  std::size_t nTops = 0;
+
+  // Global Index
   std::size_t global_index = m_group->m_grid->globalBinFromLocalBins({m_current_localBins[INDEX::PHI], m_group->m_bins[m_current_localBins[INDEX::Z]]});
-  m_middleIterators.push_back( &(m_group->m_grid->at(global_index)) );
+
+  // Middles
+  //  m_middleIterators.push_back( &(m_group->m_grid->at(global_index)) );
+  
+  auto& collection_middles = m_group->m_grid->at(global_index);
+  middles.reserve(collection_middles.size());
+  for (auto& sp : collection_middles)
+    middles.push_back( sp.get() );
   
   // Bottoms
   auto bottomBinIndices = m_group->m_bottomBinFinder->findBins(m_current_localBins[INDEX::PHI],
 							       m_group->m_bins[m_current_localBins[INDEX::Z]],
 							       m_group->m_grid.get());
-  m_bottomIterators.reserve(bottomBinIndices.size());
+
+  // Get n bottoms
   for (auto idx : bottomBinIndices) {
-    if (m_group->m_grid->at(idx).size() == 0) continue;
-    m_bottomIterators.push_back( &(m_group->m_grid->at(idx)) );
+    nBottoms += m_group->m_grid->at(idx).size();
+  }
+  bottoms.reserve(nBottoms);
+  
+  //  m_bottomIterators.reserve(bottomBinIndices.size());
+  for (auto idx : bottomBinIndices) {
+    auto& collection_bottoms = m_group->m_grid->at(idx);
+    if (collection_bottoms.size() == 0) continue;
+    for (auto& el : collection_bottoms)
+      bottoms.push_back( el.get() );
+    //    m_bottomIterators.push_back( &(m_group->m_grid->at(idx)) );
   }
   
   // Tops
   auto topBinIndices = m_group->m_topBinFinder->findBins(m_current_localBins[INDEX::PHI],
 							 m_group->m_bins[m_current_localBins[INDEX::Z]],
 							 m_group->m_grid.get());
-  m_topIterators.reserve(topBinIndices.size());
+
   for (auto idx : topBinIndices) {
-    if (m_group->m_grid->at(idx).size() == 0) continue;
-    m_topIterators.push_back( &(m_group->m_grid->at(idx)) );
+    nTops += m_group->m_grid->at(idx).size();
   }
-  
-  return std::make_tuple(Acts::Neighborhood<external_spacepoint_t>(m_bottomIterators),
-			 Acts::Neighborhood<external_spacepoint_t>(m_middleIterators),
-			 Acts::Neighborhood<external_spacepoint_t>(m_topIterators));
+     
+  //  m_topIterators.reserve(topBinIndices.size());
+  for (auto idx : topBinIndices) {
+    auto& collection_tops = m_group->m_grid->at(idx);
+    if (collection_tops.size() == 0) continue;
+    for (auto& el : collection_tops)
+      tops.push_back( el.get() );
+    //    m_topIterators.push_back( &(m_group->m_grid->at(idx)) );
+  }
+
+  return std::make_tuple( bottoms, middles, tops );
+  // return std::make_tuple(Acts::Neighborhood<external_spacepoint_t>(m_bottomIterators),
+  // 			 Acts::Neighborhood<external_spacepoint_t>(m_middleIterators),
+  // 			 Acts::Neighborhood<external_spacepoint_t>(m_topIterators));
 }
 
 template <typename external_spacepoint_t>

@@ -61,9 +61,12 @@ namespace Acts {
     bool operator==(const BinnedSPGroupIterator& other) const;
     bool operator!=(const BinnedSPGroupIterator& other) const;
 
-    std::tuple< Neighborhood<external_spacepoint_t>,
-		Neighborhood<external_spacepoint_t>,
-		Neighborhood<external_spacepoint_t> >
+    // std::tuple< Neighborhood<external_spacepoint_t>,
+    // 		Neighborhood<external_spacepoint_t>,
+    // 		Neighborhood<external_spacepoint_t> >
+    std::tuple< std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*>,
+		std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*>,
+		std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*> >
     operator*();
     
   private:
