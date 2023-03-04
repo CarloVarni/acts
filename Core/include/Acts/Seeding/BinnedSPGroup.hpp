@@ -87,18 +87,19 @@ namespace Acts {
     }
     inline bool operator!=(const BinnedSPGroupIterator& other) const { return not (*this == other); }
 
-    std::tuple< SimpleNeighborhood<external_spacepoint_t>,
-		SimpleNeighborhood<external_spacepoint_t>,
-		SimpleNeighborhood<external_spacepoint_t> >
-    // std::tuple< candidate_collection_t<external_spacepoint_t>,
-    // 		candidate_collection_t<external_spacepoint_t>,
-    // 		candidate_collection_t<external_spacepoint_t> >
+    std::tuple< Neighborhood<external_spacepoint_t>,
+		Neighborhood<external_spacepoint_t>,
+		Neighborhood<external_spacepoint_t> >
     operator*() {     
       // Retrieve here - this is the heavy lifting
       // Less expensive then doing it in the operator++
-      m_bottomIterators.clear();
-      m_middleIterators.clear();
-      m_topIterators.clear();
+      // m_bottomIterators.clear();
+      // m_middleIterators.clear();
+      // m_topIterators.clear();
+
+      candidate_collection_t<external_spacepoint_t> m_bottomIterators {};
+      candidate_collection_t<external_spacepoint_t> m_middleIterators {};
+      candidate_collection_t<external_spacepoint_t> m_topIterators {};
       
       // Middles
       std::size_t global_index = m_group->m_grid->globalBinFromLocalBins({m_current_localBins[INDEX::PHI], m_group->m_bins[m_current_localBins[INDEX::Z]]});
@@ -124,12 +125,9 @@ namespace Acts {
 	m_topIterators.push_back( &(m_group->m_grid->at(idx)) );
       }
 
-      // return std::make_tuple(std::move(bottomIterators),
-      // 			     std::move(middleIterators),
-      // 			     std::move(topIterators));      
-      return std::make_tuple(SimpleNeighborhood<external_spacepoint_t>(m_middleIterators),
-			     SimpleNeighborhood<external_spacepoint_t>(m_bottomIterators),
-			     SimpleNeighborhood<external_spacepoint_t>(m_topIterators));
+      return std::make_tuple(Neighborhood<external_spacepoint_t>(std::move(m_bottomIterators)),
+			     Neighborhood<external_spacepoint_t>(std::move(m_middleIterators)),
+			     Neighborhood<external_spacepoint_t>(std::move(m_topIterators)));
     }
     
   private:
@@ -173,10 +171,6 @@ namespace Acts {
     std::array< std::size_t, 2 > m_max_localBins;
     /// Current Local Bins
     std::array< std::size_t, 2 > m_current_localBins {0, 0};
-    // Collections
-    candidate_collection_t<external_spacepoint_t> m_bottomIterators {};
-    candidate_collection_t<external_spacepoint_t> m_middleIterators {};
-    candidate_collection_t<external_spacepoint_t> m_topIterators {};
   };
   
 /// @c BinnedSPGroup Provides access to begin and end BinnedSPGroupIterator
