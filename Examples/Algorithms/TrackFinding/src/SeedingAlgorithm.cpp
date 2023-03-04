@@ -23,8 +23,6 @@
 #include <limits>
 #include <stdexcept>
 
-#include <chrono>
-
 ActsExamples::SeedingAlgorithm::SeedingAlgorithm(
     ActsExamples::SeedingAlgorithm::Config cfg, Acts::Logging::Level lvl)
     : ActsExamples::BareAlgorithm("SeedingAlgorithm", lvl),
@@ -249,16 +247,10 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   seeds.clear();
   static thread_local decltype(m_seedFinder)::SeedingState state;
   
-  auto start = std::chrono::high_resolution_clock::now();
-
   for( auto [bottom, middle, top] : spacePointsGrouping) {
     m_seedFinder.createSeedsForGroup(m_cfg.seedFinderOptions, state, std::back_inserter(seeds),
                                      bottom, middle, top, rMiddleSPRange);
   }
-
-  auto stop = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast< std::chrono::nanoseconds >( stop - start ).count();
-  std::cout << "time=" << duration << " nsp=" << spacePointPtrs.size() << "\n";
   
   // extract proto tracks, i.e. groups of measurement indices, from tracks seeds
   size_t nSeeds = seeds.size();

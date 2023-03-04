@@ -15,7 +15,7 @@
 #include "Acts/EventData/MultiTrajectory.hpp"
 #include "Acts/Utilities/HashedString.hpp"
 #include "Acts/Utilities/UnitVectors.hpp"
-#include "Acts/EventData/Holders.hpp"
+#include "Acts/Utilities/Holders.hpp"
 #include "Acts/EventData/Utils.hpp"
 
 #include <any>
