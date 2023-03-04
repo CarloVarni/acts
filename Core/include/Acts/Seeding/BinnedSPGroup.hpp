@@ -14,7 +14,6 @@
 #include "Acts/Seeding/Seed.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
-#include "Acts/Seeding/Neighborhood.hpp"
 #include "Acts/EventData/Holders.hpp"
 
 #include <memory>
@@ -25,11 +24,7 @@
 namespace Acts {
   template<typename external_spacepoint_t>
   class BinnedSPGroup;
-  
-  template<typename external_spacepoint_t>
-  using candidate_collection_t =
-    std::vector<const std::vector<std::unique_ptr<Acts::InternalSpacePoint<external_spacepoint_t>>>*>;
-  
+    
   /// @c BinnedSPGroupIterator Allows to iterate over all groups of bins
   /// a provided BinFinder can generate for each bin of a provided SPGrid
 
@@ -61,9 +56,6 @@ namespace Acts {
     bool operator==(const BinnedSPGroupIterator& other) const;
     bool operator!=(const BinnedSPGroupIterator& other) const;
 
-    // std::tuple< Neighborhood<external_spacepoint_t>,
-    // 		Neighborhood<external_spacepoint_t>,
-    // 		Neighborhood<external_spacepoint_t> >
     std::tuple< std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*>,
 		std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*>,
 		std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*> >
@@ -79,10 +71,6 @@ namespace Acts {
     std::array< std::size_t, 2 > m_max_localBins;
     /// Current Local Bins
     std::array< std::size_t, 2 > m_current_localBins {0, 0};
-    // Candidates
-    candidate_collection_t<external_spacepoint_t> m_bottomIterators {};
-    candidate_collection_t<external_spacepoint_t> m_middleIterators {};
-    candidate_collection_t<external_spacepoint_t> m_topIterators {};
   };
   
 /// @c BinnedSPGroup Provides access to begin and end BinnedSPGroupIterator
