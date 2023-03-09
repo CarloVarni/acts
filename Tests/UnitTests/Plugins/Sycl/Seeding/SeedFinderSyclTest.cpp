@@ -222,9 +222,9 @@ auto main(int argc, char** argv) -> int {
     decltype(normalSeedFinder)::SeedingState state;
     for (auto [bottom, middle, top] : spGroup) {
       normalSeedFinder.createSeedsForGroup(
-	  options, state, spGroup.grid(),
-	  std::back_inserter(seedVector_cpu.emplace_back()),
-          bottom, middle, top, rMiddleSPRange);
+          options, state, spGroup.grid(),
+          std::back_inserter(seedVector_cpu.emplace_back()), bottom, middle,
+          top, rMiddleSPRange);
       group_count++;
       if (!cmdlTool.allgroup && group_count >= cmdlTool.groups) {
         break;
@@ -249,7 +249,7 @@ auto main(int argc, char** argv) -> int {
 
   for (auto [bottom, middle, top] : spGroup) {
     seedVector_sycl.push_back(syclSeedFinder.createSeedsForGroup(
-      spGroup.grid(), bottom, middle, top));
+        spGroup.grid(), bottom, middle, top));
     group_count++;
     if (!cmdlTool.allgroup && group_count >= cmdlTool.groups) {
       break;

@@ -179,14 +179,14 @@ int main(int argc, char* argv[]) {
     for (std::size_t i = 0; i < cmdl.groupsToIterate; ++i) {
       auto spGroup_itr = Acts::BinnedSPGroupIterator(spGroup, i);
       if (spGroup_itr == spGroup.end()) {
-	break;
+        break;
       }
       auto& group = seeds_host.emplace_back();
       auto [bottom, middle, top] = *spGroup_itr;
 
-      seedFinder_host.createSeedsForGroup(
-					  sfOptions, state, spGroup.grid(), std::back_inserter(group), bottom,
-					  middle, top, rMiddleSPRange);
+      seedFinder_host.createSeedsForGroup(sfOptions, state, spGroup.grid(),
+                                          std::back_inserter(group), bottom,
+                                          middle, top, rMiddleSPRange);
     }
   }
 
@@ -217,7 +217,7 @@ int main(int argc, char* argv[]) {
     }
     auto [bottom, middle, top] = *spGroup_itr;
     seeds_device.push_back(seedFinder_device.createSeedsForGroup(
-								 spGroup.grid(), bottom, middle, top));
+        spGroup.grid(), bottom, middle, top));
   }
 
   // Record the finish time.

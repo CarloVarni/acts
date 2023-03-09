@@ -81,8 +81,8 @@ class BinnedSPGroup {
 #ifndef DOXYGEN
   friend BinnedSPGroupIterator<external_spacepoint_t>;
 #endif
-  
-public:
+
+ public:
   BinnedSPGroup() = delete;
 
   template <typename spacepoint_iterator_t, typename callable_t>

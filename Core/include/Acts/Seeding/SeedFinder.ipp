@@ -174,7 +174,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
       if (deltaR < deltaRMinSP) {
         if (isBottom) {
           break;
-	}
+        }
         continue;
       }
 
@@ -182,7 +182,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
       if (deltaR > deltaRMaxSP) {
         if (not isBottom) {
           break;
-	}
+        }
         continue;
       }
 
@@ -562,8 +562,7 @@ template <typename sp_range_t>
 std::vector<Seed<external_spacepoint_t>>
 SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     const Acts::SeedFinderOptions& options,
-    Acts::SpacePointGrid<external_spacepoint_t>& grid,
-    sp_range_t bottomSPs,
+    Acts::SpacePointGrid<external_spacepoint_t>& grid, sp_range_t bottomSPs,
     sp_range_t middleSPs, sp_range_t topSPs) const {
   SeedingState state;
   const Acts::Range1D<float> rMiddleSPRange;

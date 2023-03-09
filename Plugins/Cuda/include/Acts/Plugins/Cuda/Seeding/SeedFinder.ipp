@@ -1,4 +1,3 @@
-// -*- C++ -*-
 // This file is part of the Acts project.
 //
 // Copyright (C) 2020 CERN for the benefit of the Acts project
@@ -48,8 +47,8 @@ template <typename external_spacepoint_t>
 template <typename sp_range_t>
 std::vector<Seed<external_spacepoint_t>>
 SeedFinder<external_spacepoint_t, Acts::Cuda>::createSeedsForGroup(
-    Acts::SpacePointGrid<external_spacepoint_t>& grid,
-    sp_range_t bottomSPs, sp_range_t middleSPs, sp_range_t topSPs) const {
+    Acts::SpacePointGrid<external_spacepoint_t>& grid, sp_range_t bottomSPs,
+    sp_range_t middleSPs, sp_range_t topSPs) const {
   std::vector<Seed<external_spacepoint_t>> outputVec;
 
   // Get SeedFinderConfig values
@@ -93,15 +92,15 @@ SeedFinder<external_spacepoint_t, Acts::Cuda>::createSeedsForGroup(
     }
   }
   for (auto idx : bottomSPs) {
-    auto& sp_collection	= grid.at(idx);
-    for	(auto& sp : sp_collection) {
+    auto& sp_collection = grid.at(idx);
+    for (auto& sp : sp_collection) {
       nSpB++;
       bottomSPvec.push_back(sp.get());
     }
   }
   for (std::size_t idx : topSPs) {
-    auto& sp_collection	= grid.at(idx);
-    for	(auto& sp : sp_collection) {
+    auto& sp_collection = grid.at(idx);
+    for (auto& sp : sp_collection) {
       nSpT++;
       topSPvec.push_back(sp.get());
     }
