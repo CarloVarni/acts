@@ -296,147 +296,149 @@ int main(int argc, char** argv) {
 
   group_count = 0;
   std::vector<std::vector<Acts::Seed<SpacePoint>>> seedVector_cuda;
-  groupIt = spGroup.begin();
-
-  for (int i_s = 0; i_s < skip; i_s++)
-    ++groupIt;
-  for (; !(groupIt == spGroup.end()); ++groupIt) {
+  groupIt = Acts::BinnedSPGroupIterator<SpacePoint>(spGroup, skip);
+  
+  for (; groupIt != spGroup.end(); ++groupIt) {
+    const auto [bottom, middle, top] = *groupIt;
     seedVector_cuda.push_back(seedFinder_cuda.createSeedsForGroup(
-        groupIt.bottom(), groupIt.middle(), groupIt.top()));
+								  spGroup.grid(),
+								  bottom, middle, top));
     group_count++;
     if (allgroup == false) {
       if (group_count >= nGroupToIterate)
         break;
     }
   }
-  auto end_cuda = std::chrono::system_clock::now();
-  std::chrono::duration<double> elapsec_cuda = end_cuda - start_cuda;
-  double cudaTime = elapsec_cuda.count();
-
-  cudaProfilerStop();
-  std::cout << "Analyzed " << group_count << " groups for CUDA" << std::endl;
-
-  std::cout << std::endl;
-  std::cout << "----------------------- Time Metric -----------------------"
-            << std::endl;
-  std::cout << "                       " << (do_cpu ? "CPU" : "   ")
-            << "          CUDA        " << (do_cpu ? "Speedup " : "")
-            << std::endl;
-  std::cout << "Seedfinding_Time  " << std::setw(11)
-            << (do_cpu ? std::to_string(cpuTime) : "") << "  " << std::setw(11)
-            << cudaTime << "  " << std::setw(11)
-            << (do_cpu ? std::to_string(cpuTime / cudaTime) : "") << std::endl;
-  double wallTime_cpu = cpuTime + preprocessTime;
-  double wallTime_cuda = cudaTime + preprocessTime;
-  std::cout << "Wall_time         " << std::setw(11)
-            << (do_cpu ? std::to_string(wallTime_cpu) : "") << "  "
-            << std::setw(11) << wallTime_cuda << "  " << std::setw(11)
-            << (do_cpu ? std::to_string(wallTime_cpu / wallTime_cuda) : "")
-            << std::endl;
-  std::cout << "-----------------------------------------------------------"
-            << std::endl;
-  std::cout << std::endl;
-
-  int nSeed_cpu = 0;
-  for (auto& outVec : seedVector_cpu) {
-    nSeed_cpu += outVec.size();
-  }
-
-  int nSeed_cuda = 0;
-  for (auto& outVec : seedVector_cuda) {
-    nSeed_cuda += outVec.size();
-  }
-
-  std::cout << "Number of Seeds (CPU | CUDA): " << nSeed_cpu << " | "
-            << nSeed_cuda << std::endl;
-
-  int nMatch = 0;
-
-  for (size_t i = 0; i < seedVector_cpu.size(); i++) {
-    auto regionVec_cpu = seedVector_cpu[i];
-    auto regionVec_cuda = seedVector_cuda[i];
-
-    std::vector<std::vector<SpacePoint>> seeds_cpu;
-    std::vector<std::vector<SpacePoint>> seeds_cuda;
-
-    // for (size_t i_cpu = 0; i_cpu < regionVec_cpu.size(); i_cpu++) {
-    for (auto sd : regionVec_cpu) {
-      std::vector<SpacePoint> seed_cpu;
-      seed_cpu.push_back(*(sd.sp()[0]));
-      seed_cpu.push_back(*(sd.sp()[1]));
-      seed_cpu.push_back(*(sd.sp()[2]));
-
-      seeds_cpu.push_back(seed_cpu);
+    
+      auto end_cuda = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsec_cuda = end_cuda - start_cuda;
+    double cudaTime = elapsec_cuda.count();
+    
+    cudaProfilerStop();
+    std::cout << "Analyzed " << group_count << " groups for CUDA" << std::endl;
+    
+    std::cout << std::endl;
+    std::cout << "----------------------- Time Metric -----------------------"
+	      << std::endl;
+    std::cout << "                       " << (do_cpu ? "CPU" : "   ")
+	      << "          CUDA        " << (do_cpu ? "Speedup " : "")
+	      << std::endl;
+    std::cout << "Seedfinding_Time  " << std::setw(11)
+	      << (do_cpu ? std::to_string(cpuTime) : "") << "  " << std::setw(11)
+	      << cudaTime << "  " << std::setw(11)
+	      << (do_cpu ? std::to_string(cpuTime / cudaTime) : "") << std::endl;
+    double wallTime_cpu = cpuTime + preprocessTime;
+    double wallTime_cuda = cudaTime + preprocessTime;
+    std::cout << "Wall_time         " << std::setw(11)
+	      << (do_cpu ? std::to_string(wallTime_cpu) : "") << "  "
+	      << std::setw(11) << wallTime_cuda << "  " << std::setw(11)
+	      << (do_cpu ? std::to_string(wallTime_cpu / wallTime_cuda) : "")
+	      << std::endl;
+    std::cout << "-----------------------------------------------------------"
+	      << std::endl;
+    std::cout << std::endl;
+    
+    int nSeed_cpu = 0;
+    for (auto& outVec : seedVector_cpu) {
+      nSeed_cpu += outVec.size();
     }
-
-    for (auto sd : regionVec_cuda) {
-      std::vector<SpacePoint> seed_cuda;
-      seed_cuda.push_back(*(sd.sp()[0]));
-      seed_cuda.push_back(*(sd.sp()[1]));
-      seed_cuda.push_back(*(sd.sp()[2]));
-
-      seeds_cuda.push_back(seed_cuda);
+    
+    int nSeed_cuda = 0;
+    for (auto& outVec : seedVector_cuda) {
+      nSeed_cuda += outVec.size();
     }
-
-    for (auto seed : seeds_cpu) {
-      for (auto other : seeds_cuda) {
-        if (seed[0] == other[0] && seed[1] == other[1] && seed[2] == other[2]) {
-          nMatch++;
-          break;
-        }
+    
+    std::cout << "Number of Seeds (CPU | CUDA): " << nSeed_cpu << " | "
+	      << nSeed_cuda << std::endl;
+    
+    int nMatch = 0;
+    
+    for (size_t i = 0; i < seedVector_cpu.size(); i++) {
+      auto regionVec_cpu = seedVector_cpu[i];
+      auto regionVec_cuda = seedVector_cuda[i];
+      
+      std::vector<std::vector<SpacePoint>> seeds_cpu;
+      std::vector<std::vector<SpacePoint>> seeds_cuda;
+      
+      // for (size_t i_cpu = 0; i_cpu < regionVec_cpu.size(); i_cpu++) {
+      for (auto sd : regionVec_cpu) {
+	std::vector<SpacePoint> seed_cpu;
+	seed_cpu.push_back(*(sd.sp()[0]));
+	seed_cpu.push_back(*(sd.sp()[1]));
+	seed_cpu.push_back(*(sd.sp()[2]));
+	
+	seeds_cpu.push_back(seed_cpu);
+      }
+      
+      for (auto sd : regionVec_cuda) {
+	std::vector<SpacePoint> seed_cuda;
+	seed_cuda.push_back(*(sd.sp()[0]));
+	seed_cuda.push_back(*(sd.sp()[1]));
+	seed_cuda.push_back(*(sd.sp()[2]));
+	
+	seeds_cuda.push_back(seed_cuda);
+      }
+      
+      for (auto seed : seeds_cpu) {
+	for (auto other : seeds_cuda) {
+	  if (seed[0] == other[0] && seed[1] == other[1] && seed[2] == other[2]) {
+	    nMatch++;
+	    break;
+	  }
+	}
       }
     }
-  }
-
-  if (do_cpu) {
-    std::cout << nMatch << " seeds are matched" << std::endl;
-    std::cout << "Matching rate: " << float(nMatch) / nSeed_cpu * 100 << "%"
-              << std::endl;
-  }
-
-  if (!quiet) {
+    
     if (do_cpu) {
-      std::cout << "CPU Seed result:" << std::endl;
-
-      for (auto& regionVec : seedVector_cpu) {
-        for (size_t i = 0; i < regionVec.size(); i++) {
-          const Acts::Seed<SpacePoint>* seed = &regionVec[i];
-          const SpacePoint* sp = seed->sp()[0];
-          std::cout << " (" << sp->x() << ", " << sp->y() << ", " << sp->z()
-                    << ") ";
-          sp = seed->sp()[1];
-          std::cout << sp->surface << " (" << sp->x() << ", " << sp->y() << ", "
-                    << sp->z() << ") ";
-          sp = seed->sp()[2];
-          std::cout << sp->surface << " (" << sp->x() << ", " << sp->y() << ", "
-                    << sp->z() << ") ";
-          std::cout << std::endl;
-        }
-      }
-
-      std::cout << std::endl;
+      std::cout << nMatch << " seeds are matched" << std::endl;
+      std::cout << "Matching rate: " << float(nMatch) / nSeed_cpu * 100 << "%"
+		<< std::endl;
     }
-    std::cout << "CUDA Seed result:" << std::endl;
-
-    for (auto& regionVec : seedVector_cuda) {
-      for (size_t i = 0; i < regionVec.size(); i++) {
-        const Acts::Seed<SpacePoint>* seed = &regionVec[i];
-        const SpacePoint* sp = seed->sp()[0];
-        std::cout << " (" << sp->x() << ", " << sp->y() << ", " << sp->z()
-                  << ") ";
-        sp = seed->sp()[1];
-        std::cout << sp->surface << " (" << sp->x() << ", " << sp->y() << ", "
-                  << sp->z() << ") ";
-        sp = seed->sp()[2];
-        std::cout << sp->surface << " (" << sp->x() << ", " << sp->y() << ", "
-                  << sp->z() << ") ";
-        std::cout << std::endl;
+    
+    if (!quiet) {
+      if (do_cpu) {
+	std::cout << "CPU Seed result:" << std::endl;
+	
+	for (auto& regionVec : seedVector_cpu) {
+	  for (size_t i = 0; i < regionVec.size(); i++) {
+	    const Acts::Seed<SpacePoint>* seed = &regionVec[i];
+	    const SpacePoint* sp = seed->sp()[0];
+	    std::cout << " (" << sp->x() << ", " << sp->y() << ", " << sp->z()
+		      << ") ";
+	    sp = seed->sp()[1];
+	    std::cout << sp->surface << " (" << sp->x() << ", " << sp->y() << ", "
+		      << sp->z() << ") ";
+	    sp = seed->sp()[2];
+	    std::cout << sp->surface << " (" << sp->x() << ", " << sp->y() << ", "
+		      << sp->z() << ") ";
+	    std::cout << std::endl;
+	  }
+	}
+	
+	std::cout << std::endl;
+      }
+      std::cout << "CUDA Seed result:" << std::endl;
+      
+      for (auto& regionVec : seedVector_cuda) {
+	for (size_t i = 0; i < regionVec.size(); i++) {
+	  const Acts::Seed<SpacePoint>* seed = &regionVec[i];
+	  const SpacePoint* sp = seed->sp()[0];
+	  std::cout << " (" << sp->x() << ", " << sp->y() << ", " << sp->z()
+		    << ") ";
+	  sp = seed->sp()[1];
+	  std::cout << sp->surface << " (" << sp->x() << ", " << sp->y() << ", "
+		    << sp->z() << ") ";
+	  sp = seed->sp()[2];
+	  std::cout << sp->surface << " (" << sp->x() << ", " << sp->y() << ", "
+		    << sp->z() << ") ";
+	  std::cout << std::endl;
+	}
       }
     }
+    
+    std::cout << std::endl;
+    std::cout << std::endl;
+    
+    return 0;
   }
-
-  std::cout << std::endl;
-  std::cout << std::endl;
-
-  return 0;
-}
+  
