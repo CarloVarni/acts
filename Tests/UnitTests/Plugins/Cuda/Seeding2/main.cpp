@@ -185,8 +185,8 @@ int main(int argc, char* argv[]) {
       auto [bottom, middle, top] = *spGroup_itr;
 
       seedFinder_host.createSeedsForGroup(
-					  sfOptions, state, spGroup.grid(), std::back_inserter(group), spGroup_itr,
-          spGroup_itr, spGroup_itr, rMiddleSPRange);
+					  sfOptions, state, spGroup.grid(), std::back_inserter(group), bottom,
+					  middle, top, rMiddleSPRange);
     }
   }
 
