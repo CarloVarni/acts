@@ -175,15 +175,18 @@ int main(int argc, char* argv[]) {
 
   // Perform the seed finding.
   if (!cmdl.onlyGPU) {
-    auto spGroup_itr = spGroup.begin();
     decltype(seedFinder_host)::SeedingState state;
-    for (std::size_t i = 0;
-         spGroup_itr != spGroup_end && i < cmdl.groupsToIterate;
-         ++i, ++spGroup_itr) {
+    for (std::size_t i = 0; i < cmdl.groupsToIterate; ++i) {
+      auto spGroup_itr = Acts::BinnedSPGroupIterator(spGroup, i);
+      if (spGroup_itr == spGroup.end()) {
+	break;
+      }
       auto& group = seeds_host.emplace_back();
+      auto [bottom, middle, top] = *spGroup_itr;
+
       seedFinder_host.createSeedsForGroup(
-          sfOptions, state, std::back_inserter(group), spGroup_itr.bottom(),
-          spGroup_itr.middle(), spGroup_itr.top(), rMiddleSPRange);
+					  sfOptions, state, spGroup.grid(), std::back_inserter(group), spGroup_itr,
+          spGroup_itr, spGroup_itr, rMiddleSPRange);
     }
   }
 
