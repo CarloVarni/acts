@@ -210,7 +210,6 @@ int main(int argc, char* argv[]) {
   std::vector<std::vector<Acts::Seed<TestSpacePoint>>> seeds_device;
 
   // Perform the seed finding.
-  auto spGroup_itr = spGroup.begin();
   for (std::size_t i = 0; i < cmdl.groupsToIterate; ++i) {
     auto spGroup_itr = Acts::BinnedSPGroupIterator(spGroup, i);
     if (spGroup_itr == spGroup_end) {

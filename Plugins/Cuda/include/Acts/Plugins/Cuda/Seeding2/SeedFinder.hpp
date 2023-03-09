@@ -16,6 +16,7 @@
 #include "Acts/Seeding/SeedFilterConfig.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Utilities/Logger.hpp"
+#include "Acts/Seeding/SpacePointGrid.hpp"
 
 // System include(s).
 #include <memory>
@@ -57,6 +58,7 @@ class SeedFinder {
   /// @return vector in which all found seeds for this group are stored.
   template <typename sp_range_t>
   std::vector<Seed<external_spacepoint_t> > createSeedsForGroup(
+							Acts::SpacePointGrid<external_spacepoint_t>& grid,	
       sp_range_t bottomSPs, sp_range_t middleSPs, sp_range_t topSPs) const;
 
   /// set logging instance
