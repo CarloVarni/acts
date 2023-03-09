@@ -130,15 +130,15 @@ SeedFinder<external_spacepoint_t, Acts::Cuda>::createSeedsForGroup(
   };
 
   int mIdx(0);
-  for (auto sp : middleSPs) {
+  for (auto sp : middleSPvec) {
     fillMatrix(spMmat_cpu, mIdx, sp);
   }
   int bIdx(0);
-  for (auto sp : bottomSPs) {
+  for (auto sp : bottomSPvec) {
     fillMatrix(spBmat_cpu, bIdx, sp);
   }
   int tIdx(0);
-  for (auto sp : topSPs) {
+  for (auto sp : topSPvec) {
     fillMatrix(spTmat_cpu, tIdx, sp);
   }
 
