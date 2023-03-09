@@ -84,10 +84,12 @@ SeedFinder<external_spacepoint_t, Acts::Cuda>::createSeedsForGroup(
   int nSpB(0);
   int nSpT(0);
 
-  auto& sp_collection = grid.at(middleSPs);
-  for (auto& sp : sp_collection) {
-    nSpM++;
-    middleSPvec.push_back(sp.get());
+  {
+    auto& sp_collection = grid.at(middleSPs);
+    for (auto& sp : sp_collection) {
+      nSpM++;
+      middleSPvec.push_back(sp.get());
+    }
   }
   for (auto idx : bottomSPs) {
     auto& sp_collection = grid.at(idx);

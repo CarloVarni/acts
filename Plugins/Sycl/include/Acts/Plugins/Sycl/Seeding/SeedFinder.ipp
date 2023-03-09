@@ -93,9 +93,11 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
                                SP->varianceR(), SP->varianceZ()});
   }
 
-  auto& sp_collection = grid.at(middleSPs);
-  for (auto& SP : sp_collection) {
-    middleSPvec.push_back(SP.get());
+  {
+    auto& sp_collection = grid.at(middleSPs);
+    for (auto& SP : sp_collection) {
+      middleSPvec.push_back(SP.get());
+    }
   }
   deviceMiddleSPs.reserve(middleSPvec.size());
   for (auto SP : middleSPvec) {
