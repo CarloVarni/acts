@@ -73,6 +73,7 @@ class SeedFinder {
   /// Can be used to parallelize the seed creation
   /// @param options frequently changing configuration (like beam position)
   /// @param state State object that holds memory used
+  /// @param grid The grid with space points
   /// @param outIt Output iterator for the seeds in the group
   /// @param bottomSPs group of space points to be used as innermost SP in a seed.
   /// @param middleSPs group of space points to be used as middle SP in a seed.
