@@ -103,6 +103,7 @@ class SeedFinder {
   ///
   /// @tparam sp_range_t container type for the seed point collections.
   /// @param options frequently changing configuration (like beam position)
+  /// @param grid The grid with space points  
   /// @param bottomSPs group of space points to be used as innermost SP in a
   /// seed.
   /// @param middleSPs group of space points to be used as middle SP in a seed.
@@ -110,7 +111,8 @@ class SeedFinder {
   /// @returns a vector of seeds.
   template <typename sp_range_t>
   std::vector<Seed<external_spacepoint_t>> createSeedsForGroup(
-      const Acts::SeedFinderOptions& options, sp_range_t bottomSPs,
+      const Acts::SeedFinderOptions& options, Acts::SpacePointGrid<external_spacepoint_t>& grid,
+      sp_range_t bottomSPs,
       sp_range_t middleSPs, sp_range_t topSPs) const;
 
  private:

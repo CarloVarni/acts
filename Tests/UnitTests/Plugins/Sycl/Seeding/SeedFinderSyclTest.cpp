@@ -247,9 +247,9 @@ auto main(int argc, char** argv) -> int {
   group_count = 0;
   std::vector<std::vector<Acts::Seed<SpacePoint>>> seedVector_sycl;
 
-  for (auto groupIt = spGroup.begin(); !(groupIt == spGroup.end()); ++groupIt) {
+  for (auto [bottom, middle, top] : spGroup) {
     seedVector_sycl.push_back(syclSeedFinder.createSeedsForGroup(
-        groupIt.bottom(), groupIt.middle(), groupIt.top()));
+      spGroup.grid(), bottom, middle, top));
     group_count++;
     if (!cmdlTool.allgroup && group_count >= cmdlTool.groups) {
       break;
