@@ -57,9 +57,9 @@ class BinnedSPGroupIterator {
   bool operator!=(const BinnedSPGroupIterator& other) const;
 
   std::tuple<boost::container::small_vector<size_t, 9>,
-             boost::container::small_vector<size_t, 9>,
+	     std::size_t,
              boost::container::small_vector<size_t, 9>>
-  operator*();
+  operator*() const;
 
  private:
   void findNotEmptyBin();

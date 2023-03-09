@@ -1,4 +1,4 @@
-// This file is part of the Acts project.
+// This file is part of the Acts project.OA
 //
 // Copyright (C) 2023 CERN for the benefit of the Acts project
 //
@@ -35,12 +35,14 @@ SeedFinder<external_spacepoint_t, platform_t>::SeedFinder(
 }
 
 template <typename external_spacepoint_t, typename platform_t>
-template <template <typename...> typename container_t, typename sp_range_t>
+template <template <typename...> typename container_t>
 void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     const Acts::SeedFinderOptions& options, SeedingState& state,
     Acts::SpacePointGrid<external_spacepoint_t>& grid,
     std::back_insert_iterator<container_t<Seed<external_spacepoint_t>>> outIt,
-    sp_range_t& bottomSPsIdx, sp_range_t& middleSPsIdx, sp_range_t& topSPsIdx,
+    const boost::container::small_vector<size_t, 9>& bottomSPsIdx,
+    const std::size_t middleSPsIdx,
+    const boost::container::small_vector<size_t, 9>& topSPsIdx,
     const Acts::Range1D<float>& rMiddleSPRange) const {
   if (not options.isInInternalUnits) {
     throw std::runtime_error(
@@ -56,10 +58,13 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
   state.candidates_collector.setMaxElements(max_num_seeds_per_spm,
                                             max_num_quality_seeds_per_spm);
 
-  auto& middleSPs = grid.at(middleSPsIdx[0]);
-  if (middleSPsIdx.size() == 0 or topSPsIdx.size() == 0) {
+  // If there are no bottom or top bins, just return and waste no time
+  if (bottomSPsIdx.empty() or topSPsIdx.empty() ) {
     return;
   }
+  
+  // Get the middle space point candidates
+  auto& middleSPs = grid.at(middleSPsIdx);
 
   for (auto& spM : middleSPs) {
     float rM = spM->radius();
@@ -558,12 +563,13 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
 }
 
 template <typename external_spacepoint_t, typename platform_t>
-template <typename sp_range_t>
 std::vector<Seed<external_spacepoint_t>>
 SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     const Acts::SeedFinderOptions& options,
-    Acts::SpacePointGrid<external_spacepoint_t>& grid, sp_range_t bottomSPs,
-    sp_range_t middleSPs, sp_range_t topSPs) const {
+    Acts::SpacePointGrid<external_spacepoint_t>& grid,
+    const boost::container::small_vector<size_t, 9>& bottomSPs,
+    const std::size_t middleSPs,
+    const boost::container::small_vector<size_t, 9>& topSPs) const {
   SeedingState state;
   const Acts::Range1D<float> rMiddleSPRange;
   std::vector<Seed<external_spacepoint_t>> ret;

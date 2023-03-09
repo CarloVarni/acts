@@ -82,12 +82,13 @@ class SeedFinder {
   /// @param rMiddleSPRange range object containing the minimum and maximum r for middle SP for a certain z bin.
   /// @note Ranges must return pointers.
   /// @note Ranges must be separate objects for each parallel call.
-  template <template <typename...> typename container_t, typename sp_range_t>
+  template <template <typename...> typename container_t>
   void createSeedsForGroup(
       const Acts::SeedFinderOptions& options, SeedingState& state,
       Acts::SpacePointGrid<external_spacepoint_t>& grid,
       std::back_insert_iterator<container_t<Seed<external_spacepoint_t>>> outIt,
-      sp_range_t& bottomSPs, sp_range_t& middleSPs, sp_range_t& topSPs,
+      const boost::container::small_vector<size_t, 9>& bottomSPs, const std::size_t middleSP,
+      const boost::container::small_vector<size_t, 9>& topSPs,
       const Acts::Range1D<float>& rMiddleSPRange) const;
 
   /// @brief Compatibility method for the new-style seed finding API.
@@ -109,11 +110,12 @@ class SeedFinder {
   /// @param middleSPs group of space points to be used as middle SP in a seed.
   /// @param topSPs group of space points to be used as outermost SP in a seed.
   /// @returns a vector of seeds.
-  template <typename sp_range_t>
   std::vector<Seed<external_spacepoint_t>> createSeedsForGroup(
       const Acts::SeedFinderOptions& options,
-      Acts::SpacePointGrid<external_spacepoint_t>& grid, sp_range_t bottomSPs,
-      sp_range_t middleSPs, sp_range_t topSPs) const;
+      Acts::SpacePointGrid<external_spacepoint_t>& grid,
+      const boost::container::small_vector<size_t, 9>& bottomSPs,
+      const std::size_t middleSP,
+      const boost::container::small_vector<size_t, 9>& topSPs) const;
 
  private:
   template <typename sp_range_t, typename out_range_t>

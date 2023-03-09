@@ -55,9 +55,9 @@ inline bool Acts::BinnedSPGroupIterator<external_spacepoint_t>::operator!=(
 
 template <typename external_spacepoint_t>
 std::tuple<boost::container::small_vector<size_t, 9>,
-           boost::container::small_vector<size_t, 9>,
+	   std::size_t,
            boost::container::small_vector<size_t, 9>>
-Acts::BinnedSPGroupIterator<external_spacepoint_t>::operator*() {
+Acts::BinnedSPGroupIterator<external_spacepoint_t>::operator*() const {
   // Global Index
   std::size_t global_index = m_group->m_grid->globalBinFromLocalBins(
       {m_current_localBins[INDEX::PHI],
@@ -68,14 +68,13 @@ Acts::BinnedSPGroupIterator<external_spacepoint_t>::operator*() {
           m_current_localBins[INDEX::PHI],
           m_group->m_bins[m_current_localBins[INDEX::Z]],
           m_group->m_grid.get());
-  boost::container::small_vector<size_t, 9> middles{global_index};
   boost::container::small_vector<size_t, 9> tops =
       m_group->m_topBinFinder->findBins(
           m_current_localBins[INDEX::PHI],
           m_group->m_bins[m_current_localBins[INDEX::Z]],
           m_group->m_grid.get());
 
-  return std::make_tuple(std::move(bottoms), std::move(middles),
+  return std::make_tuple(std::move(bottoms), global_index,
                          std::move(tops));
 }
 
