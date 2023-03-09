@@ -218,7 +218,7 @@ int main(int argc, char* argv[]) {
     }
     auto [bottom, middle, top] = *spGroup_itr;
     seeds_device.push_back(seedFinder_device.createSeedsForGroup(
-        spGroup_itr.bottom(), spGroup_itr.middle(), spGroup_itr.top()));
+								 spGroup.grid(), bottom, middle, top));
   }
 
   // Record the finish time.
