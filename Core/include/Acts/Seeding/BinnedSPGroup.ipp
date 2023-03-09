@@ -97,7 +97,7 @@ Acts::BinnedSPGroupIterator<external_spacepoint_t>::findNotEmptyBin() {
           m_group->m_grid->globalBinFromLocalBins({phiBin, zBinIndex});
 
       // Check if there are entries in this bin
-      if (m_group->m_grid->at(index).empty() {
+      if (m_group->m_grid->at(index).empty() ) {
         continue;
       }
 
