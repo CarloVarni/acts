@@ -93,7 +93,7 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
                                SP->varianceR(), SP->varianceZ()});
   }
 
-  for (std::size_t SPidx : middleSPs[0]) {
+  for (std::size_t SPidx : middleSPs) {
     auto& sp_collection = grid.at(SPidx);
     for	(auto& SP : sp_collection) {
       middleSPvec.push_back(SP.get());
