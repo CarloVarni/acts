@@ -211,9 +211,12 @@ int main(int argc, char* argv[]) {
 
   // Perform the seed finding.
   auto spGroup_itr = spGroup.begin();
-  for (std::size_t i = 0;
-       spGroup_itr != spGroup_end && i < cmdl.groupsToIterate;
-       ++i, ++spGroup_itr) {
+  for (std::size_t i = 0; i < cmdl.groupsToIterate; ++i) {
+    auto spGroup_itr = Acts::BinnedSPGroupIterator(spGroup, i);
+    if (spGroup_itr == spGroup_end) {
+      break;
+    }
+    auto [bottom, middle, top] = *spGroup_itr;
     seeds_device.push_back(seedFinder_device.createSeedsForGroup(
         spGroup_itr.bottom(), spGroup_itr.middle(), spGroup_itr.top()));
   }
