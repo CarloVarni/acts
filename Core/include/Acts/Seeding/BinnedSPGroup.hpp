@@ -78,9 +78,8 @@ class BinnedSPGroupIterator {
 /// Fulfills the range_expression interface.
 template <typename external_spacepoint_t>
 class BinnedSPGroup {
- public:
   friend BinnedSPGroupIterator<external_spacepoint_t>;
-
+public:
   BinnedSPGroup() = delete;
 
   template <typename spacepoint_iterator_t, typename callable_t>

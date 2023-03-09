@@ -16,6 +16,7 @@
 #include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SeedFinderUtils.hpp"
+#include "Acts/Seeding/SpacePointGrid.hpp"
 
 #include <array>
 #include <list>

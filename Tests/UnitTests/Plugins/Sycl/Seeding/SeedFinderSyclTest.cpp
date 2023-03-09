@@ -1,6 +1,6 @@
 // This file is part of the Acts project.
 //
-// Copyright (C) 2020-2021 CERN for the benefit of the Acts project
+// Copyright (C) 2020-2023 CERN for the benefit of the Acts project
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -222,7 +222,8 @@ auto main(int argc, char** argv) -> int {
     decltype(normalSeedFinder)::SeedingState state;
     for (auto [bottom, middle, top] : spGroup) {
       normalSeedFinder.createSeedsForGroup(
-          options, state, std::back_inserter(seedVector_cpu.emplace_back()),
+	  options, state, spGroup.grid(),
+	  std::back_inserter(seedVector_cpu.emplace_back()),
           bottom, middle, top, rMiddleSPRange);
       group_count++;
       if (!cmdlTool.allgroup && group_count >= cmdlTool.groups) {
