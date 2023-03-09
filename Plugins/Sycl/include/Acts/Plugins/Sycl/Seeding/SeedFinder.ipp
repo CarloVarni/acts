@@ -1,4 +1,3 @@
-// -*- C++ -*-
 // This file is part of the Acts project.
 //
 // Copyright (C) 2020-2021 CERN for the benefit of the Acts project
@@ -84,8 +83,8 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
 
   for (std::size_t SPidx : bottomSPs) {
     auto& sp_collection = grid.at(SPidx);
-    for (Acts::InternalSpacePoint<external_spacepoint_t>& SP : sp_collection) { 
-      bottomSPvec.push_back(&SP);
+    for (auto& SP : sp_collection) { 
+      bottomSPvec.push_back(SP.get());
     }
   }
   deviceBottomSPs.reserve(bottomSPvec.size());
@@ -96,8 +95,8 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
 
   for (std::size_t SPidx : middleSPs[0]) {
     auto& sp_collection = grid.at(SPidx);
-    for	(Acts::InternalSpacePoint<external_spacepoint_t>& SP : sp_collection) {
-      middleSPvec.push_back(&SP);
+    for	(auto& SP : sp_collection) {
+      middleSPvec.push_back(SP.get());
     }
   }
   deviceMiddleSPs.reserve(middleSPvec.size());
@@ -108,8 +107,8 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
 
   for (auto SPidx : topSPs) {
     auto& sp_collection = grid.at(SPidx);
-    for (Acts::InternalSpacePoint<external_spacepoint_t>& SP : sp_collection) {
-      topSPvec.push_back(SP);
+    for (auto& SP : sp_collection) {
+      topSPvec.push_back(SP.get());
     }
   }
   deviceTopSPs.reserve(topSPvec.size());

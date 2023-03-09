@@ -270,10 +270,9 @@ int main(int argc, char** argv) {
 
   if (do_cpu) {
     decltype(seedFinder_cpu)::SeedingState state;
-    for (; groupIt != spGroup.end(); ++groupIt) {
-      auto [bottom, middle, top] = *groupIt;
+    for (auto [bottom, middle, top] : spGroup) {
       seedFinder_cpu.createSeedsForGroup(
-          options, state, std::back_inserter(seedVector_cpu.emplace_back()),
+					 options, state, spGroup.grid(), std::back_inserter(seedVector_cpu.emplace_back()),
           bottom, middle, top, rMiddleSPRange);
       group_count++;
       if (allgroup == false) {
