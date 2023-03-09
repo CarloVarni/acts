@@ -66,7 +66,7 @@ class BinnedSPGroupIterator {
 
  private:
   /// The group, it contains the grid and the bin finders
-  Acts::detail_tc::RefHolder<BinnedSPGroup<external_spacepoint_t>> m_group;
+  Acts::detail::RefHolder<BinnedSPGroup<external_spacepoint_t>> m_group;
   /// Max Local Bins - limits of the grid
   std::array<std::size_t, 2> m_max_localBins;
   /// Current Local Bins
