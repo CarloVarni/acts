@@ -92,7 +92,7 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
   //---------------------------------
 
   // Create more convenient vectors out of the space point containers.
-  auto spVecMaker = [&grid](sp_range_t& spRange) {
+  auto spVecMaker = [&grid](const sp_range_t& spRange) {
     std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*> result;
     for (std::size_t idx : spRange) {
       auto& collection = grid.at(idx);
@@ -109,9 +109,11 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(
       spVecMaker(topSPs));
 
   std::vector<Acts::InternalSpacePoint<external_spacepoint_t>*> middleSPVec;
-  auto& grid.at(middleSPs);
-  for (auto& sp : collection) {
-    middleSPVec.push_back(sp.get());
+  {
+    auto& collection = grid.at(middleSPs);
+    for (auto& sp : collection) {
+      middleSPVec.push_back(sp.get());
+    }
   }
   
   // If either one of them is empty, we have nothing to find.
