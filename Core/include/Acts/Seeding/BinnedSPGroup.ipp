@@ -208,8 +208,8 @@ Acts::BinnedSPGroup<external_spacepoint_t>::BinnedSPGroup(
         rbin = grid->atPosition(binIndex);
     std::sort(
         rbin.begin(), rbin.end(),
-        [](std::unique_ptr<InternalSpacePoint<external_spacepoint_t>>& a,
-           std::unique_ptr<InternalSpacePoint<external_spacepoint_t>>& b) {
+        [](const std::unique_ptr<InternalSpacePoint<external_spacepoint_t>>& a,
+           const std::unique_ptr<InternalSpacePoint<external_spacepoint_t>>& b) {
           return a->radius() < b->radius();
         });
   }

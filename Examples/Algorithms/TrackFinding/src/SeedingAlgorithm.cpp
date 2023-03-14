@@ -252,18 +252,22 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   seeds.clear();
   static thread_local decltype(m_seedFinder)::SeedingState state;
 
+  state.spacePointInfo.clear();
   state.spacePointInfo.resize(spacePointPtrs.size());
 
   if (m_cfg.seedFinderConfig.useDetailedDoubleMeasurementInfo) {
-    std::size_t counter = 0;
-    for (const auto* sp : spacePointPtrs) {
-      state.spacePointInfo[counter].topHalfStripLength = m_cfg.seedFinderConfig.getTopHalfStripLength(*sp);
-      state.spacePointInfo[counter].bottomHalfStripLength = m_cfg.seedFinderConfig.getBottomHalfStripLength(*sp);
-      state.spacePointInfo[counter].topStripDirection = m_cfg.seedFinderConfig.getTopStripDirection(*sp);
-      state.spacePointInfo[counter].bottomStripDirection = m_cfg.seedFinderConfig.getBottomStripDirection(*sp);
-      state.spacePointInfo[counter].stripCenterDistance = m_cfg.seedFinderConfig.getStripCenterDistance(*sp);
-      state.spacePointInfo[counter].topStripCenterPosition = m_cfg.seedFinderConfig.getTopStripCenterPosition(*sp);
-      ++counter;
+    std::size_t max_grid_size = spacePointsGrouping.grid().size();
+    for (std::size_t i(0); i<max_grid_size; ++i) {
+      const auto& coll = spacePointsGrouping.grid().at(i);
+      for (const auto& sp : coll) {
+	std::size_t sp_index = sp->index();
+	state.spacePointInfo[sp_index].topHalfStripLength = m_cfg.seedFinderConfig.getTopHalfStripLength(sp->sp());
+	state.spacePointInfo[sp_index].bottomHalfStripLength = m_cfg.seedFinderConfig.getBottomHalfStripLength(sp->sp());
+	state.spacePointInfo[sp_index].topStripDirection = m_cfg.seedFinderConfig.getTopStripDirection(sp->sp());
+	state.spacePointInfo[sp_index].bottomStripDirection = m_cfg.seedFinderConfig.getBottomStripDirection(sp->sp());
+	state.spacePointInfo[sp_index].stripCenterDistance = m_cfg.seedFinderConfig.getStripCenterDistance(sp->sp());
+	state.spacePointInfo[sp_index].topStripCenterPosition = m_cfg.seedFinderConfig.getTopStripCenterPosition(sp->sp());
+      }
     }
   }
   

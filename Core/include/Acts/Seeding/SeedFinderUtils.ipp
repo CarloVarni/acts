@@ -154,7 +154,7 @@ inline bool xyzCoordinateCheck(
     const double* spacepointPosition, double* outputCoordinates) {
   // check the compatibility of SPs coordinates in xyz assuming the
   // Bottom-Middle direction with the strip measurement details
-
+  
   const float& topHalfStripLength = spacePointInfo[sp.index()].topHalfStripLength;
   const float& bottomHalfStripLength = spacePointInfo[sp.index()].bottomHalfStripLength;
   const Acts::Vector3& topStripDirection = spacePointInfo[sp.index()].topStripDirection;
@@ -207,6 +207,7 @@ inline bool xyzCoordinateCheck(
 
   // if arive here spacepointPosition is compatible with strip directions and
   // detector elements
+
   const Acts::Vector3& topStripCenterPosition = spacePointInfo[sp.index()].topStripCenterPosition;
 
   // spacepointPosition corected with respect to the top strip position and
