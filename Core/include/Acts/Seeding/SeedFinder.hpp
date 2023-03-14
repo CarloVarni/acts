@@ -32,8 +32,16 @@
 namespace Acts {
 
   struct SpacePointInfo {  
+    // General quantities
     float quality = -std::numeric_limits<float>::infinity();
-    float deltaR = 0;
+    float deltaR {0};
+    // Quantities for strips
+    float topHalfStripLength {0};
+    float bottomHalfStripLength {0};
+    Acts::Vector3 topStripDirection {0,0,0};
+    Acts::Vector3 bottomStripDirection {0,0,0};
+    Acts::Vector3 stripCenterDistance {0,0,0};
+    Acts::Vector3 topStripCenterPosition {0,0,0};
   };
   
 template <typename external_spacepoint_t, typename platform_t = void*>

@@ -81,6 +81,7 @@ std::vector<std::size_t> transformCoordinates(std::vector<Acts::SpacePointInfo>&
 template <typename external_spacepoint_t>
 bool xyzCoordinateCheck(
     const Acts::SeedFinderConfig<external_spacepoint_t>& config,
+    std::vector<Acts::SpacePointInfo>& spacePointInfo,
     const Acts::InternalSpacePoint<external_spacepoint_t>& sp,
     const double* spacepointPosition, double* outputCoordinates);
 

@@ -252,8 +252,20 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   seeds.clear();
   static thread_local decltype(m_seedFinder)::SeedingState state;
 
-  state.spacePointInfo.clear();
   state.spacePointInfo.resize(spacePointPtrs.size());
+
+  if (m_cfg.seedFinderConfig.useDetailedDoubleMeasurementInfo) {
+    std::size_t counter = 0;
+    for (const auto* sp : spacePointPtrs) {
+      state.spacePointInfo[counter].topHalfStripLength = m_cfg.seedFinderConfig.getTopHalfStripLength(*sp);
+      state.spacePointInfo[counter].bottomHalfStripLength = m_cfg.seedFinderConfig.getBottomHalfStripLength(*sp);
+      state.spacePointInfo[counter].topStripDirection = m_cfg.seedFinderConfig.getTopStripDirection(*sp);
+      state.spacePointInfo[counter].bottomStripDirection = m_cfg.seedFinderConfig.getBottomStripDirection(*sp);
+      state.spacePointInfo[counter].stripCenterDistance = m_cfg.seedFinderConfig.getStripCenterDistance(*sp);
+      state.spacePointInfo[counter].topStripCenterPosition = m_cfg.seedFinderConfig.getTopStripCenterPosition(*sp);
+      ++counter;
+    }
+  }
   
   for (const auto [bottom, middle, top] : spacePointsGrouping) {
     m_seedFinder.createSeedsForGroup(
@@ -261,7 +273,7 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
         std::back_inserter(seeds), bottom, middle, top, rMiddleSPRange);
   }
 
-  ACTS_DEBUG("Created " << seeds.size() << " track seeds from "
+  ACTS_INFO("Created " << seeds.size() << " track seeds from "
                         << spacePointPtrs.size() << " space points");
 
   ctx.eventStore.add(m_cfg.outputSeeds, SimSeedContainer{seeds});

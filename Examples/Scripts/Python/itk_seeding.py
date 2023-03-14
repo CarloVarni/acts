@@ -37,7 +37,7 @@ def runITkSeedingFromCsv(detector, trackingGeometry, field, outputDir):
         )
         temp.read()
 
-        s = acts.examples.Sequencer(events=1, numThreads=-1, logLevel=acts.logging.INFO)
+        s = acts.examples.Sequencer(events=100, numThreads=1, logLevel=acts.logging.INFO)
 
         # Read input space points from input csv files
         evReader = CsvSpacePointReader(
@@ -54,25 +54,11 @@ def runITkSeedingFromCsv(detector, trackingGeometry, field, outputDir):
         spacePoints = evReader.config.outputSpacePoints
 
         # run seeding
-        inputProtoTracks, inputSeeds = addStandardSeeding(
+        inputSeeds = addStandardSeeding(
             s,
             spacePoints,
-            *acts.examples.itk.itkSeedingAlgConfig("PixelSpacePoint"),
+            *acts.examples.itk.itkSeedingAlgConfig("PixelSpacePoints"),
         )
-
-        # estimate seeding performance
-        parEstimateAlg = TrackParamsEstimationAlgorithm(
-            level=acts.logging.INFO,
-            inputSeeds=inputSeeds,
-            inputProtoTracks=inputProtoTracks,
-            inputSpacePoints=[spacePoints],
-            inputSourceLinks="sourcelinks",
-            outputTrackParameters="estimatedparameters",
-            outputProtoTracks="prototracks_estimated",
-            trackingGeometry=trackingGeometry,
-            magneticField=field,
-        )
-        s.addAlgorithm(parEstimateAlg)
 
         s.run()
 
@@ -89,7 +75,7 @@ def runITkSeedingFromCsv(detector, trackingGeometry, field, outputDir):
         )
         temp.read()
 
-        s = acts.examples.Sequencer(events=1, numThreads=-1, logLevel=acts.logging.INFO)
+        s = acts.examples.Sequencer(events=100, numThreads=1, logLevel=acts.logging.INFO)
 
         # Read input space points from input csv files
         evReader = CsvSpacePointReader(
@@ -106,25 +92,11 @@ def runITkSeedingFromCsv(detector, trackingGeometry, field, outputDir):
         spacePoints = evReader.config.outputSpacePoints
 
         # run seeding
-        inputProtoTracks, inputSeeds = addStandardSeeding(
+        inputSeeds = addStandardSeeding(
             s,
             spacePoints,
-            *acts.examples.itk.itkSeedingAlgConfig("StripSpacePoint"),
+            *acts.examples.itk.itkSeedingAlgConfig("StripSpacePoints"),
         )
-
-        # estimate seeding performance
-        parEstimateAlg = TrackParamsEstimationAlgorithm(
-            level=acts.logging.INFO,
-            inputSeeds=inputSeeds,
-            inputProtoTracks=inputProtoTracks,
-            inputSpacePoints=[spacePoints],
-            inputSourceLinks="sourcelinks",
-            outputTrackParameters="estimatedparameters",
-            outputProtoTracks="prototracks_estimated",
-            trackingGeometry=trackingGeometry,
-            magneticField=field,
-        )
-        s.addAlgorithm(parEstimateAlg)
 
         s.run()
 

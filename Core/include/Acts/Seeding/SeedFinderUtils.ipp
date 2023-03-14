@@ -149,20 +149,18 @@ inline std::vector<std::size_t> transformCoordinates(std::vector<Acts::SpacePoin
 template <typename external_spacepoint_t>
 inline bool xyzCoordinateCheck(
     const Acts::SeedFinderConfig<external_spacepoint_t>& m_config,
+    std::vector<Acts::SpacePointInfo>& spacePointInfo,
     const Acts::InternalSpacePoint<external_spacepoint_t>& sp,
     const double* spacepointPosition, double* outputCoordinates) {
   // check the compatibility of SPs coordinates in xyz assuming the
   // Bottom-Middle direction with the strip measurement details
-  const float topHalfStripLength = m_config.getTopHalfStripLength(sp.sp());
-  const float bottomHalfStripLength =
-      m_config.getBottomHalfStripLength(sp.sp());
-  const Acts::Vector3 topStripDirection =
-      m_config.getTopStripDirection(sp.sp());
-  const Acts::Vector3 bottomStripDirection =
-      m_config.getBottomStripDirection(sp.sp());
-  const Acts::Vector3 stripCenterDistance =
-      m_config.getStripCenterDistance(sp.sp());
 
+  const float& topHalfStripLength = spacePointInfo[sp.index()].topHalfStripLength;
+  const float& bottomHalfStripLength = spacePointInfo[sp.index()].bottomHalfStripLength;
+  const Acts::Vector3& topStripDirection = spacePointInfo[sp.index()].topStripDirection;
+  const Acts::Vector3& bottomStripDirection = spacePointInfo[sp.index()].bottomStripDirection;
+  const Acts::Vector3& stripCenterDistance = spacePointInfo[sp.index()].stripCenterDistance;
+  
   // cross product between top strip vector and spacepointPosition
   double d1[3] = {
       (topHalfStripLength * topStripDirection[1]) * spacepointPosition[2] -
@@ -209,9 +207,7 @@ inline bool xyzCoordinateCheck(
 
   // if arive here spacepointPosition is compatible with strip directions and
   // detector elements
-
-  const Acts::Vector3 topStripCenterPosition =
-      m_config.getTopStripCenterPosition(sp.sp());
+  const Acts::Vector3& topStripCenterPosition = spacePointInfo[sp.index()].topStripCenterPosition;
 
   // spacepointPosition corected with respect to the top strip position and
   // direction and the distance between the strips
