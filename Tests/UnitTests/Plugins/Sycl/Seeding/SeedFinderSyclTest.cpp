@@ -18,6 +18,7 @@
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/Utilities/Logger.hpp"
+#include "Acts/EventData/SpacePointData.hpp"
 
 #include <chrono>
 #include <cmath>
@@ -247,8 +248,11 @@ auto main(int argc, char** argv) -> int {
   group_count = 0;
   std::vector<std::vector<Acts::Seed<SpacePoint>>> seedVector_sycl;
 
+  Acts::SpacePointData spacePointData;
+  spacePointData.resize(spVec.size());
+  
   for (auto [bottom, middle, top] : spGroup) {
-    seedVector_sycl.push_back(syclSeedFinder.createSeedsForGroup(
+    seedVector_sycl.push_back(syclSeedFinder.createSeedsForGroup(spacePointData,
         spGroup.grid(), bottom, middle, top));
     group_count++;
     if (!cmdlTool.allgroup && group_count >= cmdlTool.groups) {

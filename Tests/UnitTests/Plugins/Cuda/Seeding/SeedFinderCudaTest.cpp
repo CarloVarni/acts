@@ -1,4 +1,4 @@
-// This file is part of the Acts project.
+// This file is part of the Acts projeAct.
 //
 // Copyright (C) 2020 CERN for the benefit of the Acts project
 //
@@ -267,9 +267,10 @@ int main(int argc, char** argv) {
   //----------- CPU ----------//
   group_count = 0;
   std::vector<std::vector<Acts::Seed<SpacePoint>>> seedVector_cpu;
-
+  
   if (do_cpu) {
     decltype(seedFinder_cpu)::SeedingState state;
+    state.spacePointData.resize(spVec.size());
     for (; groupIt != spGroup.end(); ++groupIt) {
       const auto [bottom, middle, top] = *groupIt;
       seedFinder_cpu.createSeedsForGroup(
@@ -299,6 +300,8 @@ int main(int argc, char** argv) {
   std::vector<std::vector<Acts::Seed<SpacePoint>>> seedVector_cuda;
   groupIt = Acts::BinnedSPGroupIterator<SpacePoint>(spGroup, skip);
 
+
+  
   for (; groupIt != spGroup.end(); ++groupIt) {
     const auto [bottom, middle, top] = *groupIt;
     seedVector_cuda.push_back(seedFinder_cuda.createSeedsForGroup(
