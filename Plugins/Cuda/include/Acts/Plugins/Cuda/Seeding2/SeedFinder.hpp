@@ -17,6 +17,7 @@
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/Utilities/Logger.hpp"
+#include "Acts/EventData/SpacePointData.hpp"
 
 // System include(s).
 #include <memory>
@@ -57,7 +58,7 @@ class SeedFinder {
   /// Ranges must be separate objects for each parallel call.
   /// @return vector in which all found seeds for this group are stored.
   template <typename sp_range_t>
-  std::vector<Seed<external_spacepoint_t> > createSeedsForGroup(
+  std::vector<Seed<external_spacepoint_t> > createSeedsForGroup(Acts::SpacePointData& spacePointData,
       Acts::SpacePointGrid<external_spacepoint_t>& grid,
       const sp_range_t& bottomSPs, const std::size_t middleSPs,
       const sp_range_t& topSPs) const;
