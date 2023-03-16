@@ -300,11 +300,12 @@ int main(int argc, char** argv) {
   std::vector<std::vector<Acts::Seed<SpacePoint>>> seedVector_cuda;
   groupIt = Acts::BinnedSPGroupIterator<SpacePoint>(spGroup, skip);
 
-
+  Acts::SpacePointData spacePointData;
+  spacePointData.resize(spVec.size());
   
   for (; groupIt != spGroup.end(); ++groupIt) {
     const auto [bottom, middle, top] = *groupIt;
-    seedVector_cuda.push_back(seedFinder_cuda.createSeedsForGroup(
+    seedVector_cuda.push_back(seedFinder_cuda.createSeedsForGroup(spacePointData,
         spGroup.grid(), bottom, middle, top));
     group_count++;
     if (allgroup == false) {
