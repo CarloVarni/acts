@@ -42,9 +42,9 @@ class TestHostCuts : public Acts::IExperimentCuts<TestSpacePoint> {
   /// space point in a std::tuple format
   /// @return vector of seed candidates that pass the cut
   std::vector<typename Acts::CandidatesForMiddleSp<
-      Acts::InternalSpacePoint<TestSpacePoint>>::value_type>
+      const Acts::InternalSpacePoint<TestSpacePoint>>::value_type>
   cutPerMiddleSP(std::vector<typename Acts::CandidatesForMiddleSp<
-                     Acts::InternalSpacePoint<TestSpacePoint>>::value_type>
+                     const Acts::InternalSpacePoint<TestSpacePoint>>::value_type>
                      seedCandidates) const final override;
 
 };  // struct TestHostCuts
