@@ -1,3 +1,4 @@
+// -*- C++ -*-
 // This file is part of the Acts project.
 //
 // Copyright (C) 2020 CERN for the benefit of the Acts project
@@ -47,6 +48,7 @@ template <typename external_spacepoint_t>
 template <typename sp_range_t>
 std::vector<Seed<external_spacepoint_t>>
 SeedFinder<external_spacepoint_t, Acts::Cuda>::createSeedsForGroup(
+    Acts::SpacePointData& spacePointData,
     Acts::SpacePointGrid<external_spacepoint_t>& grid,
     const sp_range_t& bottomSPs, const std::size_t middleSPs,
     const sp_range_t& topSPs) const {
@@ -307,9 +309,9 @@ SeedFinder<external_spacepoint_t, Acts::Cuda>::createSeedsForGroup(
       std::sort(
           candidates.begin(), candidates.end(),
           CandidatesForMiddleSp<
-              InternalSpacePoint<external_spacepoint_t>>::descendingByQuality);
+              const InternalSpacePoint<external_spacepoint_t>>::descendingByQuality);
       std::size_t numQualitySeeds = 0;  // not used but needs to be fixed
-      m_config.seedFilter->filterSeeds_1SpFixed(candidates, numQualitySeeds,
+      m_config.seedFilter->filterSeeds_1SpFixed(spacePointData, candidates, numQualitySeeds,
                                                 std::back_inserter(outputVec));
     }
   }
