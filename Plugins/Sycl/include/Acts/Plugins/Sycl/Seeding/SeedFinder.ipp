@@ -130,7 +130,7 @@ SeedFinder<external_spacepoint_t>::createSeedsForGroup(Acts::SpacePointData& spa
   // Iterate through seeds returned by the SYCL algorithm and perform the last
   // step of filtering for fixed middle SP.
   std::vector<typename CandidatesForMiddleSp<
-      InternalSpacePoint<external_spacepoint_t>>::value_type>
+      const InternalSpacePoint<external_spacepoint_t>>::value_type>
       candidates;
 
   for (size_t mi = 0; mi < seeds.size(); ++mi) {
