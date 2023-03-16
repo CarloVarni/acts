@@ -9,6 +9,7 @@
 #pragma once
 
 // Acts include(s).
+#include "Acts/EventData/SpacePointData.hpp"
 #include "Acts/Seeding/SeedFilter.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
@@ -49,6 +50,7 @@ class SeedFinder {
   /// @return vector in which all found seeds for this group are stored.
   template <typename sp_range_t>
   std::vector<Seed<external_spacepoint_t>> createSeedsForGroup(
+      Acts::SpacePointData& spacePointData,
       Acts::SpacePointGrid<external_spacepoint_t>& grid,
       const sp_range_t& bottomSPs, const std::size_t middleSPs,
       const sp_range_t& topSPs) const;
