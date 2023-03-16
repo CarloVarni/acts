@@ -1,3 +1,4 @@
+// -*- C++ -*-
 // This file is part of the Acts project.
 //
 // Copyright (C) 2023 CERN for the benefit of the Acts project
@@ -311,6 +312,41 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
   state.linCircleBottom.reserve(numBottomSP);
   state.linCircleTop.reserve(numTopSP);
 
+  // TEST - TO BE CHANGED
+  using extraInfo = std::tuple<float , float, Acts::Vector3, Acts::Vector3, Acts::Vector3, Acts::Vector3>;
+  std::vector<extraInfo> middleInfos;
+  std::vector<extraInfo> bottomInfos;
+  std::vector<extraInfo> topInfos;
+
+  if (m_config.useDetailedDoubleMeasurementInfo) {
+    middleInfos.push_back( std::make_tuple( m_config.getTopHalfStripLength(spM.sp()),
+					    m_config.getBottomHalfStripLength(spM.sp()),
+					    m_config.getTopStripDirection(spM.sp()),
+					    m_config.getBottomStripDirection(spM.sp()),
+					    m_config.getStripCenterDistance(spM.sp()),
+					    m_config.getTopStripCenterPosition(spM.sp()) ) );
+    
+    bottomInfos.reserve(state.compatBottomSP.size());
+    for (const auto* sp : state.compatBottomSP) {
+      bottomInfos.push_back( std::make_tuple( m_config.getTopHalfStripLength(sp->sp()),
+					      m_config.getBottomHalfStripLength(sp->sp()),
+					      m_config.getTopStripDirection(sp->sp()),
+					      m_config.getBottomStripDirection(sp->sp()),
+					      m_config.getStripCenterDistance(sp->sp()),
+					      m_config.getTopStripCenterPosition(sp->sp()) ) );
+    }   
+    
+    topInfos.reserve(state.compatTopSP.size());
+    for (const auto* sp : state.compatTopSP) {
+      topInfos.push_back( std::make_tuple( m_config.getTopHalfStripLength(sp->sp()),
+					   m_config.getBottomHalfStripLength(sp->sp()),
+					   m_config.getTopStripDirection(sp->sp()),
+					   m_config.getBottomStripDirection(sp->sp()),
+					   m_config.getStripCenterDistance(sp->sp()),
+					   m_config.getTopStripCenterPosition(sp->sp()) ) );
+    }
+  }
+  
   auto sorted_bottoms = transformCoordinates(state.compatBottomSP, spM, true,
                                              state.linCircleBottom);
   auto sorted_tops =
@@ -414,7 +450,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
             cosTheta * std::sqrt(1 + A0 * A0)};
 
         double rMTransf[3];
-        if (!xyzCoordinateCheck(m_config, spM, positionMiddle, rMTransf)) {
+        if (!xyzCoordinateCheck(m_config, middleInfos[0], positionMiddle, rMTransf)) {
           continue;
         }
 
@@ -429,7 +465,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
 
         auto spB = state.compatBottomSP[b];
         double rBTransf[3];
-        if (!xyzCoordinateCheck(m_config, *spB, positionBottom, rBTransf)) {
+        if (!xyzCoordinateCheck(m_config, bottomInfos[b], positionBottom, rBTransf)) {
           continue;
         }
 
@@ -443,7 +479,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
 
         auto spT = state.compatTopSP[t];
         double rTTransf[3];
-        if (!xyzCoordinateCheck(m_config, *spT, positionTop, rTTransf)) {
+        if (!xyzCoordinateCheck(m_config, topInfos[t], positionTop, rTTransf)) {
           continue;
         }
 

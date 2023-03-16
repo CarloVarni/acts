@@ -80,7 +80,7 @@ std::vector<std::size_t> transformCoordinates(
 template <typename external_spacepoint_t>
 bool xyzCoordinateCheck(
     const Acts::SeedFinderConfig<external_spacepoint_t>& config,
-    const Acts::InternalSpacePoint<external_spacepoint_t>& sp,
+    const std::tuple<float , float, Acts::Vector3, Acts::Vector3, Acts::Vector3, Acts::Vector3>& sp,
     const double* spacepointPosition, double* outputCoordinates);
 
 }  // namespace Acts

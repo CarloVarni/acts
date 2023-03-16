@@ -1,3 +1,4 @@
+// -*- C++ -*-
 // This file is part of the Acts project.
 //
 // Copyright (C) 2019 CERN for the benefit of the Acts project
@@ -148,19 +149,26 @@ inline std::vector<std::size_t> transformCoordinates(
 template <typename external_spacepoint_t>
 inline bool xyzCoordinateCheck(
     const Acts::SeedFinderConfig<external_spacepoint_t>& m_config,
-    const Acts::InternalSpacePoint<external_spacepoint_t>& sp,
+    const std::tuple<float , float, Acts::Vector3, Acts::Vector3, Acts::Vector3, Acts::Vector3>& sp,
     const double* spacepointPosition, double* outputCoordinates) {
+
+  enum SPINFO
+    : int {
+    TopHalfStripLength=0,
+    BottomHalfStripLength=1,
+    TopStripDirection=2,
+    BottomStripDirection=3,
+    StripCenterDistance=4,
+    TopStripCenterPosition=5
+  };
+  
   // check the compatibility of SPs coordinates in xyz assuming the
   // Bottom-Middle direction with the strip measurement details
-  const float topHalfStripLength = m_config.getTopHalfStripLength(sp.sp());
-  const float bottomHalfStripLength =
-      m_config.getBottomHalfStripLength(sp.sp());
-  const Acts::Vector3 topStripDirection =
-      m_config.getTopStripDirection(sp.sp());
-  const Acts::Vector3 bottomStripDirection =
-      m_config.getBottomStripDirection(sp.sp());
-  const Acts::Vector3 stripCenterDistance =
-      m_config.getStripCenterDistance(sp.sp());
+  const float& topHalfStripLength = std::get<SPINFO::TopHalfStripLength>(sp);
+  const float& bottomHalfStripLength = std::get<SPINFO::BottomHalfStripLength>(sp);;
+  const Acts::Vector3& topStripDirection = std::get<SPINFO::TopStripDirection>(sp);
+  const Acts::Vector3& bottomStripDirection = std::get<SPINFO::BottomStripDirection>(sp);
+  const Acts::Vector3& stripCenterDistance = std::get<SPINFO::StripCenterDistance>(sp);
 
   // cross product between top strip vector and spacepointPosition
   double d1[3] = {
@@ -209,8 +217,7 @@ inline bool xyzCoordinateCheck(
   // if arive here spacepointPosition is compatible with strip directions and
   // detector elements
 
-  const Acts::Vector3 topStripCenterPosition =
-      m_config.getTopStripCenterPosition(sp.sp());
+  const Acts::Vector3& topStripCenterPosition = std::get<SPINFO::TopStripCenterPosition>(sp);
 
   // spacepointPosition corected with respect to the top strip position and
   // direction and the distance between the strips
