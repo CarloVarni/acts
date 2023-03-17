@@ -19,6 +19,7 @@
 #include "Acts/Plugins/Cuda/Utilities/MemoryManager.hpp"
 
 // Acts include(s).
+#include "Acts/EventData/SpacePointData.hpp"
 #include "Acts/Seeding/BinFinder.hpp"
 #include "Acts/Seeding/BinnedSPGroup.hpp"
 #include "Acts/Seeding/SeedFilterConfig.hpp"
@@ -208,7 +209,9 @@ int main(int argc, char* argv[]) {
   auto start_device = std::chrono::system_clock::now();
   // Create the result object.
   std::vector<std::vector<Acts::Seed<TestSpacePoint>>> seeds_device;
-
+  Acts::SpacePointData spacePointData;
+  spacePointData.resize(spView.size());
+  
   // Perform the seed finding.
   for (std::size_t i = 0; i < cmdl.groupsToIterate; ++i) {
     auto spGroup_itr = Acts::BinnedSPGroupIterator(spGroup, i);
@@ -216,7 +219,7 @@ int main(int argc, char* argv[]) {
       break;
     }
     auto [bottom, middle, top] = *spGroup_itr;
-    seeds_device.push_back(seedFinder_device.createSeedsForGroup(
+    seeds_device.push_back(seedFinder_device.createSeedsForGroup(spacePointData,
         spGroup.grid(), bottom, middle, top));
   }
 
