@@ -1,6 +1,6 @@
-// This file is part of the Acts projeAct.
+// This file is part of the Acts project.
 //
-// Copyright (C) 2020 CERN for the benefit of the Acts project
+// Copyright (C) 2023 CERN for the benefit of the Acts project
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -267,7 +267,7 @@ int main(int argc, char** argv) {
   //----------- CPU ----------//
   group_count = 0;
   std::vector<std::vector<Acts::Seed<SpacePoint>>> seedVector_cpu;
-  
+
   if (do_cpu) {
     decltype(seedFinder_cpu)::SeedingState state;
     state.spacePointData.resize(spVec.size());
@@ -302,11 +302,11 @@ int main(int argc, char** argv) {
 
   Acts::SpacePointData spacePointData;
   spacePointData.resize(spVec.size());
-  
+
   for (; groupIt != spGroup.end(); ++groupIt) {
     const auto [bottom, middle, top] = *groupIt;
-    seedVector_cuda.push_back(seedFinder_cuda.createSeedsForGroup(spacePointData,
-        spGroup.grid(), bottom, middle, top));
+    seedVector_cuda.push_back(seedFinder_cuda.createSeedsForGroup(
+        spacePointData, spGroup.grid(), bottom, middle, top));
     group_count++;
     if (allgroup == false) {
       if (group_count >= nGroupToIterate)

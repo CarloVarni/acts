@@ -1,6 +1,6 @@
 // This file is part of the Acts project.
 //
-// Copyright (C) 2020 CERN for the benefit of the Acts project
+// Copyright (C) 2023 CERN for the benefit of the Acts project
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
   std::vector<std::vector<Acts::Seed<TestSpacePoint>>> seeds_device;
   Acts::SpacePointData spacePointData;
   spacePointData.resize(spView.size());
-  
+
   // Perform the seed finding.
   for (std::size_t i = 0; i < cmdl.groupsToIterate; ++i) {
     auto spGroup_itr = Acts::BinnedSPGroupIterator(spGroup, i);
@@ -219,8 +219,8 @@ int main(int argc, char* argv[]) {
       break;
     }
     auto [bottom, middle, top] = *spGroup_itr;
-    seeds_device.push_back(seedFinder_device.createSeedsForGroup(spacePointData,
-        spGroup.grid(), bottom, middle, top));
+    seeds_device.push_back(seedFinder_device.createSeedsForGroup(
+        spacePointData, spGroup.grid(), bottom, middle, top));
   }
 
   // Record the finish time.
