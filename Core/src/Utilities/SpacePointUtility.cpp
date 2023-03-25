@@ -41,8 +41,7 @@ Result<double> SpacePointUtility::differenceOfMeasurementsChecked(
 
 Acts::Vector3 SpacePointUtility::globalPosition(const GeometryContext& gctx,
 						const SourceLink& slink,
-						const BoundVector& par,
-						const BoundSymMatrix& cov) const
+						const BoundVector& par) const
 {
   const Surface* surface =
       m_config.trackingGeometry->findSurface(slink.geometryId());

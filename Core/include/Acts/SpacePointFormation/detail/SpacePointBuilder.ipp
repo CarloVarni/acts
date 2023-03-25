@@ -34,7 +34,7 @@ void SpacePointBuilder<spacepoint_t>::buildSpacePoint(
     auto slink = sourceLinks.at(0);
     auto [param, cov] = opt.paramCovAccessor(sourceLinks.at(0));
     if (m_config.useCustomCovarianceComputation) {
-      gPos = m_spUtility->globalPosition(gctx, slink, param, cov);
+      gPos = m_spUtility->globalPosition(gctx, slink, param);
       gCov = opt.customCovComputation(sourceLinks.at(0), cov);
     } else {
       auto gPosCov = m_spUtility->globalCoords(gctx, slink, param, cov);
