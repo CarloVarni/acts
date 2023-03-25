@@ -17,7 +17,8 @@ struct SpacePointBuilderConfig {
   std::shared_ptr<const Acts::TrackingGeometry> trackingGeometry;
   /// Perform the perpendicular projection for space point finding
   bool usePerpProj = false;
-
+  bool useCustomCovarianceComputation = false;
+  
   SpacePointBuilderConfig() = default;
 };
 

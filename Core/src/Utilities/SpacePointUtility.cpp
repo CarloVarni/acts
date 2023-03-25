@@ -39,6 +39,18 @@ Result<double> SpacePointUtility::differenceOfMeasurementsChecked(
   return Result<double>::success(diffTheta2 + diffPhi2);
 }
 
+Acts::Vector3 SpacePointUtility::globalPosition(const GeometryContext& gctx,
+						const SourceLink& slink,
+						const BoundVector& par,
+						const BoundSymMatrix& cov) const
+{
+  const Surface* surface =
+      m_config.trackingGeometry->findSurface(slink.geometryId());
+  Acts::Vector2 localPos(par[eBoundLoc0], par[eBoundLoc1]);
+  return surface->localToGlobal(gctx, localPos, Vector3());
+}
+						
+  
 std::pair<Vector3, Vector2> SpacePointUtility::globalCoords(
     const GeometryContext& gctx, const SourceLink& slink,
     const BoundVector& par, const BoundSymMatrix& cov) const {

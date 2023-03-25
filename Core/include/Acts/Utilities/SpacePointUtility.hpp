@@ -72,6 +72,11 @@ class SpacePointUtility {
                                            const BoundVector& par,
                                            const BoundSymMatrix& cov) const;
 
+  Acts::Vector3 globalPosition(const GeometryContext& gctx,
+			       const SourceLink& slink,
+			       const BoundVector& par,
+			       const BoundSymMatrix& cov) const;
+  
   /// @brief Get rho and z covariance from the local position and covariance
   /// @param gctx The current geometry context object, e.g. alignment
   /// @param geoId The geometry ID

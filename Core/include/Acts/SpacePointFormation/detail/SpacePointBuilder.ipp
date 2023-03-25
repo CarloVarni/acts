@@ -1,3 +1,4 @@
+// -*- C++ -*-
 // This file is part of the Acts project.
 //
 // Copyright (C) 2018-2022 CERN for the benefit of the Acts project
@@ -32,9 +33,14 @@ void SpacePointBuilder<spacepoint_t>::buildSpacePoint(
   if (num_slinks == 1) {  // pixel SP formation
     auto slink = sourceLinks.at(0);
     auto [param, cov] = opt.paramCovAccessor(sourceLinks.at(0));
-    auto gPosCov = m_spUtility->globalCoords(gctx, slink, param, cov);
-    gPos = gPosCov.first;
-    gCov = gPosCov.second;
+    if (m_config.useCustomCovarianceComputation) {
+      gPos = m_spUtility->globalPosition(gctx, slink, param, cov);
+      gCov = opt.customCovComputation(sourceLinks.at(0), cov);
+    } else {
+      auto gPosCov = m_spUtility->globalCoords(gctx, slink, param, cov);
+      gPos = gPosCov.first;
+      gCov = gPosCov.second;
+    }
   } else if (num_slinks == 2) {  // strip SP formation
 
     const auto& ends1 = opt.stripEndsPair.first;

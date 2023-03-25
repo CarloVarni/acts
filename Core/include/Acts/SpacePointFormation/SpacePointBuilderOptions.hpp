@@ -20,6 +20,8 @@ struct SpacePointBuilderOptions {
   // accessor of local position and covariance from soruce link
   std::function<std::pair<const BoundVector, const BoundSymMatrix>(SourceLink)>
       paramCovAccessor;
+  // Custom computation of global covariance
+  std::function<Acts::Vector2(const SourceLink&, const BoundSymMatrix&)> customCovComputation;
   /// vertex position
   Vector3 vertex = {0., 0., 0.};
   /// Allowed increase of strip length
