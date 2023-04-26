@@ -94,6 +94,7 @@ struct GaussianSumFitter {
            const std::vector<const Surface*>& sSequence,
            TrackContainer<track_container_t, traj_t, holder_t>& trackContainer)
       const {
+    ACTS_INFO("Calling fit method 1");
     // Check if we have the correct navigator
     static_assert(
         std::is_same_v<DirectNavigator, typename propagator_t::Navigator>);
@@ -151,6 +152,7 @@ struct GaussianSumFitter {
            const GsfOptions<traj_t>& options,
            TrackContainer<track_container_t, traj_t, holder_t>& trackContainer)
       const {
+    ACTS_INFO("Calling fit method 2");
     // Check if we have the correct navigator
     static_assert(std::is_same_v<Navigator, typename propagator_t::Navigator>);
 
