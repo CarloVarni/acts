@@ -9,7 +9,12 @@ def parse_arguments():
     parser.add_argument('--repository', required=True, type=str, nargs=1,
                         help='name of the repository, e.g. "acts-project/acts"')
     return parser.parse_args()
-    
+
+def whatch_list():
+    whatlist_files = dict()
+    whatlist_files['CI/check_pr_labels.py'] = ['Changes Performance - Vertex']
+    return whatlist_files
+
 def main():       
     args = parse_arguments()
     github_repository_name = args.repository if type(args.repository) == str else args.repository[0]
@@ -18,9 +23,7 @@ def main():
     print(f'Checking labels for PR #{pull_id} from project: {github_repository_name}')
     
     list_labels = set()
-
-    whatlist_files = dict()
-    whatlist_files['CI/check_pr_labels.py'] = ['Changes Performance - Vertex']
+    whatlist_files = whatch_list()
 
     github_token = ""
     try:
@@ -44,13 +47,28 @@ def main():
     print('List of modified files:')
     for el in files:
         print(f"   * {el.filename}")
-        
+
+    required_labels = set()
     for el in files:
-        required_labels = whatlist_files.get(el.filename, [])
-        if len(required_labels) == 0:
+        current_required_labels = whatlist_files.get(el.filename, [])
+        if len(current_required_labels) == 0:
             continue
-        for required_label in required_labels:
-            assert (required_label in list_labels), f"This PR modifies the performance of a component but it does not contain the required label: '{required_label}'"
+        for label in current_required_labels:
+            required_labels.add(label)
+
+    all_labels_available = True
+    missing_labels = set()
+    for required_label in required_labels:
+        if required_label in list_labels:
+            continue
+        missing_labels.add(required_label)
+        all_labels_available = False
+
+    if not all_labels_available:
+        print(f"Available Labels: {list_labels}")
+        print(f"Required Labels: {required_labels}")
+        print(f"Missing Labels: {missing_labels}")
+        raise Exception(f"This PR modifies the performance of a component but it does not contain the required label")
 
 if __name__ == "__main__":
     main()
