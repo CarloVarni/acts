@@ -20,10 +20,7 @@ def main():
     list_labels = set()
 
     whatlist_files = dict()
-    whatlist_files['CI/physmon/reference/performance_amvf_orthogonal_hist.root'] = ['Changes Performance - Vertex']
-    whatlist_files['CI/physmon/reference/performance_amvf_seeded_hist.root'] = []
-    whatlist_files['CI/physmon/reference/performance_amvf_truth_estimated_hist.root'] = []
-    whatlist_files['CI/physmon/reference/performance_amvf_truth_smeared_hist.root'] = []
+    whatlist_files['CI/check_pr_labels.py'] = ['Changes Performance - Vertex']
 
     github_token = ""
     try:
