@@ -82,12 +82,13 @@ def main():
     for required_label in required_labels:
         if required_label in list_labels:
             continue
-        missing_labels.add(required_label)
+        missing_labels.add(required_label)y
 
     if len(missing_labels) != 0:
         print(f"Available Labels: {list_labels}")
         print(f"Required Labels: {required_labels}")
         print(f"Missing Labels: {missing_labels}")
+        pull.create_issue_comment(f"This PR modifies the performance of a component but it does not contain the required label. Please add: {missing_labels}")
         raise Exception(f"This PR modifies the performance of a component but it does not contain the required label")
 
 if __name__ == "__main__":
