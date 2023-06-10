@@ -11,9 +11,31 @@ def parse_arguments():
     return parser.parse_args()
 
 def whatch_list():
-    whatlist_files = dict()
-    whatlist_files['CI/check_pr_labels.py'] = ['Changes Performance - Vertex']
-    return whatlist_files
+    whatchlist_files = dict()
+    whatchlist_files['performance_ambi_orthogonal.root'] = ['Changes Performance - Ambiguity resolution']
+    whatchlist_files['performance_ambi_seeded.root'] = ['Changes Performance - Ambiguity resolution']
+    whatchlist_files['performance_amvf_orthogonal_hist.root'] = ['Changes Performance - Vertex']
+    whatchlist_files['performance_amvf_seeded_hist.root'] = ['Changes Performance - Vertex']
+    whatchlist_files['performance_amvf_truth_estimated_hist.root'] = ['Changes Performance - Vertex']
+    whatchlist_files['performance_amvf_truth_smeared_hist.root'] = ['Changes Performance - Vertex']
+    whatchlist_files['performance_ckf_orthogonal.root'] = ['Changes Performance - Finding']
+    whatchlist_files['performance_ckf_seeded.root'] = ['Changes Performance - Finding']
+    whatchlist_files['performance_ckf_truth_estimated.root'] = ['Changes Performance - Finding']
+    whatchlist_files['performance_ckf_truth_smeared.root'] = ['Changes Performance - Finding']
+    whatchlist_files['performance_gsf.root'] = ['Changes Performance - Fitting']
+    whatchlist_files['performance_ivf_orthogonal_hist.root'] = ['Changes Performance - Vertex']
+    whatchlist_files['performance_ivf_seeded_hist.root'] = ['Changes Performance - Vertex']
+    whatchlist_files['performance_ivf_truth_estimated_hist.root'] = ['Changes Performance - Vertex']
+    whatchlist_files['performance_ivf_truth_smeared_hist.root'] = ['Changes Performance - Vertex']
+    whatchlist_files['performance_seeding_orthogonal.root'] = ['Changes Performance - Seeding']
+    whatchlist_files['performance_seeding_seeded.root'] = ['Changes Performance - Seeding']
+    whatchlist_files['performance_seeding_truth_estimated.root'] = ['Changes Performance - Seeding']
+    whatchlist_files['performance_truth_tracking.root'] = ['Changes Performance - Fitting']
+    whatchlist_files['tracksummary_ckf_orthogonal_hist.root'] = ['Changes Performance - Finding']
+    whatchlist_files['tracksummary_ckf_seeded_hist.root'] = ['Changes Performance - Finding']
+    whatchlist_files['tracksummary_ckf_truth_estimated_hist.root'] = ['Changes Performance - Finding']
+    whatchlist_files['tracksummary_ckf_truth_smeared_hist.root'] = ['Changes Performance - Finding']
+    return whatchlist_files
 
 def main():       
     args = parse_arguments()
@@ -23,7 +45,7 @@ def main():
     print(f'Checking labels for PR #{pull_id} from project: {github_repository_name}')
     
     list_labels = set()
-    whatlist_files = whatch_list()
+    whatchlist_files = whatch_list()
 
     github_token = ""
     try:
@@ -50,7 +72,7 @@ def main():
 
     required_labels = set()
     for el in files:
-        current_required_labels = whatlist_files.get(el.filename, [])
+        current_required_labels = whatchlist_files.get(el.filename, [])
         if len(current_required_labels) == 0:
             continue
         for label in current_required_labels:
