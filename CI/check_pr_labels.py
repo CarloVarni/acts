@@ -56,15 +56,13 @@ def main():
         for label in current_required_labels:
             required_labels.add(label)
 
-    all_labels_available = True
     missing_labels = set()
     for required_label in required_labels:
         if required_label in list_labels:
             continue
         missing_labels.add(required_label)
-        all_labels_available = False
 
-    if not all_labels_available:
+    if len(missing_labels) != 0:
         print(f"Available Labels: {list_labels}")
         print(f"Required Labels: {required_labels}")
         print(f"Missing Labels: {missing_labels}")
