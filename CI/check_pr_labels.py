@@ -83,7 +83,7 @@ def main():
     for required_label in required_labels:
         if required_label in list_labels:
             continue
-        missing_labels.add(required_label)y
+        missing_labels.add(required_label)
 
     if len(missing_labels) != 0:
         print(f"Available Labels: {list_labels}")
