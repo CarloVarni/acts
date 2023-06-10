@@ -17,4 +17,4 @@ jobs:
       - name: install dependencies
         run: pip3 install PyGithub
       - name: check the labels
-        run: python3 CI/check_pr_labels.py --pull_id ${{ github.event.number }} --repository ${{ github.event.repository.name }}
+        run: python3 CI/check_pr_labels.py --pull_id ${{ github.event.number }} --repository ${{ github.event.repository }}
