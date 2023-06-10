@@ -64,6 +64,7 @@ def main():
         list_labels.add(label.name)
 
     print('This PR is marked with the following labels:', list_labels)
+    pull.create_issue_comment("this is a test of a comment")
 
     files = pull.get_files()
     print('List of modified files:')
