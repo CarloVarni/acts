@@ -53,20 +53,21 @@ def main():
     # from https://pygithub.readthedocs.io/en/latest/github_objects/PullRequest.html
     pull = repository.get_pull(pull_id)
 
+    # Get the labels already attached to the PR
     labels = pull.get_labels()
     for label in labels:
         list_labels.add(label.name)
 
     print('This PR is marked with the following labels:', list_labels)
-    #pull.create_issue_comment("this is a test of a comment")
-    #pull.add_to_labels("enhancement")
 
+    # Get the list of files modified by this PR
     files = pull.get_files()
     print('List of modified files:')
     for el in files:
         print(f" * {el.filename}")
 
     print('Checking labels ...')
+    # Check each file and compare them with the patterns
     for pattern in whatchlist_files:
         for el in files:
             if not re.search(pattern, el.filename):
@@ -79,13 +80,14 @@ def main():
                     print(f" * adding label: {label}")
                     list_labels.add(label)
                     outcome = pull.add_to_labels(label)
+                    # Check the addition of the label was successfull
                     if outcome != 200:
-                        raise Exception(f'Could not add label "{lavel}" to PR')
+                        raise Exception(f'Could not add label "{label}" to PR')
+            # Found a match already, we can skip the other files
             break
 
     if 'Changes Performance' in list_labels:
         pull.create_issue_comment(f"This PR modifies the performance of a component")
-        #raise Exception(f"This PR modifies the performance of a component but it does not contain the required label")
 
 if __name__ == "__main__":
     main()
