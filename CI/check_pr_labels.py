@@ -20,13 +20,13 @@ def whatch_list():
     whatchlist_files['^Examples/.*'] = ['Component - Examples']
     whatchlist_files['^Fatras/.*'] = ['Component - Fatras']
     whatchlist_files['^Plugins/.*'] = ['Component - Plugins']
-    whatchlist_files['^docs'] = ['Component - Documentation']
+    whatchlist_files['^docs/.*'] = ['Component - Documentation']
 #    whatchlist_files['^CI/physmon/reference.*'] = ['Changes Performance']
 #    whatchlist_files['^CI/physmon/reference/.*_ambi_.*.root'] = ['Changes Performance - Ambiguity resolution']
 #    whatchlist_files['^CI/physmon/reference/.*_amvf_.*.root'] = ['Changes Performance - Vertex']
 #    whatchlist_files['^CI/physmon/reference/.*_ivf_.*.root'] = ['Changes Performance - Vertex']
 #    whatchlist_files['^CI/physmon/reference/.*_ckf_.*.root'] = ['Changes Performance - Finding']
-#    whatchlist_files['^CI/physmon/reference//*_seeding_/*.root'] = ['Changes Performance - Seeding']
+#    whatchlist_files['^CI/physmon/reference/.*_seeding_.*.root'] = ['Changes Performance - Seeding']
 #    whatchlist_files['^CI/physmon/reference/performance_gsf.root'] = ['Changes Performance - Fitting']
 #    whatchlist_files['^CI/physmon/reference/performance_truth_tracking.root'] = ['Changes Performance - Fitting']
     return whatchlist_files
@@ -99,11 +99,11 @@ def main():
                 problem = True
                 break
 
+    print (f'Labels in PR: {final_labels}')
+    print (f'Expected Labels in PR: {list_labels}')
+            
     if problem:
-        print (f'Labels in PR: {final_labels}')
-        print (f'Expected Labels in PR: {list_labels}')
         raise Exception(f'Something went wrong while adding the labels to the PR')
-
         
     if 'Changes Performance' in list_labels:
         pull.create_issue_comment(f"This PR modifies the performance of a component")
