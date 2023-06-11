@@ -64,8 +64,9 @@ def main():
     if pull.draft:
         print("This PR is a draft!")
         if ":construction: WIP" not in list_labels:
+            print(" * adding label: :construction: WIP")
             list_labels.add(':construction: WIP')
-            pull.add_to_labels(':construction: WIP')
+            #pull.add_to_labels(':construction: WIP')
     
     # Get the list of files modified by this PR
     files = pull.get_files()
@@ -86,7 +87,7 @@ def main():
                 if label not in list_labels:
                     print(f" * adding label: {label}")
                     list_labels.add(label)
-                    pull.add_to_labels(label)
+                    #pull.add_to_labels(label)
             # Found a match already, we can skip the other files
             break
 
@@ -111,7 +112,8 @@ def main():
             
     if problem:
         raise Exception(f'Something went wrong while adding the labels to the PR')
-        
+
+    pull.create_issue_comment("the test has run")
     #if 'Changes Performance' in list_labels:
         #pull.create_issue_comment(f"This PR modifies the performance of a component")
 
