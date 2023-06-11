@@ -76,9 +76,11 @@ def main():
             # add label to PR if missing
             for label in toadd_labels:
                 if label not in list_labels:
-                    print(f" + adding label {label}")
+                    print(f" * adding label: {label}")
                     list_labels.add(label)
-                    pull.add_to_labels(label)
+                    outcome = pull.add_to_labels(label)
+                    if outcome != 200:
+                        raise Exception(f'Could not add label "{lavel}" to PR')
             break
 
     if 'Changes Performance' in list_labels:
