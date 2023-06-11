@@ -79,13 +79,32 @@ def main():
                 if label not in list_labels:
                     print(f" * adding label: {label}")
                     list_labels.add(label)
-                    outcome = pull.add_to_labels(label)
-                    # Check the addition of the label was successfull
-                    if outcome != 200:
-                        raise Exception(f'Could not add label "{label}" to PR')
+                    pull.add_to_labels(label)
             # Found a match already, we can skip the other files
             break
 
+    # Check the addition of the label was successfull
+    labels = pull.get_labels()
+    final_labels = set()
+    for label in labels:
+        final_labels.add(label.name)
+
+    problem = False
+    if len(final_labels) != len(list_labels):
+        problem = True
+
+    if not problem:
+        for label in list_labels:
+            if label not in final_labels:
+                problem = True
+                break
+
+    if problem:
+        print (f'Labels in PR: {final_labels}')
+        print (f'Expected Labels in PR: {list_labels}')
+        raise Exception(f'Something went wrong while adding the labels to the PR')
+
+        
     if 'Changes Performance' in list_labels:
         pull.create_issue_comment(f"This PR modifies the performance of a component")
 
