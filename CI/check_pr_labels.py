@@ -66,15 +66,17 @@ def main():
     for el in files:
         print(f" * {el.filename}")
 
+    print('Checking labels ...')
     for pattern in whatchlist_files:
-        for filename in files:
-            if not re.search(pattern, filename):
+        for el in files:
+            if not re.search(pattern, el.filename):
                 continue
             # get the required labels for this pattern
             toadd_labels = whatchlist_files[pattern]
             # add label to PR if missing
             for label in toadd_labels:
                 if label not in list_labels:
+                    print(f" + adding label {label}")
                     list_labels.add(label)
                     pull.add_to_labels(label)
             break
