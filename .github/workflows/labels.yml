@@ -10,12 +10,11 @@ jobs:
   check_pr_labels:
     name: Check PR Labels
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     steps:
       - uses: actions/checkout@v3
-      - name: labeler
-        uses: uses: actions/labeler@v4
-	Infrastructure:
-	  - aby: ['.github/**', 'CI/**']
+      - uses: uses: actions/labeler@v4
+        with:
+	  repo-token: ${{ secrets.GITHUB_TOKEN }}
+	  Infrastructure:
+	    - any: ['.github/**', 'CI/**']
