@@ -1,12 +1,14 @@
-"Infrastructure":
-  - any: ['.github/*', 'CI/*', 'cmake/*']
-"Component - Core":
-  - any: ['Core/*']
-"Component - Examples":
-  - any: ['Examples/*']
-"Component - Fatras":
-  - any: ['Fatras/*']
-"Component - Plugins":
-  - any: ['Plugins/*']
-"Component - Documentation":
-  - any: ['docs/*']
+'Infrastructure':
+  - .github/**
+  - CI/**
+  - cmake/**
+'Component - Core':
+  - *Core/**
+'Component - Examples':
+  - *Examples/**
+'Component - Fatras':
+  - *Fatras/**
+'Component - Plugins':
+  - *Plugins/**
+'Component - Documentation':
+  - *docs/**

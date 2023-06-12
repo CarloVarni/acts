@@ -16,4 +16,4 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           dot: true
-
+	  sync-labels: true
