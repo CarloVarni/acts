@@ -3,12 +3,12 @@
   - CI/**
   - cmake/**
 'Component - Core':
-  - *Core/**
+  - Core/**
 'Component - Examples':
-  - *Examples/**
+  - Examples/**
 'Component - Fatras':
-  - *Fatras/**
+  - Fatras/**
 'Component - Plugins':
-  - *Plugins/**
+  - Plugins/**
 'Component - Documentation':
-  - *docs/**
+  - docs/**
