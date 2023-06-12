@@ -16,5 +16,5 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           dot: true
-	  Infrastructure:
-	    - any: ['.github/**', 'CI/**']
+	Infrastructure:
+	  - any: ['.github/**', 'CI/**']
