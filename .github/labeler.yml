@@ -1,0 +1,2 @@
+Infrastructure:
+  - any: ['.github/**', 'CI/**']
