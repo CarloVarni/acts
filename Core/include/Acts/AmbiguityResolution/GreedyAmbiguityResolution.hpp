@@ -21,9 +21,6 @@
 
 namespace Acts {
 
-
-  // TEST
-  
 /// Evicts tracks that seem to be duplicates or fakes. This algorithm takes a
 /// greedy approach in the sense that it will remove the track which looks "most
 /// duplicate/fake" first and continues the same process with the rest. That
