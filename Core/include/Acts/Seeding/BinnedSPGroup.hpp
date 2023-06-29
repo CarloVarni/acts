@@ -8,10 +8,10 @@
 
 #pragma once
 
+#include "Acts/EventData/Seed.hpp"
 #include "Acts/Geometry/Extent.hpp"
 #include "Acts/Seeding/BinFinder.hpp"
 #include "Acts/Seeding/InternalSeed.hpp"
-#include "Acts/Seeding/Seed.hpp"
 #include "Acts/Seeding/SeedFinderConfig.hpp"
 #include "Acts/Seeding/SpacePointGrid.hpp"
 #include "Acts/Utilities/Holders.hpp"
@@ -84,10 +84,9 @@ class BinnedSPGroup {
  public:
   BinnedSPGroup() = delete;
 
-  template <typename spacepoint_iterator_t, typename callable_t>
+  template <typename spacepoint_iterator_t>
   BinnedSPGroup(
       spacepoint_iterator_t spBegin, spacepoint_iterator_t spEnd,
-      callable_t&& toGlobal,
       std::shared_ptr<const Acts::BinFinder<external_spacepoint_t>>
           botBinFinder,
       std::shared_ptr<const Acts::BinFinder<external_spacepoint_t>> tBinFinder,
@@ -122,7 +121,7 @@ class BinnedSPGroup {
   std::shared_ptr<const BinFinder<external_spacepoint_t>> m_topBinFinder;
   std::shared_ptr<const BinFinder<external_spacepoint_t>> m_bottomBinFinder;
 
-  std::vector<size_t> m_bins;
+  std::vector<std::size_t> m_bins;
 };
 
 }  // namespace Acts

@@ -67,30 +67,15 @@ inline LinCircle transformCoordinates(const external_spacepoint_t& sp,
 
 template <typename external_spacepoint_t>
 inline void transformCoordinates(
-    Acts::SpacePointData& spacePointData,
-    const std::vector<InternalSpacePoint<external_spacepoint_t>*>& vec,
-    const InternalSpacePoint<external_spacepoint_t>& spM, bool bottom,
+    const std::vector<const external_spacepoint_t*>& vec,
+    const external_spacepoint_t& spM, bool bottom,
     std::vector<LinCircle>& linCircleVec) {
-  auto extractFunction =
-      [](const InternalSpacePoint<external_spacepoint_t>& obj)
-      -> std::array<float, 6> {
-    std::array<float, 6> output{obj.x(),      obj.y(),         obj.z(),
-                                obj.radius(), obj.varianceR(), obj.varianceZ()};
-    return output;
-  };
-
-  transformCoordinates<InternalSpacePoint<external_spacepoint_t>>(
-      spacePointData, vec, spM, bottom, linCircleVec,
-      std::move(extractFunction));
-}
-
-template <typename external_spacepoint_t, typename callable_t>
-inline void transformCoordinates(Acts::SpacePointData& spacePointData,
-                                 const std::vector<external_spacepoint_t*>& vec,
-                                 const external_spacepoint_t& spM, bool bottom,
-                                 std::vector<LinCircle>& linCircleVec,
-                                 callable_t&& extractFunction) {
-  auto [xM, yM, zM, rM, varianceRM, varianceZM] = extractFunction(spM);
+  const float& xM = spM.x();
+  const float& yM = spM.y();
+  const float& zM = spM.z();
+  const float& rM = spM.radius();
+  const float& varianceRM = spM.varianceR();
+  const float& varianceZM = spM.varianceZ();
 
   // resize + operator[] is faster then reserve and push_back
   linCircleVec.resize(vec.size());
@@ -101,8 +86,13 @@ inline void transformCoordinates(Acts::SpacePointData& spacePointData,
   int bottomFactor = bottom ? -1 : 1;
 
   for (std::size_t idx(0); idx < vec.size(); ++idx) {
-    auto& sp = vec[idx];
-    auto [xSP, ySP, zSP, rSP, varianceRSP, varianceZSP] = extractFunction(*sp);
+    const external_spacepoint_t* sp = vec[idx];
+
+    const float& xSP = sp->x();
+    const float& ySP = sp->y();
+    const float& zSP = sp->z();
+    const float& varianceRSP = sp->varianceR();
+    const float& varianceZSP = sp->varianceZ();
 
     float deltaX = xSP - xM;
     float deltaY = ySP - yM;
@@ -141,33 +131,25 @@ inline void transformCoordinates(Acts::SpacePointData& spacePointData,
     linCircleVec[idx].V = V;
     linCircleVec[idx].x = xNewFrame;
     linCircleVec[idx].y = yNewFrame;
-
-    spacePointData.setDeltaR(sp->index(),
-                             std::sqrt(deltaR2 + (deltaZ * deltaZ)));
+    sp->setDeltaR(std::sqrt(deltaR2 + (deltaZ * deltaZ)));
   }
 }
 
 template <typename external_spacepoint_t>
 inline bool xyzCoordinateCheck(
-    Acts::SpacePointData& spacePointData,
     const Acts::SeedFinderConfig<external_spacepoint_t>& m_config,
-    const Acts::InternalSpacePoint<external_spacepoint_t>& sp,
-    const double* spacepointPosition, double* outputCoordinates) {
+    const external_spacepoint_t& sp, const double* spacepointPosition,
+    double* outputCoordinates) {
   // check the compatibility of SPs coordinates in xyz assuming the
   // Bottom-Middle direction with the strip measurement details
-  bool hasValueStored = spacePointData.hasDynamicVariable();
-  if (not hasValueStored) {
-    return false;
-  }
 
-  std::size_t index = sp.index();
-
-  // prepare variables
-  const Acts::Vector3& topStripVector = spacePointData.getTopStripVector(index);
+  using namespace Acts::HashedStringLiteral;
+  const Acts::Vector3& topStripVector =
+      sp.template component<Acts::Vector3>("TopStripVector"_hash);
   const Acts::Vector3& bottomStripVector =
-      spacePointData.getBottomStripVector(index);
+      sp.template component<Acts::Vector3>("BottomStripVector"_hash);
   const Acts::Vector3& stripCenterDistance =
-      spacePointData.getStripCenterDistance(index);
+      sp.template component<Acts::Vector3>("StripCenterDistance"_hash);
 
   const double& xTopStripVector = topStripVector[0];
   const double& yTopStripVector = topStripVector[1];
@@ -216,7 +198,7 @@ inline bool xyzCoordinateCheck(
   // detector elements
 
   const Acts::Vector3& topStripCenterPosition =
-      spacePointData.getTopStripCenterPosition(index);
+      sp.template component<Acts::Vector3>("TopStripCenterPosition"_hash);
 
   // spacepointPosition corrected with respect to the top strip position and
   // direction and the distance between the strips

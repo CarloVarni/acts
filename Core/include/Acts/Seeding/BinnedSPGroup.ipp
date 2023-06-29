@@ -115,10 +115,9 @@ Acts::BinnedSPGroupIterator<external_spacepoint_t>::findNotEmptyBin() {
 
 // Binned SP Group
 template <typename external_spacepoint_t>
-template <typename spacepoint_iterator_t, typename callable_t>
+template <typename spacepoint_iterator_t>
 Acts::BinnedSPGroup<external_spacepoint_t>::BinnedSPGroup(
     spacepoint_iterator_t spBegin, spacepoint_iterator_t spEnd,
-    callable_t&& toGlobal,
     std::shared_ptr<const Acts::BinFinder<external_spacepoint_t>> botBinFinder,
     std::shared_ptr<const Acts::BinFinder<external_spacepoint_t>> tBinFinder,
     std::unique_ptr<SpacePointGrid<external_spacepoint_t>> grid,
@@ -136,7 +135,7 @@ Acts::BinnedSPGroup<external_spacepoint_t>::BinnedSPGroup(
   static_assert(
       std::is_same<
           typename std::iterator_traits<spacepoint_iterator_t>::value_type,
-          const external_spacepoint_t*>::value,
+          const external_spacepoint_t>::value,
       "Iterator does not contain type this class was templated with");
 
   // get region of interest (or full detector if configured accordingly)
@@ -156,45 +155,40 @@ Acts::BinnedSPGroup<external_spacepoint_t>::BinnedSPGroup(
   // keep track of changed bins while sorting
   boost::container::flat_set<size_t> rBinsIndex;
 
-  std::size_t counter = 0;
-  for (spacepoint_iterator_t it = spBegin; it != spEnd; it++, ++counter) {
-    if (*it == nullptr) {
-      continue;
-    }
-    const external_spacepoint_t& sp = **it;
-    const auto& [spPosition, variance] =
-        toGlobal(sp, config.zAlign, config.rAlign, config.sigmaError);
+  for (spacepoint_iterator_t it = spBegin; it != spEnd; ++it) {
+    const external_spacepoint_t& sp = *it;
 
-    float spX = spPosition[0];
-    float spY = spPosition[1];
-    float spZ = spPosition[2];
+    float spX = sp.x();
+    float spY = sp.y();
+    float spZ = sp.z();
+    Acts::Vector3 spPosition{spX, spY, spZ};
 
     // store x,y,z values in extent
-    rRangeSPExtent.extend({spX, spY, spZ});
+    rRangeSPExtent.extend(spPosition);
 
+    // why do it here after the extend????
     if (spZ > zMax || spZ < zMin) {
       continue;
     }
-    float spPhi = std::atan2(spY, spX);
+
+    float spPhi = sp.phi();
     if (spPhi > phiMax || spPhi < phiMin) {
       continue;
     }
 
-    auto isp = std::make_unique<InternalSpacePoint<external_spacepoint_t>>(
-        counter, sp, spPosition, options.beamPos, variance);
     // calculate r-Bin index and protect against overflow (underflow not
     // possible)
-    size_t rIndex = static_cast<size_t>(isp->radius() / config.binSizeR);
+    size_t rIndex = static_cast<size_t>(sp.radius() / config.binSizeR);
     // if index out of bounds, the SP is outside the region of interest
     if (rIndex >= numRBins) {
       continue;
     }
 
     // fill rbins into grid
-    Acts::Vector2 spLocation(isp->phi(), isp->z());
-    std::vector<std::unique_ptr<InternalSpacePoint<external_spacepoint_t>>>&
-        rbin = grid->atPosition(spLocation);
-    rbin.push_back(std::move(isp));
+    Acts::Vector2 spLocation(spPhi, sp.z());
+    std::vector<const external_spacepoint_t*>& rbin =
+        grid->atPosition(spLocation);
+    rbin.push_back(&sp);
 
     // keep track of the bins we modify so that we can later sort the SPs in
     // those bins only
@@ -205,12 +199,11 @@ Acts::BinnedSPGroup<external_spacepoint_t>::BinnedSPGroup(
 
   // sort SPs in R for each filled (z, phi) bin
   for (auto& binIndex : rBinsIndex) {
-    std::vector<std::unique_ptr<InternalSpacePoint<external_spacepoint_t>>>&
-        rbin = grid->atPosition(binIndex);
+    std::vector<const external_spacepoint_t*>& rbin =
+        grid->atPosition(binIndex);
     std::sort(
         rbin.begin(), rbin.end(),
-        [](std::unique_ptr<InternalSpacePoint<external_spacepoint_t>>& a,
-           std::unique_ptr<InternalSpacePoint<external_spacepoint_t>>& b) {
+        [](const external_spacepoint_t* a, const external_spacepoint_t* b) {
           return a->radius() < b->radius();
         });
   }
@@ -230,7 +223,7 @@ Acts::BinnedSPGroup<external_spacepoint_t>::BinnedSPGroup(
 }
 
 template <typename external_spacepoint_t>
-inline size_t Acts::BinnedSPGroup<external_spacepoint_t>::size() const {
+inline std::size_t Acts::BinnedSPGroup<external_spacepoint_t>::size() const {
   return m_grid->size();
 }
 

@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "Acts/EventData/SpacePointContainer.hpp"
 #include "Acts/Seeding/BinFinder.hpp"
 #include "Acts/Seeding/SeedFilterConfig.hpp"
 #include "Acts/Seeding/SeedFinder.hpp"
@@ -17,6 +18,7 @@
 #include "ActsExamples/EventData/ProtoTrack.hpp"
 #include "ActsExamples/EventData/SimSeed.hpp"
 #include "ActsExamples/EventData/SimSpacePoint.hpp"
+#include "ActsExamples/EventData/SpacePointContainer.hpp"
 #include "ActsExamples/Framework/DataHandle.hpp"
 #include "ActsExamples/Framework/IAlgorithm.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
@@ -50,7 +52,10 @@ class SeedingAlgorithm final : public IAlgorithm {
     std::string outputSeeds;
 
     Acts::SeedFilterConfig seedFilterConfig;
-    Acts::SeedFinderConfig<SimSpacePoint> seedFinderConfig;
+    Acts::SeedFinderConfig<typename Acts::SpacePointContainer<
+        ActsExamples::SpacePointContainer<std::vector<const SimSpacePoint*>>,
+        Acts::detail::RefHolder>::ConstSpacePointProxyType>
+        seedFinderConfig;
     Acts::SpacePointGridConfig gridConfig;
     Acts::SpacePointGridOptions gridOptions;
     Acts::SeedFinderOptions seedFinderOptions;
@@ -82,9 +87,13 @@ class SeedingAlgorithm final : public IAlgorithm {
   const Config& config() const { return m_cfg; }
 
  private:
-  Acts::SeedFinder<SimSpacePoint> m_seedFinder;
-  std::shared_ptr<const Acts::BinFinder<SimSpacePoint>> m_bottomBinFinder;
-  std::shared_ptr<const Acts::BinFinder<SimSpacePoint>> m_topBinFinder;
+  using SpacePointProxy_t = typename Acts::SpacePointContainer<
+      ActsExamples::SpacePointContainer<std::vector<const SimSpacePoint*>>,
+      Acts::detail::RefHolder>::ConstSpacePointProxyType;
+
+  Acts::SeedFinder<SpacePointProxy_t> m_seedFinder;
+  std::shared_ptr<const Acts::BinFinder<SpacePointProxy_t>> m_bottomBinFinder;
+  std::shared_ptr<const Acts::BinFinder<SpacePointProxy_t>> m_topBinFinder;
   Config m_cfg;
 
   std::vector<std::unique_ptr<ReadDataHandle<SimSpacePointContainer>>>
