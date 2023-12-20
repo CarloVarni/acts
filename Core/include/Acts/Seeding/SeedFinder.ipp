@@ -1,3 +1,4 @@
+// -*- C++ -*-
 // This file is part of the Acts project.
 //
 // Copyright (C) 2023 CERN for the benefit of the Acts project
@@ -10,6 +11,7 @@
 #include <cmath>
 #include <numeric>
 #include <type_traits>
+#include <iostream>
 
 namespace Acts {
 
@@ -177,13 +179,8 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     }
 
     // filter candidates
-    if (m_config.useDetailedDoubleMeasurementInfo) {
-      filterCandidates<Acts::DetectorMeasurementInfo::eDetailed>(
-          state.spacePointData, *spM.get(), options, seedFilterState, state);
-    } else {
-      filterCandidates<Acts::DetectorMeasurementInfo::eDefault>(
-          state.spacePointData, *spM.get(), options, seedFilterState, state);
-    }
+    filterCandidates<Acts::DetectorMeasurementInfo::eDefault>(
+							      state.spacePointData, *spM.get(), options, seedFilterState, state);
 
     m_config.seedFilter->filterSeeds_1SpFixed(
         state.spacePointData, state.candidates_collector,
@@ -359,10 +356,13 @@ SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
       // transform SP coordinates to the u-v reference frame
       const float deltaX = otherSP->x() - xM;
       const float deltaY = otherSP->y() - yM;
-
+      
       const float xNewFrame = deltaX * cosPhiM + deltaY * sinPhiM;
       const float yNewFrame = deltaY * cosPhiM - deltaX * sinPhiM;
 
+      std::cout << "xNewFrame: " << xNewFrame << " [from deltaX=" << deltaX << "]" << std::endl;
+      std::cout << "yNewFrame: " << yNewFrame << " [from deltaY=" << deltaY << "]" << std::endl;
+	    
       const float deltaR2 = (deltaX * deltaX + deltaY * deltaY);
       const float iDeltaR2 = 1. / deltaR2;
 
@@ -458,13 +458,11 @@ SeedFinder<external_spacepoint_t, platform_t>::getCompatibleDoublets(
 template <typename external_spacepoint_t, typename platform_t>
 template <Acts::DetectorMeasurementInfo detailedMeasurement>
 inline void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
-    Acts::SpacePointData& spacePointData,
+									    Acts::SpacePointData& /*spacePointData*/,
     const InternalSpacePoint<external_spacepoint_t>& spM,
     const Acts::SeedFinderOptions& options, SeedFilterState& seedFilterState,
     SeedingState& state) const {
   float rM = spM.radius();
-  float cosPhiM = spM.x() / rM;
-  float sinPhiM = spM.y() / rM;
   float varianceRM = spM.varianceR();
   float varianceZM = spM.varianceZ();
 
@@ -533,22 +531,10 @@ inline void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
     // eta=infinity: ~8.5%
     float scatteringInRegion2 = options.multipleScattering2 * iSinTheta2;
 
-    float sinTheta = 1 / std::sqrt(iSinTheta2);
-    float cosTheta = cotThetaB * sinTheta;
-
     // clear all vectors used in each inner for loop
     state.topSpVec.clear();
     state.curvatures.clear();
     state.impactParameters.clear();
-
-    // coordinate transformation and checks for middle spacepoint
-    // x and y terms for the rotation from UV to XY plane
-    float rotationTermsUVtoXY[2] = {0, 0};
-    if constexpr (detailedMeasurement ==
-                  Acts::DetectorMeasurementInfo::eDetailed) {
-      rotationTermsUVtoXY[0] = cosPhiM * sinTheta;
-      rotationTermsUVtoXY[1] = sinPhiM * sinTheta;
-    }
 
     // minimum number of compatible top SPs to trigger the filter for a certain
     // middle bottom pair if seedConfirmation is false we always ask for at
@@ -568,101 +554,13 @@ inline void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
       auto lt = state.linCircleTop[t];
 
       float cotThetaT = lt.cotTheta;
-      float rMxy = 0.;
-      float ub = 0.;
-      float vb = 0.;
-      float ut = 0.;
-      float vt = 0.;
-      double rMTransf[3];
-      float xB = 0.;
-      float yB = 0.;
-      float xT = 0.;
-      float yT = 0.;
-      float iDeltaRB2 = 0.;
-      float iDeltaRT2 = 0.;
-
-      if constexpr (detailedMeasurement ==
-                    Acts::DetectorMeasurementInfo::eDetailed) {
-        // protects against division by 0
-        float dU = lt.U - Ub;
-        if (dU == 0.) {
-          continue;
-        }
-        // A and B are evaluated as a function of the circumference parameters
-        // x_0 and y_0
-        float A0 = (lt.V - Vb) / dU;
-
-        float zPositionMiddle = cosTheta * std::sqrt(1 + A0 * A0);
-
-        // position of Middle SP converted from UV to XY assuming cotTheta
-        // evaluated from the Bottom and Middle SPs double
-        double positionMiddle[3] = {
-            rotationTermsUVtoXY[0] - rotationTermsUVtoXY[1] * A0,
-            rotationTermsUVtoXY[0] * A0 + rotationTermsUVtoXY[1],
-            zPositionMiddle};
-
-        if (!xyzCoordinateCheck(spacePointData, m_config, spM, positionMiddle,
-                                rMTransf)) {
-          continue;
-        }
-
-        // coordinate transformation and checks for bottom spacepoint
-        float B0 = 2. * (Vb - A0 * Ub);
-        float Cb = 1. - B0 * lb.y;
-        float Sb = A0 + B0 * lb.x;
-        double positionBottom[3] = {
-            rotationTermsUVtoXY[0] * Cb - rotationTermsUVtoXY[1] * Sb,
-            rotationTermsUVtoXY[0] * Sb + rotationTermsUVtoXY[1] * Cb,
-            zPositionMiddle};
-
-        auto spB = state.compatBottomSP[b];
-        double rBTransf[3];
-        if (!xyzCoordinateCheck(spacePointData, m_config, *spB, positionBottom,
-                                rBTransf)) {
-          continue;
-        }
-
-        // coordinate transformation and checks for top spacepoint
-        float Ct = 1. - B0 * lt.y;
-        float St = A0 + B0 * lt.x;
-        double positionTop[3] = {
-            rotationTermsUVtoXY[0] * Ct - rotationTermsUVtoXY[1] * St,
-            rotationTermsUVtoXY[0] * St + rotationTermsUVtoXY[1] * Ct,
-            zPositionMiddle};
-
-        auto spT = state.compatTopSP[t];
-        double rTTransf[3];
-        if (!xyzCoordinateCheck(spacePointData, m_config, *spT, positionTop,
-                                rTTransf)) {
-          continue;
-        }
-
-        // bottom and top coordinates in the spM reference frame
-        xB = rBTransf[0] - rMTransf[0];
-        yB = rBTransf[1] - rMTransf[1];
-        float zB = rBTransf[2] - rMTransf[2];
-        xT = rTTransf[0] - rMTransf[0];
-        yT = rTTransf[1] - rMTransf[1];
-        float zT = rTTransf[2] - rMTransf[2];
-
-        iDeltaRB2 = 1. / (xB * xB + yB * yB);
-        iDeltaRT2 = 1. / (xT * xT + yT * yT);
-
-        cotThetaB = -zB * std::sqrt(iDeltaRB2);
-        cotThetaT = zT * std::sqrt(iDeltaRT2);
-      }
 
       // use geometric average
       float cotThetaAvg2 = cotThetaB * cotThetaT;
-      if constexpr (detailedMeasurement ==
-                    Acts::DetectorMeasurementInfo::eDetailed) {
-        // use arithmetic average
-        float averageCotTheta = 0.5 * (cotThetaB + cotThetaT);
-        cotThetaAvg2 = averageCotTheta * averageCotTheta;
-      } else if (cotThetaAvg2 <= 0) {
+      if (cotThetaAvg2 <= 0) {
         continue;
       }
-
+      
       // add errors of spB-spM and spM-spT pairs and add the correlation term
       // for errors on spM
       float error2 =
@@ -684,10 +582,6 @@ inline void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
       // fair for scattering and measurement uncertainties)
       if (deltaCotTheta2 > (error2 + scatteringInRegion2)) {
         // skip top SPs based on cotTheta sorting when producing triplets
-        if constexpr (detailedMeasurement ==
-                      Acts::DetectorMeasurementInfo::eDetailed) {
-          continue;
-        }
         // break if cotTheta from bottom SP < cotTheta from top SP because
         // the SP are sorted by cotTheta
         if (cotThetaB - cotThetaT < 0) {
@@ -697,49 +591,23 @@ inline void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
         continue;
       }
 
-      if constexpr (detailedMeasurement ==
-                    Acts::DetectorMeasurementInfo::eDetailed) {
-        rMxy = std::sqrt(rMTransf[0] * rMTransf[0] + rMTransf[1] * rMTransf[1]);
-        double irMxy = 1 / rMxy;
-        float Ax = rMTransf[0] * irMxy;
-        float Ay = rMTransf[1] * irMxy;
-
-        ub = (xB * Ax + yB * Ay) * iDeltaRB2;
-        vb = (yB * Ax - xB * Ay) * iDeltaRB2;
-        ut = (xT * Ax + yT * Ay) * iDeltaRT2;
-        vt = (yT * Ax - xT * Ay) * iDeltaRT2;
-      }
-
       float dU = 0;
       float A = 0;
       float S2 = 0;
       float B = 0;
       float B2 = 0;
 
-      if constexpr (detailedMeasurement ==
-                    Acts::DetectorMeasurementInfo::eDetailed) {
-        dU = ut - ub;
-        // protects against division by 0
-        if (dU == 0.) {
-          continue;
-        }
-        A = (vt - vb) / dU;
-        S2 = 1. + A * A;
-        B = vb - A * ub;
-        B2 = B * B;
-      } else {
-        dU = lt.U - Ub;
-        // protects against division by 0
-        if (dU == 0.) {
-          continue;
-        }
-        // A and B are evaluated as a function of the circumference parameters
-        // x_0 and y_0
-        A = (lt.V - Vb) / dU;
-        S2 = 1. + A * A;
-        B = Vb - A * Ub;
-        B2 = B * B;
+      dU = lt.U - Ub;
+      // protects against division by 0
+      if (dU == 0.) {
+	continue;
       }
+      // A and B are evaluated as a function of the circumference parameters
+      // x_0 and y_0
+      A = (lt.V - Vb) / dU;
+      S2 = 1. + A * A;
+      B = Vb - A * Ub;
+      B2 = B * B;
 
       // sqrt(S2)/B = 2 * helixradius
       // calculated radius must not be smaller than minimum radius
@@ -770,10 +638,6 @@ inline void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
 
       // if deltaTheta larger than allowed scattering for calculated pT, skip
       if (deltaCotTheta2 > (error2 + p2scatterSigma)) {
-        if constexpr (detailedMeasurement ==
-                      Acts::DetectorMeasurementInfo::eDetailed) {
-          continue;
-        }
         if (cotThetaB - cotThetaT < 0) {
           break;
         }
@@ -784,12 +648,7 @@ inline void SeedFinder<external_spacepoint_t, platform_t>::filterCandidates(
       // function
       // (in contrast to having to solve a quadratic function in x/y plane)
       float Im = 0;
-      if constexpr (detailedMeasurement ==
-                    Acts::DetectorMeasurementInfo::eDetailed) {
-        Im = std::abs((A - B * rMxy) * rMxy);
-      } else {
-        Im = std::abs((A - B * rM) * rM);
-      }
+      Im = std::abs((A - B * rM) * rM);
 
       if (Im > m_config.impactMax) {
         continue;
