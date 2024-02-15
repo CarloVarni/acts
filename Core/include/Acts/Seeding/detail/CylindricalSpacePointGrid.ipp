@@ -1,3 +1,4 @@
+// -*- C++ -*-A
 // This file is part of the Acts project.
 //
 // Copyright (C) 2024 CERN for the benefit of the Acts project
@@ -132,9 +133,26 @@ Acts::CylindricalSpacePointGridCreator::createGrid(
   }
 
   detail::Axis<detail::AxisType::Variable, detail::AxisBoundaryType::Bound>
-      zAxis(std::move(zValues));
+    zAxis(std::move(zValues));
+
+  // radius bin
+  std::vector<AxisScalar> rValues;
+  // minimum detector
+  rValues.push_back(config.rMin);
+  // Bins in the middle
+  // Validity of middle SP
+  if (options.rMinMiddle != config.rMin)  rValues.push_back(options.rMinMiddle);
+  if (options.rMaxMiddle != config.rMax) rValues.push_back(options.rMaxMiddle);
+  // maximum detector
+  rValues.push_back(config.rMax);
+
+  detail::Axis<detail::AxisType::Variable, detail::AxisBoundaryType::Bound>
+    rAxis(std::move(rValues));
+  
   return Acts::CylindricalSpacePointGrid<SpacePoint>(
-      std::make_tuple(std::move(phiAxis), std::move(zAxis)));
+						     std::make_tuple(std::move(phiAxis),
+								     std::move(zAxis),
+								     std::move(rAxis)));
 }
 
 template <typename external_spacepoint_t,
@@ -144,8 +162,7 @@ void Acts::CylindricalSpacePointGridCreator::fillGrid(
     const Acts::SeedFinderOptions& options,
     Acts::CylindricalSpacePointGrid<external_spacepoint_t>& grid,
     external_spacepoint_iterator_t spBegin,
-    external_spacepoint_iterator_t spEnd, callable_t&& toGlobal,
-    Acts::Extent& rRangeSPExtent) {
+    external_spacepoint_iterator_t spEnd, callable_t&& toGlobal) {
   using iterated_value_t =
       typename std::iterator_traits<external_spacepoint_iterator_t>::value_type;
   using iterated_t = typename std::remove_const<
@@ -198,9 +215,6 @@ void Acts::CylindricalSpacePointGridCreator::fillGrid(
     float spY = spPosition[1];
     float spZ = spPosition[2];
 
-    // store x,y,z values in extent
-    rRangeSPExtent.extend({spX, spY, spZ});
-
     // remove SPs outside z and phi region
     if (spZ > zMax || spZ < zMin) {
       continue;
@@ -222,7 +236,7 @@ void Acts::CylindricalSpacePointGridCreator::fillGrid(
     }
 
     // fill rbins into grid
-    Acts::Vector2 spLocation(isp->phi(), isp->z());
+    Acts::Vector3 spLocation(isp->phi(), isp->z(), isp->radius());
     std::vector<std::unique_ptr<InternalSpacePoint<external_spacepoint_t>>>&
         rbin = grid.atPosition(spLocation);
     rbin.push_back(std::move(isp));

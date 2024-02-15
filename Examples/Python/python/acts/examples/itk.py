@@ -381,6 +381,7 @@ def itkSeedingAlgConfig(
     if inputSpacePointsType is InputSpacePointsType.PixelSpacePoints:
         outputSeeds = "PixelSeeds"
         allowSeparateRMax = False
+        rMinGridConfig = 0 * u.mm
         rMaxGridConfig = 320 * u.mm
         rMaxSeedFinderConfig = rMaxGridConfig
         deltaRMinSP = 6 * u.mm
@@ -449,6 +450,7 @@ def itkSeedingAlgConfig(
     elif inputSpacePointsType is InputSpacePointsType.StripSpacePoints:
         outputSeeds = "StripSeeds"
         allowSeparateRMax = True
+        rMinGridConfig = 350 * u.mm
         rMaxGridConfig = 1000.0 * u.mm
         rMaxSeedFinderConfig = 1200.0 * u.mm
         deltaRMinSP = 20 * u.mm
@@ -561,6 +563,7 @@ def itkSeedingAlgConfig(
         useDeltaRorTopRadius=useDeltaRorTopRadius,
     )
     spacePointGridConfigArg = SpacePointGridConfigArg(
+        rMin=rMinGridConfig,
         rMax=rMaxGridConfig,
         deltaRMax=deltaRMax,
         zBinEdges=zBinEdges,

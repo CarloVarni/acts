@@ -1,3 +1,4 @@
+// -*- C++ -*-
 // This file is part of the Acts project.
 //
 // Copyright (C) 2024 CERN for the benefit of the Acts project
@@ -10,6 +11,7 @@
 #include <cmath>
 #include <numeric>
 #include <type_traits>
+#include <iostream>
 
 namespace Acts {
 
@@ -42,8 +44,7 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     const grid_t& grid,
     std::back_insert_iterator<container_t<Seed<external_spacepoint_t>>> outIt,
     const sp_range_t& bottomSPsIdx, const std::size_t middleSPsIdx,
-    const sp_range_t& topSPsIdx,
-    const Acts::Range1D<float>& rMiddleSPRange) const {
+    const sp_range_t& topSPsIdx) const {
   if (!options.isInInternalUnits) {
     throw std::runtime_error(
         "SeedFinderOptions not in ACTS internal units in SeedFinder");
@@ -87,33 +88,23 @@ void SeedFinder<external_spacepoint_t, platform_t>::createSeedsForGroup(
     float rM = spM->radius();
 
     // check if spM is outside our radial region of interest
-    if (m_config.useVariableMiddleSPRange) {
-      if (rM < rMiddleSPRange.min()) {
-        continue;
-      }
-      if (rM > rMiddleSPRange.max()) {
-        // break because SPs are sorted in r
-        break;
-      }
-    } else if (!m_config.rRangeMiddleSP.empty()) {
+    // only do this check if we have different ranges in different bins
+    if (!m_config.useVariableMiddleSPRange && !m_config.rRangeMiddleSP.empty()) {
       /// get zBin position of the middle SP
       auto pVal = std::lower_bound(m_config.zBinEdges.begin(),
                                    m_config.zBinEdges.end(), spM->z());
       int zBin = std::distance(m_config.zBinEdges.begin(), pVal);
       /// protects against zM at the limit of zBinEdges
       zBin == 0 ? zBin : --zBin;
+      std::cout << "Checking (2) rM to be in the range ["
+		<< m_config.rRangeMiddleSP[zBin][0]
+		<< " -- "
+		<< m_config.rRangeMiddleSP[zBin][1]
+		<< "]"<< std::endl;
       if (rM < m_config.rRangeMiddleSP[zBin][0]) {
         continue;
       }
       if (rM > m_config.rRangeMiddleSP[zBin][1]) {
-        // break because SPs are sorted in r
-        break;
-      }
-    } else {
-      if (rM < m_config.rMinMiddle) {
-        continue;
-      }
-      if (rM > m_config.rMaxMiddle) {
         // break because SPs are sorted in r
         break;
       }

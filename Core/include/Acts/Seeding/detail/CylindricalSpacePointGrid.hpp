@@ -18,14 +18,16 @@
 
 namespace Acts {
 
-/// Cylindrical Space Point bin is a 2D grid with (phi, z) bins
+/// Cylindrical Space Point bin is a 3D grid with (phi, z, radius) bins
 /// It stores a vector of internal space points to external space points
 template <typename external_spacepoint_t>
 using CylindricalSpacePointGrid =
     Acts::Grid<std::vector<std::unique_ptr<
-                   Acts::InternalSpacePoint<external_spacepoint_t>>>,
+                   Acts::InternalSpacePoint<external_spacepoint_t>>>,	       
                Acts::detail::Axis<Acts::detail::AxisType::Equidistant,
                                   Acts::detail::AxisBoundaryType::Closed>,
+               Acts::detail::Axis<Acts::detail::AxisType::Variable,
+                                  Acts::detail::AxisBoundaryType::Bound>,
                Acts::detail::Axis<Acts::detail::AxisType::Variable,
                                   Acts::detail::AxisBoundaryType::Bound>>;
 
@@ -41,6 +43,9 @@ using CylindricalBinnedGroupIterator = Acts::BinnedGroupIterator<
 struct CylindricalSpacePointGridConfig {
   // minimum pT to be found by seedFinder
   float minPt = 0;
+  // minimum extension of sensitive detector layer relevant for seeding as
+   // distance from x=y=0 (i.e. in r)
+  float rMin = 0;
   // maximum extension of sensitive detector layer relevant for seeding as
   // distance from x=y=0 (i.e. in r)
   float rMax = 0;
@@ -94,6 +99,8 @@ struct CylindricalSpacePointGridConfig {
 struct CylindricalSpacePointGridOptions {
   // magnetic field
   float bFieldInZ = 0;
+  float rMinMiddle = 0;
+  float rMaxMiddle = 0;
   bool isInInternalUnits = false;
   CylindricalSpacePointGridOptions toInternalUnits() const {
     if (isInInternalUnits) {
@@ -105,7 +112,8 @@ struct CylindricalSpacePointGridOptions {
     CylindricalSpacePointGridOptions options = *this;
     options.isInInternalUnits = true;
     options.bFieldInZ /= 1000_T;
-
+    options.rMinMiddle /= 1_mm;
+    options.rMaxMiddle /= 1_mm;
     return options;
   }
 };
@@ -125,8 +133,7 @@ class CylindricalSpacePointGridCreator {
       const Acts::SeedFinderOptions& options,
       Acts::CylindricalSpacePointGrid<external_spacepoint_t>& grid,
       external_spacepoint_iterator_t spBegin,
-      external_spacepoint_iterator_t spEnd, callable_t&& toGlobal,
-      Acts::Extent& rRangeSPExtent);
+      external_spacepoint_iterator_t spEnd, callable_t&& toGlobal);
 };
 
 }  // namespace Acts
