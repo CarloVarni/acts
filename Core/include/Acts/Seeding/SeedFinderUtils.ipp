@@ -62,7 +62,7 @@ inline LinCircle transformCoordinates(const external_spacepoint_t& sp,
                    iDeltaR2;
 
   sp.setDeltaR(std::sqrt(deltaR2 + (deltaZ * deltaZ)));
-  return LinCircle(cotTheta, iDeltaR, Er, U, V, xNewFrame, yNewFrame);
+  return LinCircle(cotTheta, iDeltaR, Er, U, V);
 }
 
 template <typename external_spacepoint_t>
@@ -139,8 +139,6 @@ inline void transformCoordinates(Acts::SpacePointData& spacePointData,
     linCircleVec[idx].Er = Er;
     linCircleVec[idx].U = U;
     linCircleVec[idx].V = V;
-    linCircleVec[idx].x = xNewFrame;
-    linCircleVec[idx].y = yNewFrame;
 
     spacePointData.setDeltaR(sp->index(),
                              std::sqrt(deltaR2 + (deltaZ * deltaZ)));

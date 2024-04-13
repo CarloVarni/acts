@@ -17,16 +17,18 @@ namespace Acts {
 /// @brief A partial description of a circle in u-v space.
 struct LinCircle {
   LinCircle() = default;
-  LinCircle(float ct, float idr, float er, float u, float v, float X, float Y)
-      : cotTheta(ct), iDeltaR(idr), Er(er), U(u), V(v), x(X), y(Y) {}
-
+  // LinCircle(float ct, float idr, float er, float u, float v, float X, float Y)
+  //     : cotTheta(ct), iDeltaR(idr), Er(er), U(u), V(v), x(X), y(Y) {}
+  LinCircle(float ct, float idr, float er, float u, float v)
+      : cotTheta(ct), iDeltaR(idr), Er(er), U(u), V(v) {}
+  
   float cotTheta{0.};
   float iDeltaR{0.};
   float Er{0.};
   float U{0.};
   float V{0.};
-  float x{0.};
-  float y{0.};
+  // float x{0.};
+  // float y{0.};
 };
 
 /// @brief Transform two spacepoints to a u-v space circle.
