@@ -48,7 +48,6 @@ template <typename container_t>
 bool SpacePointProxyIterator<container_t>::operator==(
     const SpacePointProxyIterator<container_t>& other) const {
   return m_container == other.m_container && m_index == other.m_index;
-  ;
 }
 
 template <typename container_t>
