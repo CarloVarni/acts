@@ -145,6 +145,17 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
     const float sinPhiM = -spM->y() * uIP;
     const float uIP2 = uIP * uIP;
 
+    // Iterate over middle-bottom dublets
+    getCompatibleDoublets<Acts::SpacePointCandidateType::eBottom>(
+        state.spacePointData, options, grid, state.bottomNeighbours, *spM.get(),
+        state.linCircleBottom, state.compatBottomSP, m_config.deltaRMinBottomSP,
+        m_config.deltaRMaxBottomSP, uIP, uIP2, cosPhiM, sinPhiM);
+
+    // no bottom SP found -> try next spM
+    if (state.compatBottomSP.empty()) {
+      continue;
+    }
+
     // Iterate over middle-top dublets
     getCompatibleDoublets<Acts::SpacePointCandidateType::eTop>(
         state.spacePointData, options, grid, state.topNeighbours, *spM.get(),
@@ -176,17 +187,6 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
       if (state.compatTopSP.size() < seedFilterState.nTopSeedConf) {
         continue;
       }
-    }
-
-    // Iterate over middle-bottom dublets
-    getCompatibleDoublets<Acts::SpacePointCandidateType::eBottom>(
-        state.spacePointData, options, grid, state.bottomNeighbours, *spM.get(),
-        state.linCircleBottom, state.compatBottomSP, m_config.deltaRMinBottomSP,
-        m_config.deltaRMaxBottomSP, uIP, uIP2, cosPhiM, sinPhiM);
-
-    // no bottom SP found -> try next spM
-    if (state.compatBottomSP.empty()) {
-      continue;
     }
 
     // filter candidates
