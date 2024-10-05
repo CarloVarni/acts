@@ -9,14 +9,23 @@
 
 namespace Acts {
 
-template <typename external_spacepoint_t, std::size_t N, OwningPolicy owningPolicy>
-requires(N >= 3)
-  template <typename... args_t>
-  requires(sizeof...(args_t) == N) &&
-  (std::same_as<external_spacepoint_t, args_t> && ...)
-  Seed<external_spacepoint_t, N, owningPolicy>::Seed(const args_t&... points)
+  template <typename external_spacepoint_t, std::size_t N, OwningPolicy owningPolicy>
+  requires(N >= 3)    
+    template <typename ... args_t>
+    requires(sizeof...(args_t) == N)
+    Seed<external_spacepoint_t, N, owningPolicy>::Seed(const args_t&... points)
+    requires(owningPolicy == OwningPolicy::Viewer)
     : m_spacepoints({&points...}) {}
-
+  
+  template <typename external_spacepoint_t, std::size_t N, OwningPolicy owningPolicy>
+  requires(N >= 3)
+    template <typename ... args_t>
+    requires(sizeof...(args_t) == N)
+    Seed<external_spacepoint_t, N, owningPolicy>::Seed(args_t&& ... points)
+    requires(owningPolicy == OwningPolicy::Owner)
+    : m_spacepoints({std::forward<args_t>(points)...})
+  {}
+  
   template <typename external_spacepoint_t, std::size_t N, OwningPolicy owningPolicy>
   requires(N >= 3)
     void Seed<external_spacepoint_t, N, owningPolicy>::setVertexZ(float vertex) {

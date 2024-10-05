@@ -26,11 +26,25 @@ class Seed {
 					       const external_spacepoint_t>::type;
   using element_type = external_spacepoint_t;
 
+  Seed() = delete;
 
-  template <typename... args_t>
-    requires(sizeof...(args_t) == N) &&
-            (std::same_as<external_spacepoint_t, args_t> && ...)
-  explicit Seed(const args_t&... points);
+  // lvalues                                                                                                                                                                                  
+  template <typename ... args_t>
+  requires(sizeof...(args_t) == N)
+  Seed(const args_t&... points)
+    requires(owningPolicy == OwningPolicy::Viewer);
+  
+  // rvalues                                                                                                                                                                                  
+  template <typename ... args_t>
+  requires(sizeof...(args_t) == N)
+  Seed(const args_t&&... points)
+    requires(owningPolicy == OwningPolicy::Viewer) = delete;
+  
+  // any value                                                                                                                                                                                
+  template <typename ... args_t>
+  requires(sizeof...(args_t) == N)
+  Seed(args_t&& ... points)
+    requires(owningPolicy == OwningPolicy::Owner);
 
   void setVertexZ(float vertex);
   void setQuality(float seedQuality);

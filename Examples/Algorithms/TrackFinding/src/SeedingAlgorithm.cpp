@@ -274,8 +274,8 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
 
   /// variable middle SP radial region of interest
   const Acts::Range1D<float> rMiddleSPRange(
-      minRange + m_cfg.seedFinderConfig.deltaRMiddleMinSPRange,
-      maxRange - m_cfg.seedFinderConfig.deltaRMiddleMaxSPRange);
+					    std::floor(minRange/2)*2 + m_cfg.seedFinderConfig.deltaRMiddleMinSPRange,
+					    std::floor(maxRange/2)*2 - m_cfg.seedFinderConfig.deltaRMiddleMaxSPRange);
 
   // run the seeding
   static thread_local std::vector<seed_type> seeds;
@@ -298,9 +298,9 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   SeedContainerForStorage.reserve(seeds.size());
   for (const auto& seed : seeds) {
     const auto& sps = seed.sp();
-    SeedContainerForStorage.emplace_back(*sps[0]->externalSpacePoint(),
-                                         *sps[1]->externalSpacePoint(),
-                                         *sps[2]->externalSpacePoint());
+    SeedContainerForStorage.emplace_back(*sps[0].externalSpacePoint(),
+                                         *sps[1].externalSpacePoint(),
+                                         *sps[2].externalSpacePoint());
     SeedContainerForStorage.back().setVertexZ(seed.z());
     SeedContainerForStorage.back().setQuality(seed.seedQuality());
   }

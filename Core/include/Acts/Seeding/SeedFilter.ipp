@@ -1,3 +1,4 @@
+// -*- C++ -*-
 // This file is part of the ACTS project.
 //
 // Copyright (C) 2016 CERN for the benefit of the ACTS project
@@ -291,7 +292,8 @@ void SeedFilter<external_spacepoint_t>::filterSeeds_1SpFixed(
     mutableData.setQuality(medium->index(), bestSeedQuality);
     mutableData.setQuality(top->index(), bestSeedQuality);
 
-    Acts::Seed<external_spacepoint_t> seed{*bottom, *medium, *top};
+    using seed_type = typename collection_t::value_type;
+    seed_type seed{*bottom, *medium, *top};
     seed.setVertexZ(zOrigin);
     seed.setQuality(bestSeedQuality);
 
