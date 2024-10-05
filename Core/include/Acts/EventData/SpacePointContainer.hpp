@@ -131,7 +131,7 @@ class SpacePointContainer {
   ProxyType at(const std::size_t n);
   ProxyType at(const std::size_t n) const;
   const ValueType& sp(const std::size_t n) const;
-  
+
  private:
   void initialize();
 
