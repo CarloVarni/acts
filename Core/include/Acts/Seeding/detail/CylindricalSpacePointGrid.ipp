@@ -1,3 +1,4 @@
+// -*- C++ -*-
 // This file is part of the ACTS project.
 //
 // Copyright (C) 2016 CERN for the benefit of the ACTS project
@@ -192,7 +193,7 @@ void Acts::CylindricalSpacePointGridCreator::fillGrid(
     std::size_t globIndex = grid.globalBinFromPosition(
         Acts::Vector3{sp.phi(), sp.z(), sp.radius()});
     auto& rbin = grid.at(globIndex);
-    rbin.push_back(&sp);
+    rbin.push_back(std::move(sp));
 
     // keep track of the bins we modify so that we can later sort the SPs in
     // those bins only
@@ -205,6 +206,6 @@ void Acts::CylindricalSpacePointGridCreator::fillGrid(
   /// sort SPs in R for each filled bin
   for (std::size_t binIndex : rBinsIndex) {
     auto& rbin = grid.atPosition(binIndex);
-    std::ranges::sort(rbin, {}, [](const auto& rb) { return rb->radius(); });
+    std::ranges::sort(rbin, {}, [](const auto& rb) { return rb.radius(); });
   }
 }
