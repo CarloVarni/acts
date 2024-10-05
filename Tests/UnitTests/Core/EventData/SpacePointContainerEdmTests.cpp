@@ -79,9 +79,9 @@ BOOST_AUTO_TEST_CASE(spacepoint_container_edm_traits) {
   using container_t =
       Acts::SpacePointContainer<adapter_t, Acts::detail::RefHolder>;
   using proxy_t = Acts::SpacePointProxy<container_t>;
-  using iterator_t = Acts::ContainerIndexIterator<container_t, proxy_t&, false>;
+  using iterator_t = Acts::ContainerIndexIterator<container_t, proxy_t&, false>;  
 
-  static_assert(std::ranges::range<container_t>);
+  static_assert(std::ranges::sized_range<container_t>);
   static_assert(std::same_as<typename iterator_t::iterator_category,
                              std::random_access_iterator_tag>);
   static_assert(

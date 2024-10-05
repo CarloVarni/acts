@@ -240,7 +240,7 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
       spContainer(spConfig, spOptions, container);
 
   using value_type = typename decltype(spContainer)::SpacePointProxyType;
-  using seed_type = Acts::Seed<value_type>;
+  using seed_type = Acts::Seed<value_type, 3, Acts::OwningPolicy::Owner>;
 
   Acts::CylindricalSpacePointGrid<value_type> grid =
       Acts::CylindricalSpacePointGridCreator::createGrid<value_type>(
