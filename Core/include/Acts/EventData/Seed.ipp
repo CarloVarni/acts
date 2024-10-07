@@ -8,59 +8,42 @@
 
 namespace Acts {
 
-template <typename external_spacepoint_t, std::size_t N,
-          OwningPolicy owningPolicy>
+template <typename external_spacepoint_t, std::size_t N>
   requires(N >= 3)
 template <typename... args_t>
-  requires(sizeof...(args_t) == N)
-Seed<external_spacepoint_t, N, owningPolicy>::Seed(const args_t&... points)
-  requires(owningPolicy == OwningPolicy::Viewer)
+  requires(sizeof...(args_t) == N) &&
+          (std::same_as<external_spacepoint_t, args_t> && ...)
+Seed<external_spacepoint_t, N>::Seed(const args_t&... points)
     : m_spacepoints({&points...}) {}
 
-template <typename external_spacepoint_t, std::size_t N,
-          OwningPolicy owningPolicy>
+template <typename external_spacepoint_t, std::size_t N>
   requires(N >= 3)
-template <typename... args_t>
-  requires(sizeof...(args_t) == N)
-Seed<external_spacepoint_t, N, owningPolicy>::Seed(args_t&&... points)
-  requires(owningPolicy == OwningPolicy::Owner)
-    : m_spacepoints({std::forward<args_t>(points)...}) {}
-
-template <typename external_spacepoint_t, std::size_t N,
-          OwningPolicy owningPolicy>
-  requires(N >= 3)
-void Seed<external_spacepoint_t, N, owningPolicy>::setVertexZ(float vertex) {
+void Seed<external_spacepoint_t, N>::setVertexZ(float vertex) {
   m_vertexZ = vertex;
 }
 
-template <typename external_spacepoint_t, std::size_t N,
-          OwningPolicy owningPolicy>
+template <typename external_spacepoint_t, std::size_t N>
   requires(N >= 3)
-void Seed<external_spacepoint_t, N, owningPolicy>::setQuality(
-    float seedQuality) {
+void Seed<external_spacepoint_t, N>::setQuality(float seedQuality) {
   m_seedQuality = seedQuality;
 }
 
-template <typename external_spacepoint_t, std::size_t N,
-          OwningPolicy owningPolicy>
+template <typename external_spacepoint_t, std::size_t N>
   requires(N >= 3)
-const std::array<
-    typename Seed<external_spacepoint_t, N, owningPolicy>::value_type, N>&
-Seed<external_spacepoint_t, N, owningPolicy>::sp() const {
+const std::array<const external_spacepoint_t*, N>&
+Seed<external_spacepoint_t, N>::sp() const {
   return m_spacepoints;
 }
 
-template <typename external_spacepoint_t, std::size_t N,
-          OwningPolicy owningPolicy>
+template <typename external_spacepoint_t, std::size_t N>
   requires(N >= 3)
-float Seed<external_spacepoint_t, N, owningPolicy>::z() const {
+float Seed<external_spacepoint_t, N>::z() const {
   return m_vertexZ;
 }
 
-template <typename external_spacepoint_t, std::size_t N,
-          OwningPolicy owningPolicy>
+template <typename external_spacepoint_t, std::size_t N>
   requires(N >= 3)
-float Seed<external_spacepoint_t, N, owningPolicy>::seedQuality() const {
+float Seed<external_spacepoint_t, N>::seedQuality() const {
   return m_seedQuality;
 }
 
