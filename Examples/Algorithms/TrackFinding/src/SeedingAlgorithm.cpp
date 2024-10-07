@@ -240,7 +240,7 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
       spContainer(spConfig, spOptions, container);
 
   using value_type = typename decltype(spContainer)::SpacePointProxyType;
-  using seed_type = Acts::Seed<value_type, 3, Acts::OwningPolicy::Owner>;
+  using seed_type = Acts::Seed<value_type, 3>;
 
   Acts::CylindricalSpacePointGrid<value_type> grid =
       Acts::CylindricalSpacePointGridCreator::createGrid<value_type>(
@@ -300,9 +300,9 @@ ActsExamples::ProcessCode ActsExamples::SeedingAlgorithm::execute(
   SeedContainerForStorage.reserve(seeds.size());
   for (const auto& seed : seeds) {
     const auto& sps = seed.sp();
-    SeedContainerForStorage.emplace_back(*sps[0].externalSpacePoint(),
-                                         *sps[1].externalSpacePoint(),
-                                         *sps[2].externalSpacePoint());
+    SeedContainerForStorage.emplace_back(*sps[0]->externalSpacePoint(),
+                                         *sps[1]->externalSpacePoint(),
+                                         *sps[2]->externalSpacePoint());
     SeedContainerForStorage.back().setVertexZ(seed.z());
     SeedContainerForStorage.back().setQuality(seed.seedQuality());
   }
