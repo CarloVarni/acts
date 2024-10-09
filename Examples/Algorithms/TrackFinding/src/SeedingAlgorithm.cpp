@@ -177,8 +177,6 @@ ActsExamples::SeedingAlgorithm::SeedingAlgorithm(
     }
   }
 
-  m_cfg.gridConfig.rBinEdges = {0, 1};
-  
   if (m_cfg.useExtraCuts) {
     // This function will be applied to select space points during grid filling
     m_cfg.seedFinderConfig.spacePointSelector
@@ -193,9 +191,9 @@ ActsExamples::SeedingAlgorithm::SeedingAlgorithm(
       Acts::detail::RefHolder>::SpacePointProxyType;
 
   m_bottomBinFinder = std::make_unique<const Acts::GridBinFinder<3ul>>(
-								       m_cfg.numPhiNeighbors, cfg.zBinNeighborsBottom, 0);
+      m_cfg.numPhiNeighbors, cfg.zBinNeighborsBottom, 0);
   m_topBinFinder = std::make_unique<const Acts::GridBinFinder<3ul>>(
-								    m_cfg.numPhiNeighbors, m_cfg.zBinNeighborsTop, 0);
+      m_cfg.numPhiNeighbors, m_cfg.zBinNeighborsTop, 0);
 
   m_cfg.seedFinderConfig.seedFilter =
       std::make_unique<Acts::SeedFilter<SpacePointProxy_type>>(
