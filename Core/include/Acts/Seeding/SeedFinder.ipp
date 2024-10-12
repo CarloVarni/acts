@@ -12,6 +12,7 @@
 #include <cmath>
 #include <numeric>
 #include <type_traits>
+#include <chrono>
 
 namespace Acts {
 
@@ -275,8 +276,21 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
       const external_spacepoint_t* otherSP = *min_itr;
 
       if constexpr (!isBottomCandidate) {
+	auto start_compatible = std::chrono::high_resolution_clock::now();
 	bool is_compatbiel = doubletIsCompatible(options, mediumSP, *otherSP);
+	auto stop_compatible = std::chrono::high_resolution_clock::now();
+	auto start_legacy = std::chrono::high_resolution_clock::now();
+	bool is_legacy_compatible = doubletIsCompatibleLegacy(options, mediumSP, *otherSP);
+	auto stop_legacy = std::chrono::high_resolution_clock::now();
+	if (is_compatbiel != is_legacy_compatible) {
+	  std::cout << "ERRORE !!!" << std::endl;
+	}
 	std::cout << "Doublet is compatible: " << (is_compatbiel?"Y":"N") << std::endl;
+
+	auto duration_comp = std::chrono::duration_cast<std::chrono::nanoseconds>(stop_compatible - start_compatible).count();
+	auto duration_legacy = std::chrono::duration_cast<std::chrono::nanoseconds>(stop_legacy - start_legacy).count();
+	std::cout << "Timing comp: " << duration_comp << std::endl;
+	std::cout << "Timing lega: " << duration_legacy << std::endl;
       }
       
       if constexpr (isBottomCandidate) {
@@ -309,10 +323,6 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
       // check if duplet origin on z axis within collision region
       if (zOriginTimesDeltaR < m_config.collisionRegionMin * deltaR ||
           zOriginTimesDeltaR > m_config.collisionRegionMax * deltaR) {
-
-	if constexpr (!isBottomCandidate) {
-	  std::cout << "NOPE" << std::endl;
-	}
         continue;
       }
 
@@ -326,16 +336,10 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
         // cotThetaMax by deltaR to avoid division
         if (deltaZ > m_config.cotThetaMax * deltaR ||
             deltaZ < -m_config.cotThetaMax * deltaR) {
-	  if constexpr (!isBottomCandidate) {
-	    std::cout << "NOPE (1)" << std::endl;
-	  }
           continue;
         }
         // if z-distance between SPs is within max and min values
         if (deltaZ > m_config.deltaZMax || deltaZ < -m_config.deltaZMax) {
-	  if constexpr (!isBottomCandidate) {
-	    std::cout << "NOPE (1)" << std::endl;
-	  }
           continue;
         }
 
@@ -367,9 +371,6 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
         mutableData.setDeltaR(otherSP->index(),
                               std::sqrt(deltaR2 + (deltaZ * deltaZ)));
         outVec.push_back(otherSP);
-	if constexpr (!isBottomCandidate) {
-	  std::cout << "YUP (1)" << std::endl;
-	}
 	continue;
       }
 
@@ -395,9 +396,6 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
         // cotThetaMax by deltaR to avoid division
         if (deltaZ > m_config.cotThetaMax * deltaR ||
             deltaZ < -m_config.cotThetaMax * deltaR) {
-	  if constexpr (!isBottomCandidate) {
-	    std::cout << "NOPE (2)" << std::endl;
-	  }
           continue;
         }
 
@@ -408,9 +406,6 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
         // to detector specific cuts
         if constexpr (isBottomCandidate) {
           if (!m_config.experimentCuts(otherSP->radius(), cotTheta)) {
-	    if constexpr (!isBottomCandidate) {
-	      std::cout << "NOPE EXP (2)" << std::endl;
-	    }
             continue;
           }
         }
@@ -426,10 +421,6 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
         mutableData.setDeltaR(otherSP->index(),
                               std::sqrt(deltaR2 + (deltaZ * deltaZ)));
         outVec.emplace_back(otherSP);
-
-	if constexpr (!isBottomCandidate) {
-	  std::cout << "YUP (2)" << std::endl;
-	}
         continue;
       }
 
@@ -445,13 +436,7 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
       // the distance of the straight line from the origin (radius of the
       // circle) is related to aCoef and bCoef by d^2 = bCoef^2 / (1 +
       // aCoef^2) = 1 / (radius^2) and we can apply the cut on the curvature
-      if constexpr (!isBottomCandidate) {
-	std::cout << "TAGLIO (3) : " << ((1 + aCoef * aCoef) / (bCoef * bCoef)) << " < " << options.minHelixDiameter2 << " [i.e. options.minHelixDiameter2]" << std::endl;
-      }
       if ((bCoef * bCoef) * options.minHelixDiameter2 > (1 + aCoef * aCoef)) {
-	if constexpr (!isBottomCandidate) {
-	  std::cout << "NOPE (3)" << std::endl;
-	}
         continue;
       }
 
@@ -460,9 +445,6 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
       // cotThetaMax by deltaR to avoid division
       if (deltaZ > m_config.cotThetaMax * deltaR ||
           deltaZ < -m_config.cotThetaMax * deltaR) {
-	if constexpr (!isBottomCandidate) {
-	  std::cout << "NOPE (3)" << std::endl;
-	}
         continue;
       }
 
@@ -489,10 +471,6 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
       mutableData.setDeltaR(otherSP->index(),
                             std::sqrt(deltaR2 + (deltaZ * deltaZ)));
       outVec.emplace_back(otherSP);
-
-      if constexpr (!isBottomCandidate) {
-	std::cout << "YUP (3)"<<std::endl;
-      }
     }
   }
 }
@@ -872,6 +850,76 @@ std::pair<float, float> SeedFinder<external_spacepoint_t, grid_t, platform_t>::
   return std::make_pair(m_config.rMinMiddle, m_config.rMaxMiddle);
 }
 
+  template <typename external_spacepoint_t, typename grid_t, typename platform_t>
+bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatibleLegacy(const Acts::SeedFinderOptions& options,
+                                                                                const external_spacepoint_t& spLow,
+                                                                                const external_spacepoint_t& spUp) const
+{
+  const float deltaR = spUp.radius() - spLow.radius();
+  const float deltaZ = spUp.z() - spLow.z();
+  
+  const float zOriginTimesDeltaR = (spLow.z() * deltaR - spLow.radius() * deltaZ);
+  // check if duplet origin on z axis within collision region                                                                                                                                                  
+  if (zOriginTimesDeltaR < m_config.collisionRegionMin * deltaR ||
+      zOriginTimesDeltaR > m_config.collisionRegionMax * deltaR) {
+    return false;
+  }
+  
+  if (!m_config.interactionPointCut) {
+    if (deltaZ > m_config.cotThetaMax * deltaR ||
+        deltaZ < -m_config.cotThetaMax * deltaR) {
+      return false;
+    }
+    if (std::abs(deltaZ) > m_config.deltaZMax) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  const float uIP = 1. / spLow.radius();
+  const float cosPhiM = spLow.x() * uIP;
+  const float sinPhiM = spLow.y() * uIP;
+  
+  const float deltaX = spUp.x() - spLow.x();
+  const float deltaY = spUp.y() - spLow.y();
+  const float deltaR2 = deltaX*deltaX + deltaY*deltaY;
+
+  const float xNewFrame = deltaX * cosPhiM + deltaY * sinPhiM;
+  const float yNewFrame = deltaY * cosPhiM - deltaX * sinPhiM;
+
+  if (yNewFrame*yNewFrame * spLow.radius()*spLow.radius() <= m_config.impactMax*m_config.impactMax * deltaR2) {
+    if (deltaZ > m_config.cotThetaMax * deltaR ||
+        deltaZ < -m_config.cotThetaMax * deltaR) {
+      return false;
+    }
+    return true;
+  }
+
+  const float iDeltaR2 = 1. / deltaR2;
+  
+  const float uT = xNewFrame * iDeltaR2;
+  const float vT = yNewFrame * iDeltaR2;
+
+  const float uIP2 = uIP * uIP;
+  const float vIPAbs = m_config.impactMax * uIP2;
+
+  const float vIP = (yNewFrame > 0.) ? -vIPAbs : vIPAbs;
+  const float aCoef = (vT - vIP) / (uT - uIP);
+  const float bCoef = vIP - aCoef * uIP;
+  
+  if ((bCoef * bCoef) * options.minHelixDiameter2 > (1 + aCoef * aCoef)) {
+    return false;
+  }
+  
+  if (deltaZ > m_config.cotThetaMax * deltaR ||
+      deltaZ < -m_config.cotThetaMax * deltaR) {
+    return false;
+  }
+  
+  return true;  
+}
+  
 template <typename external_spacepoint_t, typename grid_t, typename platform_t>
 bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatible(const Acts::SeedFinderOptions& options,
 										const external_spacepoint_t& spLow,
@@ -967,8 +1015,6 @@ bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatible(
   circleCenter(1) = - ia_mt * circleCenter(0) + b_mt;
   const ActsScalar R = circleCenter.norm();
 
-   std::cout << "BOOL : " << 4 * R * R
-	     << " < " << options.minHelixDiameter2 << " [i.e. options.minHelixDiameter2]" << std::endl;
    if (4 * R * R < options.minHelixDiameter2) {
     return false;
   }

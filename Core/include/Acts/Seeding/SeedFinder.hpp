@@ -121,6 +121,10 @@ class SeedFinder {
   bool doubletIsCompatible(const Acts::SeedFinderOptions& options,
 			   const external_spacepoint_t& spLow,
 			   const external_spacepoint_t& spUp) const;
+
+  bool doubletIsCompatibleLegacy(const Acts::SeedFinderOptions& options,
+				 const external_spacepoint_t& spLow,
+				 const external_spacepoint_t& spUp) const;
   
   /// Iterates over dublets and tests the compatibility between them by applying
   /// a series of cuts that can be tested with only two SPs
