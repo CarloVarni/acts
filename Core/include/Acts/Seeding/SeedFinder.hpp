@@ -117,6 +117,11 @@ class SeedFinder {
       const external_spacepoint_t& spM,
       const Acts::Range1D<float>& rMiddleSPRange) const;
 
+  /// Check if two space points are compatible
+  bool doubletIsCompatible(const Acts::SeedFinderOptions& options,
+			   const external_spacepoint_t& spLow,
+			   const external_spacepoint_t& spUp) const;
+  
   /// Iterates over dublets and tests the compatibility between them by applying
   /// a series of cuts that can be tested with only two SPs
   /// @param options frequently changing configuration (like beam position)
@@ -155,7 +160,7 @@ class SeedFinder {
                         const Acts::SeedFinderOptions& options,
                         SeedFilterState& seedFilterState,
                         SeedingState& state) const;
-
+  
  private:
   Acts::SeedFinderConfig<external_spacepoint_t> m_config;
 };
