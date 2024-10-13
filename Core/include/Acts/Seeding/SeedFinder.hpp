@@ -28,7 +28,9 @@
 #include <utility>
 #include <vector>
 
-namespace Acts {
+#include "Acts/Seeding/DoubletCache.hpp"
+
+namespace Acts {  
 
 enum class SpacePointCandidateType : short { eBottom, eTop };
 
@@ -43,6 +45,8 @@ class SeedFinder {
 
  public:
   struct SeedingState {
+    Acts::DoubletCache cache{};
+    
     // bottom space point
     std::vector<const external_spacepoint_t*> compatBottomSP;
     std::vector<const external_spacepoint_t*> compatTopSP;

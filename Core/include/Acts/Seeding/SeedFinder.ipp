@@ -1,3 +1,4 @@
+// -*- C++ -*-
 // This file is part of the ACTS project.
 //
 // Copyright (C) 2016 CERN for the benefit of the ACTS project
@@ -10,6 +11,7 @@
 #include <cmath>
 #include <numeric>
 #include <type_traits>
+
 
 namespace Acts {
 
@@ -75,13 +77,17 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
   state.bottomNeighbours.clear();
   state.topNeighbours.clear();
 
+  std::size_t nBottom = 0;
+  std::size_t nTop = 0;
   // Fill
   // bottoms
   for (const std::size_t idx : bottomSPsIdx) {
+    if (idx != middleSPsIdx) continue;
     // Only add an entry if the bin has entries
     if (grid.at(idx).size() == 0) {
       continue;
     }
+    nBottom += grid.at(idx).size();
     state.bottomNeighbours.emplace_back(
         grid, idx, middleSPs.front()->radius() - m_config.deltaRMaxBottomSP);
   }
@@ -92,10 +98,12 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
 
   // tops
   for (const std::size_t idx : topSPsIdx) {
+    if (idx != middleSPsIdx) continue;
     // Only add an entry if the bin has entries
     if (grid.at(idx).size() == 0) {
       continue;
     }
+    nTop += grid.at(idx).size();
     state.topNeighbours.emplace_back(
         grid, idx, middleSPs.front()->radius() + m_config.deltaRMinTopSP);
   }
@@ -103,6 +111,8 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
   if (state.topNeighbours.size() == 0) {
     return;
   }
+
+  std::cout << "nMiddle=" << middleSPs.size() << " nBottom=" << nBottom << " nTop=" << nTop << std::endl;
 
   // we compute this here since all middle space point candidates belong to the
   // same z-bin
@@ -132,32 +142,36 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
         state.linCircleTop, state.compatTopSP, m_config.deltaRMinTopSP,
         m_config.deltaRMaxTopSP, uIP, uIP2, cosPhiM, sinPhiM);
 
-    // no top SP found -> try next spM
-    if (state.compatTopSP.empty()) {
-      continue;
+    for (const auto* sp : state.compatTopSP) {
+      state.cache.insert(std::make_pair(spM->index(), sp->index()));
     }
+    
+    // // no top SP found -> try next spM
+    // if (state.compatTopSP.empty()) {
+    //   continue;
+    // }
 
-    // apply cut on the number of top SP if seedConfirmation is true
+    // // apply cut on the number of top SP if seedConfirmation is true
     SeedFilterState seedFilterState;
-    if (m_config.seedConfirmation) {
-      // check if middle SP is in the central or forward region
-      SeedConfirmationRangeConfig seedConfRange =
-          (zM > m_config.centralSeedConfirmationRange.zMaxSeedConf ||
-           zM < m_config.centralSeedConfirmationRange.zMinSeedConf)
-              ? m_config.forwardSeedConfirmationRange
-              : m_config.centralSeedConfirmationRange;
-      // set the minimum number of top SP depending on whether the middle SP is
-      // in the central or forward region
-      seedFilterState.nTopSeedConf = rM > seedConfRange.rMaxSeedConf
-                                         ? seedConfRange.nTopForLargeR
-                                         : seedConfRange.nTopForSmallR;
-      // set max bottom radius for seed confirmation
-      seedFilterState.rMaxSeedConf = seedConfRange.rMaxSeedConf;
-      // continue if number of top SPs is smaller than minimum
-      if (state.compatTopSP.size() < seedFilterState.nTopSeedConf) {
-        continue;
-      }
-    }
+    // if (m_config.seedConfirmation) {
+    //   // check if middle SP is in the central or forward region
+    //   SeedConfirmationRangeConfig seedConfRange =
+    //       (zM > m_config.centralSeedConfirmationRange.zMaxSeedConf ||
+    //        zM < m_config.centralSeedConfirmationRange.zMinSeedConf)
+    //           ? m_config.forwardSeedConfirmationRange
+    //           : m_config.centralSeedConfirmationRange;
+    //   // set the minimum number of top SP depending on whether the middle SP is
+    //   // in the central or forward region
+    //   seedFilterState.nTopSeedConf = rM > seedConfRange.rMaxSeedConf
+    //                                      ? seedConfRange.nTopForLargeR
+    //                                      : seedConfRange.nTopForSmallR;
+    //   // set max bottom radius for seed confirmation
+    //   seedFilterState.rMaxSeedConf = seedConfRange.rMaxSeedConf;
+    //   // continue if number of top SPs is smaller than minimum
+    //   if (state.compatTopSP.size() < seedFilterState.nTopSeedConf) {
+    //     continue;
+    //   }
+    // }
 
     // Iterate over middle-bottom dublets
     getCompatibleDoublets<Acts::SpacePointCandidateType::eBottom>(
@@ -169,6 +183,10 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
     // no bottom SP found -> try next spM
     if (state.compatBottomSP.empty()) {
       continue;
+    }
+
+    for (const auto* sp : state.compatBottomSP) {
+      state.cache.insert(std::make_pair(sp->index(), spM->index()));
     }
 
     // filter candidates
@@ -185,6 +203,11 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
                                               outputCollection);
 
   }  // loop on mediums
+
+  std::cout << "Cache Size: " << state.cache.size() << std::endl;
+  std::cout << "   Requests: " << state.cache.requests() << std::endl;
+  std::cout << "   Doppioni: " << state.cache.doppioni() << std::endl;
+  std::cout << "   Efficiency: " << (100. * (state.cache.requests() - state.cache.doppioni()) ) / state.cache.requests() << std::endl;
 }
 
 template <typename external_spacepoint_t, typename grid_t, typename platform_t>
