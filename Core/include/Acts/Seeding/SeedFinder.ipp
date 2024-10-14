@@ -94,11 +94,13 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
   }
 
   // tops
+  std::size_t nTopTotal = 0;
   for (const std::size_t idx : topSPsIdx) {
     // Only add an entry if the bin has entries
     if (grid.at(idx).size() == 0) {
       continue;
     }
+    nTopTotal += grid.at(idx).size();
     state.topNeighbours.emplace_back(
         grid, idx, middleSPs.front()->radius() + m_config.deltaRMinTopSP);
   }
@@ -135,6 +137,10 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
         state.linCircleTop, state.compatTopSP, m_config.deltaRMinTopSP,
         m_config.deltaRMaxTopSP, uIP, uIP2, cosPhiM, sinPhiM);
 
+    std::cout << "Top Efficiency: " << state.compatTopSP.size()
+	      << " / " << nTopTotal << " = "
+	      << (100. * state.compatTopSP.size()) / nTopTotal << std::endl;
+    
     // no top SP found -> try next spM
     if (state.compatTopSP.empty()) {
       continue;
@@ -1004,18 +1010,19 @@ bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatible(
   // maximum radius possible is when the ImpactPoint is at (-rM, +/- m_config.impactMax)
   // where the +/- depends on the sign of yNewFrame
   const float vIP = (yNewFrame >= 0.) ? -m_config.impactMax : m_config.impactMax;
+
+  float ia_bm = - spLow.radius() / vIP;
+  float b_bm = 0.5 * (vIP - ia_bm * spLow.radius());
+
   
   float ia_mt = xNewFrame / yNewFrame;
-  float ia_bm = - spLow.radius() / vIP;
-
   float b_mt = 0.5 * (yNewFrame + ia_mt * xNewFrame);
-  float b_bm = 0.5 * (vIP - ia_bm * spLow.radius());
-  Vector2 circleCenter;
-  circleCenter(0) = (b_bm - b_mt) / (ia_bm - ia_mt);
-  circleCenter(1) = - ia_mt * circleCenter(0) + b_mt;
-  const ActsScalar R = circleCenter.norm();
 
-   if (4 * R * R < options.minHelixDiameter2) {
+  float xCircle = (b_bm - b_mt) / (ia_bm - ia_mt);
+  float yCircle = - ia_mt * xCircle + b_mt;
+  const ActsScalar R2 = xCircle * xCircle + yCircle * yCircle;
+
+   if (4 * R2 < options.minHelixDiameter2) {
     return false;
   }
   
