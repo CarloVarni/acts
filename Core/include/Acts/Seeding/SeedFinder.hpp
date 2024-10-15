@@ -91,6 +91,7 @@ class SeedFinder {
     float sinPhiM{0.f};
     float ia_bm{0.f};
     float b_bm{0.f};
+    std::pair<double, double> circleCenter;
   };
   
   /// The only constructor. Requires a config object.
@@ -127,7 +128,25 @@ class SeedFinder {
                            const sp_range_t& topSPs,
                            const Acts::Range1D<float>& rMiddleSPRange) const;
 
- private:
+private:
+  void evaluateDoublets(const Acts::SeedFinderOptions& options,
+			const doubletInfo& dInfo,
+			const grid_t& grid,
+			const external_spacepoint_t& spM,
+			const boost::container::small_vector<Neighbour<grid_t>,
+			Acts::detail::ipow(3, grid_t::DIM)>&
+			otherSPsNeighbours) const;
+
+  void evaluateDoubletsLegacy(const Acts::SeedFinderOptions& options,
+			const doubletInfo& dInfo,
+			const grid_t& grid,
+			const external_spacepoint_t& spM,
+			const boost::container::small_vector<Neighbour<grid_t>,
+			Acts::detail::ipow(3, grid_t::DIM)>&
+			otherSPsNeighbours) const;
+
+
+private:
   /// Given a middle space point candidate, get the proper radius validity range
   /// In case the radius range changes according to the z-bin we need to
   /// retrieve the proper range. We can do this computation only once, since

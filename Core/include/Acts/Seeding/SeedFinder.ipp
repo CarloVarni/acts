@@ -1,4 +1,4 @@
-
+  
 // -*- C++ -*-
 // This file is part of the ACTS project.
 //
@@ -15,6 +15,60 @@
 #include <chrono>
 
 namespace Acts {
+
+  template <typename external_spacepoint_t, typename grid_t, typename platform_t>
+  void SeedFinder<external_spacepoint_t, grid_t, platform_t>::evaluateDoublets(const Acts::SeedFinderOptions& options,
+									       const doubletInfo& dInfo,
+									       const grid_t& grid,
+									       const external_spacepoint_t& spM,
+									       const boost::container::small_vector<Neighbour<grid_t>,
+									       Acts::detail::ipow(3, grid_t::DIM)>&
+									       otherSPsNeighbours) const
+  {
+    for (auto& otherSPCol : otherSPsNeighbours) {
+      // run on bins
+      const std::vector<const external_spacepoint_t*>& otherSPs =
+        grid.at(otherSPCol.index);
+      if (otherSPs.empty()) {
+	continue;
+      }
+
+      // run on space point
+      for (const external_spacepoint_t* sp : otherSPs) {
+	doubletIsCompatible(options,
+			    spM,
+			    *sp,
+			    dInfo);	
+      } // stop loop on sps
+    } // stop loop on bins
+  }
+
+    template <typename external_spacepoint_t, typename grid_t, typename platform_t>
+  void SeedFinder<external_spacepoint_t, grid_t, platform_t>::evaluateDoubletsLegacy(const Acts::SeedFinderOptions& options,
+									       const doubletInfo& dInfo,
+									       const grid_t& grid,
+									       const external_spacepoint_t& spM,
+									       const boost::container::small_vector<Neighbour<grid_t>,
+									       Acts::detail::ipow(3, grid_t::DIM)>&
+									       otherSPsNeighbours) const
+  {
+    for (auto& otherSPCol : otherSPsNeighbours) {
+      // run on bins
+      const std::vector<const external_spacepoint_t*>& otherSPs =
+        grid.at(otherSPCol.index);
+      if (otherSPs.empty()) {
+	continue;
+      }
+
+      // run on space point
+      for (const external_spacepoint_t* sp : otherSPs) {
+	doubletIsCompatibleLegacy(options,
+				  spM,
+				  *sp,
+				  dInfo);	
+      } // stop loop on sps
+    } // stop loop on bins
+  }
 
 template <typename external_spacepoint_t, typename grid_t, typename platform_t>
 SeedFinder<external_spacepoint_t, grid_t, platform_t>::SeedFinder(
@@ -126,6 +180,41 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
     }
 
     doubletInfo dInfo(*spM, m_config.impactMax);
+    // Compute center
+    using computation_t = double;
+    std::pair<computation_t, computation_t> ip_position = std::make_pair(-spM->radius(), -m_config.impactMax);
+    const computation_t ipNorm = std::sqrt(ip_position.first*ip_position.first + ip_position.second*ip_position.second);
+    const computation_t sinPhi = ip_position.second / ipNorm;
+    const computation_t cosPhi = ip_position.first / ipNorm;
+    std::pair<computation_t, computation_t> ip_new_position;
+    ip_new_position.first = ip_position.first * cosPhi + ip_position.second * sinPhi;
+    ip_new_position.second = ip_position.second * cosPhi - ip_position.first * sinPhi;
+
+    std::pair<computation_t, computation_t> circle;
+    circle.first = ip_new_position.first/2;
+    circle.second = std::sqrt(options.minHelixDiameter2/4 - circle.first*circle.first);
+
+    std::pair<computation_t, computation_t> propert_circle_center;
+    propert_circle_center.first = propert_circle_center.first * cosPhi - propert_circle_center.second * sinPhi;
+    propert_circle_center.second = propert_circle_center.first * sinPhi + propert_circle_center.second * cosPhi;
+
+    dInfo.circleCenter = propert_circle_center;
+
+    {
+      auto start_compatible = std::chrono::high_resolution_clock::now();
+      evaluateDoublets(options, dInfo, grid, *spM, state.topNeighbours);
+      auto stop_compatible = std::chrono::high_resolution_clock::now();
+
+      auto start_legacy = std::chrono::high_resolution_clock::now();
+      evaluateDoublets(options, dInfo, grid, *spM, state.topNeighbours);
+      auto stop_legacy = std::chrono::high_resolution_clock::now();
+      
+      auto duration_comp = std::chrono::duration_cast<std::chrono::nanoseconds>(stop_compatible - start_compatible).count();
+      auto duration_legacy = std::chrono::duration_cast<std::chrono::nanoseconds>(stop_legacy - start_legacy).count();
+      std::cout << "Timing comp: " << duration_comp << std::endl;
+      std::cout << "Timing lega: " << duration_legacy << std::endl;
+    }
+
     // Iterate over middle-top dublets
     getCompatibleDoublets<Acts::SpacePointCandidateType::eTop>(
         options, grid, state.spacePointMutableData, state.topNeighbours, *spM,
@@ -281,21 +370,6 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
     for (; min_itr != otherSPs.end(); ++min_itr) {
       const external_spacepoint_t* otherSP = *min_itr;
       if constexpr (!isBottomCandidate) {
-	auto start_compatible = std::chrono::high_resolution_clock::now();
-	bool is_compatbiel = doubletIsCompatible(options, mediumSP, *otherSP, dInfo);
-	auto stop_compatible = std::chrono::high_resolution_clock::now();
-	auto start_legacy = std::chrono::high_resolution_clock::now();
-	bool is_legacy_compatible = doubletIsCompatibleLegacy(options, mediumSP, *otherSP, dInfo);
-	auto stop_legacy = std::chrono::high_resolution_clock::now();
-	if (is_compatbiel != is_legacy_compatible) {
-	  std::cout << "ERRORE !!!" << std::endl;
-	}
-	std::cout << "Doublet is compatible: " << (is_compatbiel?"Y":"N") << std::endl;
-
-	auto duration_comp = std::chrono::duration_cast<std::chrono::nanoseconds>(stop_compatible - start_compatible).count();
-	auto duration_legacy = std::chrono::duration_cast<std::chrono::nanoseconds>(stop_legacy - start_legacy).count();
-	std::cout << "Timing comp: " << duration_comp << std::endl;
-	std::cout << "Timing lega: " << duration_legacy << std::endl;
       }
 
       if constexpr (isBottomCandidate) {
@@ -857,14 +931,14 @@ std::pair<float, float> SeedFinder<external_spacepoint_t, grid_t, platform_t>::
 
   template <typename external_spacepoint_t, typename grid_t, typename platform_t>
 bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatibleLegacy(const Acts::SeedFinderOptions& options,
-                                                                                const external_spacepoint_t& spLow,
+										      const external_spacepoint_t& spLow,
 										      const external_spacepoint_t& spUp,
 										      const doubletInfo& dInfo) const
-{
-  const float deltaR = spUp.radius() - spLow.radius();
-  const float deltaZ = spUp.z() - spLow.z();
+  {
+    const float deltaR = spUp.radius() - dInfo.rM;
+    const float deltaZ = spUp.z() - dInfo.zM;
   
-  const float zOriginTimesDeltaR = (spLow.z() * deltaR - spLow.radius() * deltaZ);
+  const float zOriginTimesDeltaR = (dInfo.zM * deltaR - dInfo.rM * deltaZ);
   // check if duplet origin on z axis within collision region                                                                                                                                                  
   if (zOriginTimesDeltaR < m_config.collisionRegionMin * deltaR ||
       zOriginTimesDeltaR > m_config.collisionRegionMax * deltaR) {
@@ -883,18 +957,14 @@ bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatibleL
     return true;
   }
 
-  const float uIP = 1. / spLow.radius();
-  const float cosPhiM = spLow.x() * uIP;
-  const float sinPhiM = spLow.y() * uIP;
-  
   const float deltaX = spUp.x() - spLow.x();
   const float deltaY = spUp.y() - spLow.y();
   const float deltaR2 = deltaX*deltaX + deltaY*deltaY;
 
-  const float xNewFrame = deltaX * cosPhiM + deltaY * sinPhiM;
-  const float yNewFrame = deltaY * cosPhiM - deltaX * sinPhiM;
+  const float xNewFrame = deltaX * dInfo.cosPhiM + deltaY * dInfo.sinPhiM;
+  const float yNewFrame = deltaY * dInfo.cosPhiM - deltaX * dInfo.sinPhiM;
 
-  if (yNewFrame*yNewFrame * spLow.radius()*spLow.radius() <= m_config.impactMax*m_config.impactMax * deltaR2) {
+  if (std::abs(dInfo.rM * yNewFrame) <= m_config.impactMax * xNewFrame) {
     if (deltaZ > m_config.cotThetaMax * deltaR ||
         deltaZ < -m_config.cotThetaMax * deltaR) {
       return false;
@@ -907,12 +977,15 @@ bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatibleL
   const float uT = xNewFrame * iDeltaR2;
   const float vT = yNewFrame * iDeltaR2;
 
-  const float uIP2 = uIP * uIP;
-  const float vIPAbs = m_config.impactMax * uIP2;
-
-  const float vIP = (yNewFrame > 0.) ? -vIPAbs : vIPAbs;
-  const float aCoef = (vT - vIP) / (uT - uIP);
-  const float bCoef = vIP - aCoef * uIP;
+  const float uIP2 = dInfo.uIP * dInfo.uIP;
+  float vIPAbs = m_config.impactMax * uIP2;
+  if (m_config.interactionPointCut) {
+    vIPAbs = m_config.impactMax * uIP2;
+  }
+  
+  const float vIP = (yNewFrame > 0.) ? -vIPAbs: vIPAbs ;
+  const float aCoef = (vT - vIP) / (uT - dInfo.uIP);
+  const float bCoef = vIP - aCoef * dInfo.uIP;
   
   if ((bCoef * bCoef) * options.minHelixDiameter2 > (1 + aCoef * aCoef)) {
     return false;
@@ -970,7 +1043,6 @@ bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatible(
   // Check the minimum distance between the line connecting the two points and the origin (i.e. the interaction point)  
   const float deltaX = spUp.x() - spLow.x();
   const float deltaY = spUp.y() - spLow.y();
-  const float deltaR2 = deltaX*deltaX + deltaY*deltaY;
   
   const float xNewFrame = deltaX * dInfo.cosPhiM + deltaY * dInfo.sinPhiM;
   const float yNewFrame = deltaY * dInfo.cosPhiM - deltaX * dInfo.sinPhiM;
@@ -990,6 +1062,14 @@ bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatible(
     return true;
   }
 
+  std::pair<double, double> center = dInfo.circleCenter;
+  if (yNewFrame < 0.) center.second = -center.second;
+  double dX = center.first - spUp.x();
+  double dY = center.second - spUp.y();
+  if (4 * dX*dX + dY*dY <= options.minHelixDiameter2) {
+    return false;
+  }
+  
   // (3)
   //
   // check the curvature
@@ -1001,7 +1081,7 @@ bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatible(
   // Consider the triplet: ImpactPoint, middle and top candidates
   // maximum radius possible is when the ImpactPoint is at (-rM, +/- m_config.impactMax)
   // where the +/- depends on the sign of yNewFrame
-  const float vIP = (yNewFrame >= 0.) ? -m_config.impactMax : m_config.impactMax;
+  /*
   const float ia_bm = (yNewFrame >= 0.) ? dInfo.ia_bm : -dInfo.ia_bm;
   const float b_bm = (yNewFrame >= 0.) ? dInfo.b_bm : -dInfo.b_bm;
   
@@ -1015,7 +1095,7 @@ bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatible(
    if (4 * R2 < options.minHelixDiameter2) {
     return false;
   }
-  
+  */
   // check if duplet cotTheta is within the region of interest
   // cotTheta is defined as (deltaZ / deltaR) but instead we multiply
   // cotThetaMax by deltaR to avoid division
