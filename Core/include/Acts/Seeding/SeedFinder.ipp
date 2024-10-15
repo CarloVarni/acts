@@ -125,22 +125,20 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
       break;
     }
 
-    const float zM = spM->z();
-    const float uIP = -1. / rM;
-    const float cosPhiM = -spM->x() * uIP;
-    const float sinPhiM = -spM->y() * uIP;
-    const float uIP2 = uIP * uIP;
-
+    doubletInfo dInfo(*spM, m_config.impactMax);
     // Iterate over middle-top dublets
     getCompatibleDoublets<Acts::SpacePointCandidateType::eTop>(
         options, grid, state.spacePointMutableData, state.topNeighbours, *spM,
         state.linCircleTop, state.compatTopSP, m_config.deltaRMinTopSP,
-        m_config.deltaRMaxTopSP, uIP, uIP2, cosPhiM, sinPhiM);
+        m_config.deltaRMaxTopSP,
+	dInfo.uIP, dInfo.uIP*dInfo.uIP, dInfo.cosPhiM, dInfo.sinPhiM,
+	dInfo);
 
     std::cout << "Top Efficiency: " << state.compatTopSP.size()
 	      << " / " << nTopTotal << " = "
 	      << (100. * state.compatTopSP.size()) / nTopTotal << std::endl;
-    
+
+    /// home made computation
     // no top SP found -> try next spM
     if (state.compatTopSP.empty()) {
       continue;
@@ -151,8 +149,8 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
     if (m_config.seedConfirmation) {
       // check if middle SP is in the central or forward region
       SeedConfirmationRangeConfig seedConfRange =
-          (zM > m_config.centralSeedConfirmationRange.zMaxSeedConf ||
-           zM < m_config.centralSeedConfirmationRange.zMinSeedConf)
+          (dInfo.zM > m_config.centralSeedConfirmationRange.zMaxSeedConf ||
+           dInfo.zM < m_config.centralSeedConfirmationRange.zMinSeedConf)
               ? m_config.forwardSeedConfirmationRange
               : m_config.centralSeedConfirmationRange;
       // set the minimum number of top SP depending on whether the middle SP is
@@ -172,8 +170,9 @@ void SeedFinder<external_spacepoint_t, grid_t, platform_t>::createSeedsForGroup(
     getCompatibleDoublets<Acts::SpacePointCandidateType::eBottom>(
         options, grid, state.spacePointMutableData, state.bottomNeighbours,
         *spM, state.linCircleBottom, state.compatBottomSP,
-        m_config.deltaRMinBottomSP, m_config.deltaRMaxBottomSP, uIP, uIP2,
-        cosPhiM, sinPhiM);
+        m_config.deltaRMinBottomSP, m_config.deltaRMaxBottomSP,
+	dInfo.uIP, dInfo.uIP*dInfo.uIP, dInfo.cosPhiM, dInfo.sinPhiM,
+        dInfo);
 
     // no bottom SP found -> try next spM
     if (state.compatBottomSP.empty()) {
@@ -208,7 +207,8 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
     const external_spacepoint_t& mediumSP, std::vector<LinCircle>& linCircleVec,
     out_range_t& outVec, const float deltaRMinSP, const float deltaRMaxSP,
     const float uIP, const float uIP2, const float cosPhiM,
-    const float sinPhiM) const {
+    const float sinPhiM,
+    const doubletInfo& dInfo) const {
   float impactMax = m_config.impactMax;
 
   constexpr bool isBottomCandidate =
@@ -280,13 +280,12 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
 
     for (; min_itr != otherSPs.end(); ++min_itr) {
       const external_spacepoint_t* otherSP = *min_itr;
-
       if constexpr (!isBottomCandidate) {
 	auto start_compatible = std::chrono::high_resolution_clock::now();
-	bool is_compatbiel = doubletIsCompatible(options, mediumSP, *otherSP);
+	bool is_compatbiel = doubletIsCompatible(options, mediumSP, *otherSP, dInfo);
 	auto stop_compatible = std::chrono::high_resolution_clock::now();
 	auto start_legacy = std::chrono::high_resolution_clock::now();
-	bool is_legacy_compatible = doubletIsCompatibleLegacy(options, mediumSP, *otherSP);
+	bool is_legacy_compatible = doubletIsCompatibleLegacy(options, mediumSP, *otherSP, dInfo);
 	auto stop_legacy = std::chrono::high_resolution_clock::now();
 	if (is_compatbiel != is_legacy_compatible) {
 	  std::cout << "ERRORE !!!" << std::endl;
@@ -298,7 +297,7 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
 	std::cout << "Timing comp: " << duration_comp << std::endl;
 	std::cout << "Timing lega: " << duration_legacy << std::endl;
       }
-      
+
       if constexpr (isBottomCandidate) {
         deltaR = (rM - otherSP->radius());
 
@@ -859,7 +858,8 @@ std::pair<float, float> SeedFinder<external_spacepoint_t, grid_t, platform_t>::
   template <typename external_spacepoint_t, typename grid_t, typename platform_t>
 bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatibleLegacy(const Acts::SeedFinderOptions& options,
                                                                                 const external_spacepoint_t& spLow,
-                                                                                const external_spacepoint_t& spUp) const
+										      const external_spacepoint_t& spUp,
+										      const doubletInfo& dInfo) const
 {
   const float deltaR = spUp.radius() - spLow.radius();
   const float deltaZ = spUp.z() - spLow.z();
@@ -929,22 +929,20 @@ bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatibleL
 template <typename external_spacepoint_t, typename grid_t, typename platform_t>
 bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatible(const Acts::SeedFinderOptions& options,
 										const external_spacepoint_t& spLow,
-										const external_spacepoint_t& spUp) const
+										const external_spacepoint_t& spUp,
+										const doubletInfo& dInfo) const
 {
-  // low = middle
-  // up = top
-
   // We first check the Z impact parameter
-  const float deltaR = spUp.radius() - spLow.radius();
-  const float deltaZ = spUp.z() - spLow.z();
-
+  const float deltaR = spUp.radius() - dInfo.rM;
+  const float deltaZ = spUp.z() - dInfo.zM;
+  
   // (1)
   //
   // the longitudinal impact parameter zOrigin is defined as (zM - rM *
   // cotTheta) where cotTheta is the ratio Z/R (forward angle) of space
   // point duplet but instead we calculate (zOrigin * deltaR) and multiply
   // collisionRegion by deltaR to avoid divisions
-  const float zOriginTimesDeltaR = (spLow.z() * deltaR - spLow.radius() * deltaZ);
+  const float zOriginTimesDeltaR = (dInfo.zM * deltaR - dInfo.rM * deltaZ);
   // check if duplet origin on z axis within collision region
   if (zOriginTimesDeltaR < m_config.collisionRegionMin * deltaR ||
       zOriginTimesDeltaR > m_config.collisionRegionMax * deltaR) {
@@ -969,23 +967,17 @@ bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatible(
 
   // (2)
   //
-  // Check the minimum distance between the line connecting the two points and the origin (i.e. the interaction point)
-
-  // TODO: These can be provided externally
-  const float uIP = 1. / spLow.radius();
-  const float cosPhiM = spLow.x() * uIP;
-  const float sinPhiM = spLow.y() * uIP;
-  
+  // Check the minimum distance between the line connecting the two points and the origin (i.e. the interaction point)  
   const float deltaX = spUp.x() - spLow.x();
   const float deltaY = spUp.y() - spLow.y();
   const float deltaR2 = deltaX*deltaX + deltaY*deltaY;
   
-  const float xNewFrame = deltaX * cosPhiM + deltaY * sinPhiM;
-  const float yNewFrame = deltaY * cosPhiM - deltaX * sinPhiM;
+  const float xNewFrame = deltaX * dInfo.cosPhiM + deltaY * dInfo.sinPhiM;
+  const float yNewFrame = deltaY * dInfo.cosPhiM - deltaX * dInfo.sinPhiM;
 
   // equivalence
-  //  if (std::abs(spLow.radius() * yNewFrame) <= m_config.impactMax * xNewFrame) {
-  if (yNewFrame*yNewFrame * spLow.radius()*spLow.radius() <= m_config.impactMax*m_config.impactMax * deltaR2) {
+  if (std::abs(dInfo.rM * yNewFrame) <= m_config.impactMax * xNewFrame) {
+    //  if (yNewFrame*yNewFrame * spLow.radius()*spLow.radius() <= m_config.impactMax*m_config.impactMax * deltaR2) {
     //  if (std::abs(spLow.radius() * yNewFrame) <= m_config.impactMax * xNewFrame) {
     // check if duplet cotTheta is within the region of interest
     // cotTheta is defined as (deltaZ / deltaR) but instead we multiply
@@ -1010,10 +1002,8 @@ bool SeedFinder<external_spacepoint_t, grid_t, platform_t>::doubletIsCompatible(
   // maximum radius possible is when the ImpactPoint is at (-rM, +/- m_config.impactMax)
   // where the +/- depends on the sign of yNewFrame
   const float vIP = (yNewFrame >= 0.) ? -m_config.impactMax : m_config.impactMax;
-
-  float ia_bm = - spLow.radius() / vIP;
-  float b_bm = 0.5 * (vIP - ia_bm * spLow.radius());
-
+  const float ia_bm = (yNewFrame >= 0.) ? dInfo.ia_bm : -dInfo.ia_bm;
+  const float b_bm = (yNewFrame >= 0.) ? dInfo.b_bm : -dInfo.b_bm;
   
   float ia_mt = xNewFrame / yNewFrame;
   float b_mt = 0.5 * (yNewFrame + ia_mt * xNewFrame);

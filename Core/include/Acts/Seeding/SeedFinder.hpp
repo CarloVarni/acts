@@ -72,6 +72,27 @@ class SeedFinder {
     Acts::SpacePointMutableData spacePointMutableData;
   };
 
+  struct doubletInfo {
+    doubletInfo() = delete;
+    doubletInfo(const external_spacepoint_t& sp,
+                float vIP)
+      : zM(sp.z()),
+        rM(sp.radius()),
+        uIP(1./rM),
+        cosPhiM(sp.x() * uIP),
+        sinPhiM(sp.y() * uIP),
+	ia_bm(-rM / vIP),
+        b_bm(0.5 * (vIP - ia_bm * rM))
+    {}
+    float zM{0.f};
+    float rM{0.f};
+    float uIP{0.f};
+    float cosPhiM{0.f};
+    float sinPhiM{0.f};
+    float ia_bm{0.f};
+    float b_bm{0.f};
+  };
+  
   /// The only constructor. Requires a config object.
   /// @param config the configuration for the SeedFinder
   SeedFinder(const Acts::SeedFinderConfig<external_spacepoint_t>& config);
@@ -120,11 +141,13 @@ class SeedFinder {
   /// Check if two space points are compatible
   bool doubletIsCompatible(const Acts::SeedFinderOptions& options,
 			   const external_spacepoint_t& spLow,
-			   const external_spacepoint_t& spUp) const;
+			   const external_spacepoint_t& spUp,
+			   const doubletInfo& dInfo) const;
 
   bool doubletIsCompatibleLegacy(const Acts::SeedFinderOptions& options,
 				 const external_spacepoint_t& spLow,
-				 const external_spacepoint_t& spUp) const;
+				 const external_spacepoint_t& spUp,
+				 const doubletInfo& dInfo) const;
   
   /// Iterates over dublets and tests the compatibility between them by applying
   /// a series of cuts that can be tested with only two SPs
@@ -151,7 +174,8 @@ class SeedFinder {
       const external_spacepoint_t& mediumSP,
       std::vector<LinCircle>& linCircleVec, out_range_t& outVec,
       const float deltaRMinSP, const float deltaRMaxSP, const float uIP,
-      const float uIP2, const float cosPhiM, const float sinPhiM) const;
+      const float uIP2, const float cosPhiM, const float sinPhiM,
+			     const doubletInfo& dInfo) const;
 
   /// Iterates over the seed candidates tests the compatibility between three
   /// SPs and calls for the seed confirmation
