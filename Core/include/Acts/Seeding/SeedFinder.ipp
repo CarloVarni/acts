@@ -236,7 +236,12 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
   const float zM = mediumSP.z();
   const float varianceRM = mediumSP.varianceR();
   const float varianceZM = mediumSP.varianceZ();
+  const float deltaZMax = isBottomCandidate
+    ? m_config.deltaZMaxBottomSP->atPosition( Acts::Vector2(std::abs(zM), rM) )
+    : m_config.deltaZMaxTopSP->atPosition( Acts::Vector2(std::abs(zM), rM) );
 
+  //  std::cout << "- cut (delta Z) is set at: " << deltaZMax << " for coordinates (" << std::abs(zM) << ", " << rM << ")"  << std::endl; 
+  
   float vIPAbs = 0;
   if (m_config.interactionPointCut) {
     // equivalent to m_config.impactMax / (rM * rM);
@@ -311,6 +316,8 @@ SeedFinder<external_spacepoint_t, grid_t, platform_t>::getCompatibleDoublets(
         deltaZ = (otherSP->z() - zM);
       }
 
+      //      if (deltaZ > deltaZMax) continue;
+      
       // the longitudinal impact parameter zOrigin is defined as (zM - rM *
       // cotTheta) where cotTheta is the ratio Z/R (forward angle) of space
       // point duplet but instead we calculate (zOrigin * deltaR) and multiply

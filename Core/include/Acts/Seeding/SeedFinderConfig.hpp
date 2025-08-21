@@ -13,6 +13,9 @@
 #include "Acts/Material/Interactions.hpp"
 #include "Acts/Seeding/SeedConfirmationRangeConfig.hpp"
 #include "Acts/Utilities/Delegate.hpp"
+#include "Acts/Utilities/Grid.hpp"
+#include "Acts/Utilities/Axis.hpp"
+#include "Acts/Utilities/AxisDefinitions.hpp"
 
 #include <limits>
 #include <memory>
@@ -94,7 +97,13 @@ struct SeedFinderConfig {
 
   /// Maximum value of z-distance between space-points in doublet
   float deltaZMax = std::numeric_limits<float>::infinity() * UnitConstants::mm;
-
+  std::shared_ptr< Grid<float,
+                        Axis<AxisType::Variable, AxisBoundaryType::Open>,
+                        Axis<AxisType::Variable, AxisBoundaryType::Open>>> deltaZMaxTopSP { nullptr };
+  std::shared_ptr< Grid<float,
+                        Axis<AxisType::Variable, AxisBoundaryType::Open>,
+                        Axis<AxisType::Variable, AxisBoundaryType::Open>>> deltaZMaxBottomSP { nullptr };
+  
   /// Maximum allowed cotTheta between two space-points in doublet, used to
   /// check if forward angle is within bounds
   float cotThetaMax = 10.01788;  // equivalent to eta = 3 (pseudorapidity)
