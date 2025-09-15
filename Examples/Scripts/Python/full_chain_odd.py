@@ -168,6 +168,7 @@ oddDigiConfig = (
 )
 
 oddSeedingSel = actsDir / "Examples/Configs/odd-seeding-config.json"
+oddStripSeedingSel = actsDir / "Examples/Configs/odd-strip-spacepoint-selection.json"
 oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)
 
 detector = getOpenDataDetector(odd_dir=geoDir, materialDecorator=oddMaterialDeco)
@@ -349,10 +350,12 @@ if args.reco:
         initialVarInflation=[1.0] * 6,
         particleHypothesis=acts.ParticleHypothesis.muon,
         geoSelectionConfigFile=oddSeedingSel,
+        stripGeoSelectionConfigFile=oddStripSeedingSel,
         outputDirRoot=outputDir if args.output_root else None,
         outputDirCsv=outputDir if args.output_csv else None,
         # logLevel=acts.logging.DEBUG,
         seedingAlgorithm=SeedingAlgorithm.HoughTransform,
+        logLevel=acts.logging.DEBUG,
     )
 
     if seedFilter_ML:
