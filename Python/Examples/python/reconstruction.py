@@ -508,6 +508,8 @@ def addSeeding(
         else:
             logger.fatal("unknown seedingAlgorithm %s", seedingAlgorithm)
 
+        return
+
         parEstimateAlg = acts.examples.TrackParamsEstimationAlgorithm(
             level=logLevel,
             inputSeeds=seeds,
@@ -1750,6 +1752,8 @@ def addCKFTracks(
         write covaraiance matrices to tracksummary_ckf.root ntuple?
     """
 
+    return
+
     customLogLevel = acts.examples.defaultLogging(s, logLevel)
 
     tslist = (
@@ -2174,6 +2178,8 @@ def addAmbiguityResolution(
     writeCovMat=False,
     logLevel: Optional[acts.logging.Level] = None,
 ) -> None:
+    return
+
     from acts.examples import GreedyAmbiguityResolutionAlgorithm
 
     customLogLevel = acts.examples.defaultLogging(s, logLevel)
@@ -2430,6 +2436,8 @@ def addVertexFitting(
     logLevel : acts.logging.Level, None
         logging level to override setting given in `s`
     """
+    return
+
     from acts.examples import (
         TruthVertexFinder,
         VertexFitterAlgorithm,
