@@ -355,7 +355,7 @@ if args.reco:
         outputDirCsv=outputDir if args.output_csv else None,
         # logLevel=acts.logging.DEBUG,
         seedingAlgorithm=SeedingAlgorithm.HoughTransform,
-        logLevel=acts.logging.DEBUG,
+        # logLevel=acts.logging.DEBUG,
     )
 
     if seedFilter_ML:
