@@ -32,6 +32,7 @@ target_sources(
         TrackingVolume.cpp
         TrackingVolumeArrayCreator.cpp
         TrapezoidVolumeBounds.cpp
+        ConvexPolygonVolumeBounds.cpp
         Volume.cpp
         VolumeBounds.cpp
         CylinderVolumeStack.cpp
@@ -59,4 +60,6 @@ target_sources(
         VolumeStack.cpp
         ContainerBlueprintNode.cpp
         MultiWireVolumeBuilder.cpp
+        detail/TrackingGeometryPrintVisitor.cpp
+        detail/BoundDeduplicator.cpp
 )

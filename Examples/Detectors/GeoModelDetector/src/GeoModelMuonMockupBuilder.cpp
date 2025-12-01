@@ -16,11 +16,11 @@
 #include "Acts/Geometry/TrackingVolume.hpp"
 #include "Acts/Geometry/TrapezoidVolumeBounds.hpp"
 #include "Acts/Geometry/VolumeAttachmentStrategy.hpp"
+#include "Acts/Geometry/detail/TrackingGeometryPrintVisitor.hpp"
 #include "Acts/Utilities/AxisDefinitions.hpp"
 #include "Acts/Utilities/MathHelpers.hpp"
 
-#include "GeoModelKernel/throwExcept.h"
-
+#include <format>
 using namespace Acts::UnitLiterals;
 
 namespace ActsExamples {
@@ -63,6 +63,11 @@ GeoModelMuonMockupBuilder::trackingGeometry(
   }
 
   auto trackingGeometry = root.construct({}, gctx, *m_logger);
+  if (logger().doPrint(Acts::Logging::Level::DEBUG)) {
+    Acts::detail::TrackingGeometryPrintVisitor trkGeoPrinter{gctx};
+    trackingGeometry->apply(trkGeoPrinter);
+    ACTS_DEBUG(std::endl << trkGeoPrinter.stream().str());
+  }
 
   return trackingGeometry;
 }
@@ -91,8 +96,12 @@ GeoModelMuonMockupBuilder::buildBarrelNode(
     }
     commonStations[parent].push_back(box);
   }
-  // Create a vector to hold the chambers
+  // Create a vector to hold the chambers and inner volumes
   std::vector<std::unique_ptr<Acts::TrackingVolume>> volChambers;
+  std::vector<
+      std::vector<std::shared_ptr<Acts::Experimental::StaticBlueprintNode>>>
+      innerVolumesNodes;
+  innerVolumesNodes.resize(commonStations.size());
 
   if (commonStations.empty()) {
     throw std::invalid_argument("No barrel stations could be found.");
@@ -101,35 +110,42 @@ GeoModelMuonMockupBuilder::buildBarrelNode(
   std::size_t stationNum = 1;
   double maxZ = std::numeric_limits<double>::lowest();
   for (const auto& [parentPhysVol, childrenTrkVols] : commonStations) {
-    std::shared_ptr<Acts::Volume> parentVolume = Acts::GeoModel::convertVolume(
-        Acts::GeoModel::volumePosInSpace(parentPhysVol),
-        parentPhysVol->getLogVol()->getShape(), boundFactory);
+    std::shared_ptr<Acts::Volume> parentVolume =
+        ActsPlugins::GeoModel::convertVolume(
+            ActsPlugins::GeoModel::volumePosInSpace(parentPhysVol),
+            parentPhysVol->getLogVol()->getShape(), boundFactory);
 
     auto chamberVolume = std::make_unique<Acts::TrackingVolume>(
-        *parentVolume, name + "Chamber_" + std::to_string(stationNum));
+        *parentVolume, std::format("{:}_Chamber_{:d}", name, stationNum));
     chamberVolume->assignGeometryId(geoId.withVolume(stationNum));
-    ++stationNum;
+
     ACTS_VERBOSE("Boundaries of the chamber volume: "
                  << chamberVolume->boundarySurfaces().size());
 
     std::size_t childVol = 1;
+    auto chamberId = chamberVolume->geometryId();
+
     for (const auto& child : childrenTrkVols) {
       auto trVol =
           std::make_unique<Acts::TrackingVolume>(*child.volume, child.name);
-      trVol->assignGeometryId(geoId.withVolume(stationNum).withExtra(childVol));
+      trVol->assignGeometryId(chamberId.withExtra(childVol));
       ++childVol;
 
       // add the sensitives (tubes) in the constructed tracking volume
       for (const auto& surface : child.surfaces) {
         trVol->addSurface(surface);
       }
-
-      chamberVolume->addVolume(std::move(trVol));
+      // create static blueprint node for the inner volume
+      auto innerNode =
+          std::make_shared<Acts::Experimental::StaticBlueprintNode>(
+              std::move(trVol));
+      innerVolumesNodes[stationNum - 1].push_back(std::move(innerNode));
     }
     volChambers.push_back(std::move(chamberVolume));
     maxZ = std::max(
         maxZ, volChambers.back()->center().z() +
                   volChambers.back()->volumeBounds().values()[eHalfLengthY]);
+    ++stationNum;
   }
 
   const Acts::Vector3& cent{volChambers.front()->center()};
@@ -147,14 +163,20 @@ GeoModelMuonMockupBuilder::buildBarrelNode(
       std::make_unique<Acts::TrackingVolume>(
           Acts::Transform3::Identity(),
           std::make_shared<Acts::CylinderVolumeBounds>(rmincyl, rmaxcyl, halfZ),
-          name + "_Barrel"));
+          std::format("{:}_Barrel", name)));
 
   // create the bluprint nodes for the chambers and add them as children to the
   // cylinder barrel node
-  for (auto& chamber : volChambers) {
+  for (std::size_t chamberNum = 0; chamberNum < volChambers.size();
+       ++chamberNum) {
     auto chamberNode =
         std::make_shared<Acts::Experimental::StaticBlueprintNode>(
-            std::move(chamber));
+            std::move(volChambers[chamberNum]));
+
+    for (auto& innerVolNode : innerVolumesNodes[chamberNum]) {
+      chamberNode->addChild(std::move(innerVolNode));
+    }
+
     barrelNode->addChild(std::move(chamberNode));
   }
 
