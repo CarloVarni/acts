@@ -204,8 +204,8 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
 
     const auto name =
         std::format("event_{:06}_{:02}", ctx.eventNumber, subregion);
-    auto hh_hist = std::unique_ptr<TH2F>(
-        new TH2F(name.c_str(), name.c_str(), m_cfg.houghHistSize_y, 0,
+    auto hh_hist = std::unique_ptr<TH2S>(
+        new TH2S(name.c_str(), name.c_str(), m_cfg.houghHistSize_y, 0,
                  m_cfg.houghHistSize_y, m_cfg.houghHistSize_x, 0,
                  m_cfg.houghHistSize_x));
 
@@ -266,6 +266,8 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
 ActsExamples::HoughHist
 ActsExamples::HoughTransformSeeder::createLayerHoughHist(unsigned layer,
                                                          int subregion) const {
+  const uint16_t layer_bitmask = 0x1 << layer;
+
   ActsExamples::HoughHist houghHist(
       Axis(0, m_cfg.houghHistSize_y, m_cfg.houghHistSize_y),
       Axis(0, m_cfg.houghHistSize_x, m_cfg.houghHistSize_x));
@@ -293,7 +295,7 @@ ActsExamples::HoughTransformSeeder::createLayerHoughHist(unsigned layer,
       // Update the houghHist
       for (unsigned y = y_bin_min; y < y_bin_max; y++) {
         for (unsigned x = xBins.first; x < xBins.second; x++) {
-          houghHist.atLocalBins({y, x}).first++;
+          houghHist.atLocalBins({y, x}).first |= layer_bitmask;
           houghHist.atLocalBins({y, x}).second.insert(index);
         }
       }
@@ -314,7 +316,7 @@ ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
     for (unsigned y = 0; y < m_cfg.houghHistSize_y; ++y) {
       for (unsigned x = 0; x < m_cfg.houghHistSize_x; ++x) {
         if (layerHoughHist.atLocalBins({y, x}).first > 0) {
-          houghHist.atLocalBins({y, x}).first++;
+          houghHist.atLocalBins({y, x}).first |= layerHoughHist.atLocalBins({y, x}).first;
           houghHist.atLocalBins({y, x}).second.insert(
               layerHoughHist.atLocalBins({y, x}).second.begin(),
               layerHoughHist.atLocalBins({y, x}).second.end());

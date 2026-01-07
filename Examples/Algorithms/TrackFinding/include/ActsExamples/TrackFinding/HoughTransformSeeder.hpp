@@ -136,7 +136,7 @@ namespace ActsExamples {
 using Axis =
     Acts::Axis<Acts::AxisType::Equidistant, Acts::AxisBoundaryType::Bound>;
 using HoughHist =
-    Acts::Grid<std::pair<int, std::unordered_set<unsigned>>, Axis, Axis>;
+    Acts::Grid<std::pair<uint16_t, std::unordered_set<unsigned>>, Axis, Axis>;
 
 enum HoughHitType { SP = 0, MEASUREMENT = 1 };
 
