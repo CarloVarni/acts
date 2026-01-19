@@ -263,67 +263,53 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
   return ActsExamples::ProcessCode::SUCCESS;
 }
 
-ActsExamples::HoughHist
-ActsExamples::HoughTransformSeeder::createLayerHoughHist(unsigned layer,
-                                                         int subregion) const {
-  const uint16_t layer_bitmask = 0x1 << layer;
-
-  ActsExamples::HoughHist houghHist(
-      Axis(0, m_cfg.houghHistSize_y, m_cfg.houghHistSize_y),
-      Axis(0, m_cfg.houghHistSize_x, m_cfg.houghHistSize_x));
-
-  auto filter_layer_slice =
-      [layer, subregion,
-       this](const std::shared_ptr<HoughMeasurementStruct>& meas) {
-        return meas->layer == layer &&
-               m_cfg.sliceTester(meas, subregion).value();
-      };
-
-  for (const auto& meas :
-       houghMeasurementStructs | std::views::filter(filter_layer_slice)) {
-    const int index =
-        std::distance(houghMeasurementStructs.begin(),
-                      std::find(houghMeasurementStructs.begin(),
-                                houghMeasurementStructs.end(), meas));
-    for (unsigned y_ = 0; y_ < m_cfg.houghHistSize_y; y_++) {
-      const unsigned y_bin_min = y_;
-      const unsigned y_bin_max = (y_ + 1);
-
-      // Find the min/max x bins
-      const auto xBins =
-          yToXBins(y_bin_min, y_bin_max, meas->radius, meas->phi, meas->layer);
-      // Update the houghHist
-      for (unsigned y = y_bin_min; y < y_bin_max; y++) {
-        for (unsigned x = xBins.first; x < xBins.second; x++) {
-          houghHist.atLocalBins({y, x}).first |= layer_bitmask;
-          houghHist.atLocalBins({y, x}).second.insert(index);
-        }
-      }
-    }
-  }
-
-  return houghHist;
-}
-
 ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
     int subregion) const {
   ActsExamples::HoughHist houghHist(
       Axis(0, m_cfg.houghHistSize_y, m_cfg.houghHistSize_y),
       Axis(0, m_cfg.houghHistSize_x, m_cfg.houghHistSize_x));
 
-  for (int i : populatedLayers) {
-    HoughHist layerHoughHist = createLayerHoughHist(i, subregion);
-    for (unsigned y = 0; y < m_cfg.houghHistSize_y; ++y) {
-      for (unsigned x = 0; x < m_cfg.houghHistSize_x; ++x) {
-        if (layerHoughHist.atLocalBins({y, x}).first > 0) {
-          houghHist.atLocalBins({y, x}).first |= layerHoughHist.atLocalBins({y, x}).first;
-          houghHist.atLocalBins({y, x}).second.insert(
-              layerHoughHist.atLocalBins({y, x}).second.begin(),
-              layerHoughHist.atLocalBins({y, x}).second.end());
+  for (unsigned int layer : populatedLayers) {
+    const uint16_t layer_bitmask = 0x1 << layer;
+
+    auto filter_layer_slice =
+        [layer, subregion,
+         this](const std::shared_ptr<HoughMeasurementStruct>& meas) {
+          return meas->layer == layer &&
+                 m_cfg.sliceTester(meas, subregion).value();
+        };
+
+    for (const auto& meas :
+         houghMeasurementStructs | std::views::filter(filter_layer_slice)) {
+      const int index =
+          std::distance(houghMeasurementStructs.begin(),
+                        std::find(houghMeasurementStructs.begin(),
+                                  houghMeasurementStructs.end(), meas));
+      for (unsigned y_ = 0; y_ < m_cfg.houghHistSize_y; y_++) {
+        const unsigned y_bin_min = y_;
+        const unsigned y_bin_max = (y_ + 1);
+
+        // Find the min/max x bins
+        const auto xBins = yToXBins(y_bin_min, y_bin_max, meas->radius,
+                                    meas->phi, meas->layer);
+        // Update the houghHist
+        for (unsigned y = y_bin_min; y < y_bin_max; y++) {
+          for (unsigned x = xBins.first; x < xBins.second; x++) {
+            houghHist.atLocalBins({y, x}).first |= layer_bitmask;
+            houghHist.atLocalBins({y, x}).second.insert(index);
+          }
         }
       }
     }
   }
+
+  // Flattening
+  // for (unsigned y = 0; y < m_cfg.houghHistSize_y; y++) {
+  //   for (unsigned x = 0; x < m_cfg.houghHistSize_x; x++) {
+  //     houghHist.atLocalBins({y, x}).first =
+  //         std::popcount(houghHist.atLocalBins({y, x}).first);
+  //   }
+  // }
 
   return houghHist;
 }
@@ -451,8 +437,8 @@ std::pair<unsigned, unsigned> ActsExamples::HoughTransformSeeder::yToXBins(
   return {x_bin_min, x_bin_max};
 }
 
-// We allow variable extension based on the size of m_hitExtend_x. See comments
-// below.
+// We allow variable extension based on the size of m_hitExtend_x. See
+// comments below.
 unsigned ActsExamples::HoughTransformSeeder::getExtension(
     unsigned y, unsigned layer) const {
   if (m_cfg.hitExtend_x.size() == m_cfg.nLayers) {
@@ -460,9 +446,9 @@ unsigned ActsExamples::HoughTransformSeeder::getExtension(
   }
 
   if (m_cfg.hitExtend_x.size() == m_cfg.nLayers * 2) {
-    // different extension for low pt vs high pt, split in half but irrespective
-    // of sign first nLayers entries of m_hitExtend_x is for low pt half, rest
-    // are for high pt half
+    // different extension for low pt vs high pt, split in half but
+    // irrespective of sign first nLayers entries of m_hitExtend_x is for low
+    // pt half, rest are for high pt half
     if (y < m_cfg.houghHistSize_y / 4 || y > 3 * m_cfg.houghHistSize_y / 4) {
       return m_cfg.hitExtend_x[layer];
     }
@@ -478,14 +464,14 @@ unsigned ActsExamples::HoughTransformSeeder::getExtension(
  *
  * For example, given [2 3], generates [(0 0) (1 0) (0 1) (1 1) (0 2) (1 2)].
  *
- * This basically amounts to a positional number system of where each digit has
- * its own base. The number of digits is sizes.size(), and the base of digit i
- * is sizes[i]. Then all combinations can be uniquely represented just by
- * counting from [0, nCombs).
+ * This basically amounts to a positional number system of where each digit
+ * has its own base. The number of digits is sizes.size(), and the base of
+ * digit i is sizes[i]. Then all combinations can be uniquely represented just
+ * by counting from [0, nCombs).
  *
- * For a decimal number like 1357, you get the thousands digit with n / 1000 = n
- * / (10 * 10 * 10). So here, you get the 0th digit with n / (base_1 * base_2 *
- * base_3);
+ * For a decimal number like 1357, you get the thousands digit with n / 1000 =
+ * n / (10 * 10 * 10). So here, you get the 0th digit with n / (base_1 *
+ * base_2 * base_3);
  */
 std::vector<std::vector<int>>
 ActsExamples::HoughTransformSeeder::getComboIndices(
@@ -528,7 +514,8 @@ void ActsExamples::HoughTransformSeeder::addSpacePoints(
   // std::vector<TH2F> zr;
   // for (int i = 0; i < 32; ++i) {
   //   const auto name = std::format("zr_{}", i);
-  //   zr.emplace_back(name.c_str(), name.c_str(), 600, -3000, 3000, 120, 0, 1200);
+  //   zr.emplace_back(name.c_str(), name.c_str(), 600, -3000, 3000, 120, 0,
+  //   1200);
   // }
   for (const auto& isp : m_inputSpacePoints) {
     const auto& spContainer = (*isp)(ctx);
