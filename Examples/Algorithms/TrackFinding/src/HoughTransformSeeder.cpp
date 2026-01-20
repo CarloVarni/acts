@@ -24,7 +24,6 @@
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
 #include "ActsExamples/TrackFinding/DefaultHoughFunctions.hpp"
 #include "ActsExamples/Utilities/GroupBy.hpp"
-#include "ActsExamples/Utilities/Range.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -32,7 +31,6 @@
 #include <iterator>
 #include <ostream>
 #include <stdexcept>
-#include <variant>
 
 #include <TFile.h>
 #include <TH2.h>
@@ -211,9 +209,20 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
 
     for (unsigned y = 0; y < m_cfg.houghHistSize_y; y++) {
       for (unsigned x = 0; x < m_cfg.houghHistSize_x; x++) {
-        if (int entries = m_houghHist.atLocalBins({y, x}).first; entries > 0) {
-          hh_hist->SetBinContent(hh_hist->FindBin(y, x), entries);
+        // Flat layers
+        // if (int entries = m_houghHist.nLayers(y, x); entries > 0) {
+        //   hh_hist->SetBinContent(hh_hist->FindBin(y, x), entries);
+        // }
+
+        // Bit pattern
+        if (int entries = m_houghHist.nLayers(y, x); entries > 0) {
+          const uint16_t bits = std::accumulate(
+              m_houghHist.layers(y, x).begin(), m_houghHist.layers(y, x).end(),
+              uint16_t{},
+              [](uint16_t sum, uint16_t layer) { return sum | 0x1 << layer; });
+          hh_hist->SetBinContent(hh_hist->FindBin(y, x), bits);
         }
+
         if (!passThreshold(m_houghHist, x, y)) {
           continue;
         }
@@ -225,7 +234,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
         std::vector<std::vector<std::vector<Index>>> hitIndicesAll(
             m_cfg.nLayers);
         std::vector<std::size_t> nHitsPerLayer(m_cfg.nLayers);
-        for (auto measurementIndex : m_houghHist.atLocalBins({y, x}).second) {
+        for (auto measurementIndex : m_houghHist.hitIds(y, x)) {
           HoughMeasurementStruct* meas =
               houghMeasurementStructs[measurementIndex].get();
           hitIndicesAll[meas->layer].push_back(meas->indices);
@@ -265,13 +274,12 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
 
 ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
     int subregion) const {
-  ActsExamples::HoughHist houghHist(
-      Axis(0, m_cfg.houghHistSize_y, m_cfg.houghHistSize_y),
-      Axis(0, m_cfg.houghHistSize_x, m_cfg.houghHistSize_x));
+  // TODO: Make this a class variable:
+  Acts::HoughTransformUtils::HoughPlaneConfig config{m_cfg.houghHistSize_y,
+                                                     m_cfg.houghHistSize_x};
+  ActsExamples::HoughHist houghHist(config);
 
   for (unsigned int layer : populatedLayers) {
-    const uint16_t layer_bitmask = 0x1 << layer;
-
     auto filter_layer_slice =
         [layer, subregion,
          this](const std::shared_ptr<HoughMeasurementStruct>& meas) {
@@ -295,21 +303,12 @@ ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
         // Update the houghHist
         for (unsigned y = y_bin_min; y < y_bin_max; y++) {
           for (unsigned x = xBins.first; x < xBins.second; x++) {
-            houghHist.atLocalBins({y, x}).first |= layer_bitmask;
-            houghHist.atLocalBins({y, x}).second.insert(index);
+            houghHist.fillBin(y, x, index, layer);
           }
         }
       }
     }
   }
-
-  // Flattening
-  // for (unsigned y = 0; y < m_cfg.houghHistSize_y; y++) {
-  //   for (unsigned x = 0; x < m_cfg.houghHistSize_x; x++) {
-  //     houghHist.atLocalBins({y, x}).first =
-  //         std::popcount(houghHist.atLocalBins({y, x}).first);
-  //   }
-  // }
 
   return houghHist;
 }
@@ -322,7 +321,7 @@ bool ActsExamples::HoughTransformSeeder::passThreshold(
     return false;
   }
   for (unsigned i = 0; i < m_cfg.threshold.size(); i++) {
-    if (houghHist.atLocalBins({y, x - width + i}).first < m_cfg.threshold[i]) {
+    if (houghHist.nLayers(y, x - width + i) < m_cfg.threshold[i]) {
       return false;
     }
   }
@@ -337,18 +336,14 @@ bool ActsExamples::HoughTransformSeeder::passThreshold(
           continue;
         }
         if (y + j < m_cfg.houghHistSize_y && x + i < m_cfg.houghHistSize_x) {
-          if (houghHist.atLocalBins({y + j, x + i}).first >
-              houghHist.atLocalBins({y, x}).first) {
+          if (houghHist.nLayers(y + j, x + i) > houghHist.nLayers(y, x)) {
             return false;
           }
-          if (houghHist.atLocalBins({y + j, x + i}).first ==
-              houghHist.atLocalBins({y, x}).first) {
-            if (houghHist.atLocalBins({y + j, x + i}).second.size() >
-                houghHist.atLocalBins({y, x}).second.size()) {
+          if (houghHist.nLayers(y + j, x + i) == houghHist.nLayers(y, x)) {
+            if (houghHist.nHits(y + j, x + i) > houghHist.nHits(y, x)) {
               return false;
             }
-            if (houghHist.atLocalBins({y + j, x + i}).second.size() ==
-                    houghHist.atLocalBins({y, x}).second.size() &&
+            if (houghHist.nHits(y + j, x + i) == houghHist.nHits(y, x) &&
                 j <= 0 && i <= 0) {
               return false;  // favor bottom-left (low phi, low neg q/pt)
             }

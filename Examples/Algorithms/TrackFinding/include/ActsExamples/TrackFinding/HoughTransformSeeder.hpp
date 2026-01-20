@@ -71,8 +71,8 @@
 #pragma once
 
 #include "Acts/Geometry/GeometryIdentifier.hpp"
+#include "Acts/Seeding/HoughTransformUtils.hpp"
 #include "Acts/Utilities/Delegate.hpp"
-#include "Acts/Utilities/Grid.hpp"
 #include "Acts/Utilities/Logger.hpp"
 #include "Acts/Utilities/Result.hpp"
 #include "ActsExamples/EventData/Index.hpp"
@@ -133,10 +133,8 @@ namespace ActsExamples {
 /// each bin. Size m_houghHistSize_y * m_houghHistSize_x. (NOTE y is row
 /// coordinate) For now, what is stored is actually the index of the object in
 /// the vectors, so we can get the Index layer
-using Axis =
-    Acts::Axis<Acts::AxisType::Equidistant, Acts::AxisBoundaryType::Bound>;
-using HoughHist =
-    Acts::Grid<std::pair<uint16_t, std::unordered_set<unsigned>>, Axis, Axis>;
+using HoughMeasurement = unsigned;  // measurement index
+using HoughHist = Acts::HoughTransformUtils::HoughPlane<HoughMeasurement>;
 
 enum HoughHitType { SP = 0, MEASUREMENT = 1 };
 
@@ -228,7 +226,7 @@ class HoughTransformSeeder final : public IAlgorithm {
     /// bins. The loop is over y bins, and for each y bin we find the min and
     /// max x for each hit
 
-    unsigned houghHistSize_x = 7000;  // i.e. number of bins in phi_track
+    unsigned houghHistSize_x = 1800;  // i.e. number of bins in phi_track
     unsigned houghHistSize_y = 216;   // i.e. number of bins in q/pT
 
     /// For each assumed q/pT (y) we find the appropriate phi (x) bin for a hit.
