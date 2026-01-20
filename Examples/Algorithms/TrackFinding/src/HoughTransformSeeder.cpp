@@ -402,13 +402,12 @@ double ActsExamples::HoughTransformSeeder::yToX(double y, double r,
                                                 double phi) const {
   double d0 = 0;  // d0 correction TO DO allow for this
   double x =
-    std::asin(r * ActsExamples::HoughTransformSeeder::m_cfg.kA * y - d0 / r) + phi;
+      asin(r * ActsExamples::HoughTransformSeeder::m_cfg.kA * y - d0 / r) + phi;
 
   if (m_cfg.fieldCorrector.connected()) {
     x += (m_cfg.fieldCorrector(0, y, r)).value();
   }
 
-  x = std::remainder(x, 2.0 * std::numbers::pi);
   return x;
 }
 
