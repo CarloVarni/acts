@@ -221,8 +221,9 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
         if (int entries = m_houghHist.nLayers(y, x); entries > 0) {
           const std::uint16_t bits = std::accumulate(
               m_houghHist.layers(y, x).begin(), m_houghHist.layers(y, x).end(),
-              std::uint16_t{},
-              [](std::uint16_t sum, std::uint16_t layer) { return sum | 0x1 << layer; });
+              std::uint16_t{}, [](std::uint16_t sum, std::uint16_t layer) {
+                return sum | 0x1 << layer;
+              });
           hh_hist->SetBinContent(hh_hist->FindBin(y, x), bits);
         }
 
@@ -420,7 +421,6 @@ double ActsExamples::HoughTransformSeeder::yToX(double y, double r,
     x += (m_cfg.fieldCorrector(0, y, r)).value();
   }
 
-  x = std::remainder(x, 2.0 * std::numbers::pi);
   return x;
 }
 
