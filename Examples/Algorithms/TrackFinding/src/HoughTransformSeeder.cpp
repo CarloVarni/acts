@@ -93,15 +93,18 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     throw std::invalid_argument(
         "HoughTransformSeeder: Missing geometry selection");
   }
-  // ensure geometry selection contains only valid inputs
-  for (const auto& geoId : m_cfg.geometrySelection) {
-    if ((geoId.approach() != 0u) || (geoId.boundary() != 0u) ||
-        (geoId.sensitive() != 0u)) {
-      throw std::invalid_argument(
-          "HoughTransformSeeder: Invalid geometry selection: only volume and "
-          "layer are allowed to be set");
-    }
+
+  auto hasInvalidInputs = [](const Acts::GeometryIdentifier& geoId) {
+    return (geoId.approach() != 0u) || (geoId.boundary() != 0u) ||
+           (geoId.sensitive() != 0u);
+  };
+
+  if (std::ranges::any_of(m_cfg.geometrySelection, hasInvalidInputs)) {
+    throw std::invalid_argument(
+        "HoughTransformSeeder: Invalid geometry selection: only volume and "
+        "layer are allowed to be set");
   }
+
   // remove geometry selection duplicates
   //
   // the geometry selections must be mutually exclusive, i.e. if we have a

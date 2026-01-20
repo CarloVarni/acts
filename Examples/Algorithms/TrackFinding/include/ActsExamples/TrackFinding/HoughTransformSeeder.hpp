@@ -96,7 +96,7 @@ struct AlgorithmContext;
 }  // namespace ActsExamples
 
 namespace ActsExamples {
-class HoughMeasurementStruct;
+struct HoughMeasurementStruct;
 }  // namespace ActsExamples
 
 using ResultDouble = Acts::Result<double>;
@@ -280,7 +280,7 @@ class HoughTransformSeeder final : public IAlgorithm {
     return m_cfg.threshold[0];  // for now this is just one number in the
                                 // vector, can be more in the future
   }
-  std::vector<int> getSubRegions() const { return m_cfg.subRegions; }
+  const std::vector<int>& getSubRegions() const { return m_cfg.subRegions; }
 
   double yToX(double y, double r,
               double phi) const;  // calculate the hough equation
