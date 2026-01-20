@@ -200,10 +200,10 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
     ACTS_DEBUG("Processing subregion " << subregion);
     ActsExamples::HoughHist m_houghHist = createHoughHist(subregion);
 
-    const auto name =
+    const auto hh_name =
         std::format("event_{:06}_{:02}", ctx.eventNumber, subregion);
     auto hh_hist = std::unique_ptr<TH2S>(
-        new TH2S(name.c_str(), name.c_str(), m_cfg.houghHistSize_y, 0,
+        new TH2S(hh_name.c_str(), hh_name.c_str(), m_cfg.houghHistSize_y, 0,
                  m_cfg.houghHistSize_y, m_cfg.houghHistSize_x, 0,
                  m_cfg.houghHistSize_x));
 
@@ -257,11 +257,26 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
         }
       }
     }
+
+    // Sliding window
+    const auto peaks_name =
+        std::format("peaks_{:06}_{:02}", ctx.eventNumber, subregion);
+    auto peaks_hist = std::unique_ptr<TH2S>(
+        new TH2S(peaks_name.c_str(), peaks_name.c_str(), m_cfg.houghHistSize_y,
+                 0, m_cfg.houghHistSize_y, m_cfg.houghHistSize_x, 0,
+                 m_cfg.houghHistSize_x));
+
+    const auto all_peaks = slidingWindowPeaks(m_houghHist, m_cfg.slidingWindow);
+    for (const auto& peak : all_peaks) {
+      peaks_hist->Fill(peak[0], peak[1]);
+    }
+
     const auto thread_id_hash =
         std::hash<std::thread::id>{}(std::this_thread::get_id());
     auto file = TFile::Open(std::format("out_{}.root", thread_id_hash).c_str(),
                             "update");
-    file->WriteObject(hh_hist.get(), name.c_str());
+    file->WriteObject(hh_hist.get(), hh_name.c_str());
+    file->WriteObject(peaks_hist.get(), peaks_name.c_str());
     file->Close();
   }
   ACTS_DEBUG("Created " << protoTracks.size() << " proto track");
@@ -274,10 +289,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
 
 ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
     int subregion) const {
-  // TODO: Make this a class variable:
-  Acts::HoughTransformUtils::HoughPlaneConfig config{m_cfg.houghHistSize_y,
-                                                     m_cfg.houghHistSize_x};
-  ActsExamples::HoughHist houghHist(config);
+  ActsExamples::HoughHist houghHist(m_cfg.plane);
 
   for (unsigned int layer : populatedLayers) {
     auto filter_layer_slice =
