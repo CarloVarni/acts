@@ -317,9 +317,20 @@ ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
                                     meas->phi, meas->layer);
         // Update the houghHist
         for (unsigned y = y_bin_min; y < y_bin_max; y++) {
-          for (unsigned x = xBins.first; x < xBins.second; x++) {
-            houghHist.fillBin(y, x, index, layer);
-          }
+	  // handle cases
+	  double diff = xBins.second - xBins.first;
+	  if (diff < m_cfg.houghHistSize_x / 2) {
+	    for (unsigned x = xBins.first; x < xBins.second; x++) {
+	      houghHist.fillBin(y, x, index, layer);
+	    }
+	  } else {
+	    for (unsigned x = 0; x < xBins.first; ++x) {
+	      houghHist.fillBin(y, x, index, layer);
+	    }
+	    for (unsigned x = xBins.second; x < m_cfg.houghHistSize_x; ++x) {
+	      houghHist.fillBin(y, x, index, layer);
+	    }
+	  }
         }
       }
     }
@@ -408,7 +419,7 @@ double ActsExamples::HoughTransformSeeder::yToX(double y, double r,
     x += (m_cfg.fieldCorrector(0, y, r)).value();
   }
 
-  x = std::remainder(x, 2.0 * std::numbers::pi);
+  x = std::remainder(x, 2.0 * std::numbers::pi);  
   return x;
 }
 
