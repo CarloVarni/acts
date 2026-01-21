@@ -420,7 +420,6 @@ double ActsExamples::HoughTransformSeeder::yToX(double y, double r,
     x += (m_cfg.fieldCorrector(0, y, r)).value();
   }
 
-  x = std::remainder(x, 2.0 * std::numbers::pi);
   return x;
 }
 
