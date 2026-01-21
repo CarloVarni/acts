@@ -42,6 +42,7 @@ static inline std::string to_string(std::vector<T> v);
 
 thread_local std::vector<std::shared_ptr<ActsExamples::HoughMeasurementStruct>>
     houghMeasurementStructs;
+thread_local std::unordered_set<int> populatedLayers;
 
 ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     ActsExamples::HoughTransformSeeder::Config cfg, Acts::Logging::Level lvl)
@@ -221,8 +222,9 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
         if (int entries = m_houghHist.nLayers(y, x); entries > 0) {
           const std::uint16_t bits = std::accumulate(
               m_houghHist.layers(y, x).begin(), m_houghHist.layers(y, x).end(),
-              std::uint16_t{},
-              [](std::uint16_t sum, std::uint16_t layer) { return sum | 0x1 << layer; });
+              std::uint16_t{}, [](std::uint16_t sum, std::uint16_t layer) {
+                return sum | 0x1 << layer;
+              });
           hh_hist->SetBinContent(hh_hist->FindBin(y, x), bits);
         }
 
