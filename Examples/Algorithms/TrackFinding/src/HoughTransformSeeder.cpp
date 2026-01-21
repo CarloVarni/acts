@@ -42,6 +42,7 @@ static inline std::string to_string(std::vector<T> v);
 
 thread_local std::vector<std::shared_ptr<ActsExamples::HoughMeasurementStruct>>
     houghMeasurementStructs;
+thread_local std::unordered_set<int> populatedLayers;
 
 ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     ActsExamples::HoughTransformSeeder::Config cfg, Acts::Logging::Level lvl)
