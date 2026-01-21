@@ -219,10 +219,10 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
 
         // Bit pattern
         if (int entries = m_houghHist.nLayers(y, x); entries > 0) {
-          const uint16_t bits = std::accumulate(
+          const std::uint16_t bits = std::accumulate(
               m_houghHist.layers(y, x).begin(), m_houghHist.layers(y, x).end(),
-              uint16_t{},
-              [](uint16_t sum, uint16_t layer) { return sum | 0x1 << layer; });
+              std::uint16_t{},
+              [](std::uint16_t sum, std::uint16_t layer) { return sum | 0x1 << layer; });
           hh_hist->SetBinContent(hh_hist->FindBin(y, x), bits);
         }
 
@@ -317,8 +317,19 @@ ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
                                     meas->phi, meas->layer);
         // Update the houghHist
         for (unsigned y = y_bin_min; y < y_bin_max; y++) {
-          for (unsigned x = xBins.first; x < xBins.second; x++) {
-            houghHist.fillBin(y, x, index, layer);
+          // handle cases
+          const double diff = xBins.second - xBins.first;
+          if (diff < m_cfg.houghHistSize_x / 2) {
+            for (unsigned x = xBins.first; x < xBins.second; x++) {
+              houghHist.fillBin(y, x, index, layer);
+            }
+          } else {
+            for (unsigned x = 0; x < xBins.first; ++x) {
+              houghHist.fillBin(y, x, index, layer);
+            }
+            for (unsigned x = xBins.second; x < m_cfg.houghHistSize_x; ++x) {
+              houghHist.fillBin(y, x, index, layer);
+            }
           }
         }
       }
@@ -402,7 +413,8 @@ double ActsExamples::HoughTransformSeeder::yToX(double y, double r,
                                                 double phi) const {
   double d0 = 0;  // d0 correction TO DO allow for this
   double x =
-      asin(r * ActsExamples::HoughTransformSeeder::m_cfg.kA * y - d0 / r) + phi;
+      std::asin(r * ActsExamples::HoughTransformSeeder::m_cfg.kA * y - d0 / r) +
+      phi;
 
   if (m_cfg.fieldCorrector.connected()) {
     x += (m_cfg.fieldCorrector(0, y, r)).value();
