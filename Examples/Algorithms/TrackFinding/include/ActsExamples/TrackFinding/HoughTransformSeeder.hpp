@@ -213,7 +213,7 @@ class HoughTransformSeeder final : public IAlgorithm {
     /// bins. The loop is over y bins, and for each y bin we find the min and
     /// max x for each hit
 
-    unsigned houghHistSize_x = 1800;  // i.e. number of bins in phi_track
+    unsigned houghHistSize_x = 7000;  // i.e. number of bins in phi_track
     unsigned houghHistSize_y = 216;   // i.e. number of bins in q/pT
 
     /// For each assumed q/pT (y) we find the appropriate phi (x) bin for a hit.
