@@ -37,6 +37,8 @@
 
 static inline int quant(double min, double max, unsigned nSteps, double val);
 static inline double unquant(double min, double max, unsigned nSteps, int step);
+static inline double unquant(double min, double max, unsigned nSteps, int step,
+                             const std::vector<double>& ptBins);
 template <typename T>
 static inline std::string to_string(std::vector<T> v);
 
@@ -141,6 +143,16 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     ACTS_INFO("  " << geoId);
   }
 
+  std::vector<double> ptBins;
+  const double ptBinSize = 1.;  // GeV
+  const double minPt = 1.;
+  const double maxPt = m_cfg.houghHistSize_y * ptBinSize;
+  const unsigned halfSize = m_cfg.houghHistSize_y / 2;
+  for (unsigned i = 0; i < halfSize; ++i) {
+    ptBins.push_back(minPt +
+                     (maxPt - minPt) * i / static_cast<double>(halfSize));
+  }
+
   // Fill convenience variables
   m_step_x = (m_cfg.xMax - m_cfg.xMin) / m_cfg.houghHistSize_x;
   m_step_y = (m_cfg.yMax - m_cfg.yMin) / m_cfg.houghHistSize_y;
@@ -150,7 +162,7 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
   }
   for (unsigned i = 0; i <= m_cfg.houghHistSize_y; i++) {
     m_bins_y.push_back(
-        unquant(m_cfg.yMin, m_cfg.yMax, m_cfg.houghHistSize_y, i));
+        unquant(m_cfg.yMin, m_cfg.yMax, m_cfg.houghHistSize_y, i, ptBins));
   }
 
   m_cfg.fieldCorrector
@@ -397,6 +409,20 @@ static inline int quant(double min, double max, unsigned nSteps, double val) {
 static inline double unquant(double min, double max, unsigned nSteps,
                              int step) {
   return min + (max - min) * step / nSteps;
+}
+
+// Returns the lower bound of the bin specified by step
+static inline double unquant(double min, double max, unsigned nSteps, int step,
+                             const std::vector<double>& ptBins) {
+  if (const double qOverp = unquant(min, max, nSteps, step); qOverp < 0) {
+    const double ptBin = ptBins[step];
+    return -1. / ptBin;
+  } else if (qOverp == 0.) {
+    return 0;
+  } else {
+    const double ptBin = ptBins[nSteps - step];
+    return 1. / ptBin;
+  }
 }
 
 template <typename T>
