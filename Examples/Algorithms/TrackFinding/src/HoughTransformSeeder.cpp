@@ -24,6 +24,7 @@
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
 #include "ActsExamples/TrackFinding/DefaultHoughFunctions.hpp"
 #include "ActsExamples/Utilities/GroupBy.hpp"
+#include "ActsFatras/EventData/Barcode.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -86,6 +87,7 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
 
   m_outputProtoTracks.initialize(m_cfg.outputProtoTracks);
   m_inputMeasurements.initialize(m_cfg.inputMeasurements);
+  m_inputMeasurementParticlesMap.initialize("measurement_particles_map");
 
   if (!m_cfg.trackingGeometry) {
     throw std::invalid_argument(
@@ -162,7 +164,7 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
   }
   for (unsigned i = 0; i <= m_cfg.houghHistSize_y; i++) {
     m_bins_y.push_back(
-        unquant(m_cfg.yMin, m_cfg.yMax, m_cfg.houghHistSize_y, i, ptBins));
+        unquant(m_cfg.yMin, m_cfg.yMax, m_cfg.houghHistSize_y, i));
   }
 
   m_cfg.fieldCorrector
@@ -206,7 +208,9 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
   addSpacePoints(ctx);
 
   // add ACTS measurements
-  // addMeasurements(ctx);
+  addMeasurements(ctx);
+
+  const auto& measurementParticleMap = m_inputMeasurementParticlesMap(ctx);
 
   static thread_local ProtoTrackContainer protoTracks;
   protoTracks.clear();
@@ -214,30 +218,60 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
   // loop over our subregions and run the Hough Transform on each
   for (int subregion : m_cfg.subRegions) {
     ACTS_DEBUG("Processing subregion " << subregion);
-    ActsExamples::HoughHist m_houghHist = createHoughHist(subregion);
+    ActsExamples::HoughHist m_houghHist =
+        createHoughHist(measurementParticleMap, subregion);
 
-    const auto hh_name =
+    const auto hist_name =
         std::format("event_{:06}_{:02}", ctx.eventNumber, subregion);
-    auto hh_hist = std::unique_ptr<TH2S>(
-        new TH2S(hh_name.c_str(), hh_name.c_str(), m_cfg.houghHistSize_y, 0,
+    const auto truth_name =
+        std::format("truth_{:06}_{:02}", ctx.eventNumber, subregion);
+    auto hough_hist = std::unique_ptr<TH2S>(
+        new TH2S(hist_name.c_str(), hist_name.c_str(), m_cfg.houghHistSize_y, 0,
                  m_cfg.houghHistSize_y, m_cfg.houghHistSize_x, 0,
+                 m_cfg.houghHistSize_x));
+    auto truth_hist = std::unique_ptr<TH2D>(
+        new TH2D(truth_name.c_str(), truth_name.c_str(), m_cfg.houghHistSize_y,
+                 0, m_cfg.houghHistSize_y, m_cfg.houghHistSize_x, 0,
                  m_cfg.houghHistSize_x));
 
     for (unsigned y = 0; y < m_cfg.houghHistSize_y; y++) {
       for (unsigned x = 0; x < m_cfg.houghHistSize_x; x++) {
-        // Flat layers
-        // if (int entries = m_houghHist.nLayers(y, x); entries > 0) {
-        //   hh_hist->SetBinContent(hh_hist->FindBin(y, x), entries);
-        // }
-
-        // Bit pattern
         if (int entries = m_houghHist.nLayers(y, x); entries > 0) {
+          // Flat layers
+          // hh_hist->SetBinContent(hh_hist->FindBin(y, x), entries);
+
+          // Bit pattern
           const std::uint16_t bits = std::accumulate(
               m_houghHist.layers(y, x).begin(), m_houghHist.layers(y, x).end(),
               std::uint16_t{}, [](std::uint16_t sum, std::uint16_t layer) {
                 return sum | 0x1 << layer;
               });
-          hh_hist->SetBinContent(hh_hist->FindBin(y, x), bits);
+          hough_hist->SetBinContent(hough_hist->FindBin(y, x), bits);
+
+          // Find truth particle contributing the most
+          std::vector<uint64_t> encoded_barcodes;
+          std::transform(
+              m_houghHist.hitIds(y, x).begin(), m_houghHist.hitIds(y, x).end(),
+              std::back_inserter(encoded_barcodes),
+              [](const HoughMeasurement& meas) {
+                return (static_cast<uint64_t>(meas.barcode.vertexPrimary())
+                        << 48) +
+                       (static_cast<uint64_t>(meas.barcode.vertexSecondary())
+                        << 32) +
+                       meas.barcode.particle();
+              });
+          std::unordered_map<std::uint64_t, std::uint32_t> counts;
+          for (std::uint64_t barcode : encoded_barcodes) {
+            counts[barcode]++;
+          }
+          const auto max = std::max_element(counts.begin(), counts.end(),
+                                            [](const auto lhs, const auto rhs) {
+                                              return lhs.second < rhs.second;
+                                            });
+          if (max != nullptr && max->second * 2 >= encoded_barcodes.size()) {
+            truth_hist->SetBinContent(truth_hist->FindBin(y, x),
+                                      static_cast<double>(max->first));
+          }
         }
 
         if (!passThreshold(m_houghHist, x, y)) {
@@ -253,7 +287,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
         std::vector<std::size_t> nHitsPerLayer(m_cfg.nLayers);
         for (auto measurementIndex : m_houghHist.hitIds(y, x)) {
           HoughMeasurementStruct* meas =
-              houghMeasurementStructs[measurementIndex].get();
+              houghMeasurementStructs[measurementIndex.index].get();
           hitIndicesAll[meas->layer].push_back(meas->indices);
           nHitsPerLayer[meas->layer]++;
         }
@@ -292,8 +326,9 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
         std::hash<std::thread::id>{}(std::this_thread::get_id());
     auto file = TFile::Open(std::format("out_{}.root", thread_id_hash).c_str(),
                             "update");
-    file->WriteObject(hh_hist.get(), hh_name.c_str());
+    file->WriteObject(hough_hist.get(), hist_name.c_str());
     file->WriteObject(peaks_hist.get(), peaks_name.c_str());
+    file->WriteObject(truth_hist.get(), truth_name.c_str());
     file->Close();
   }
   ACTS_DEBUG("Created " << protoTracks.size() << " proto track");
@@ -305,7 +340,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
 }
 
 ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
-    int subregion) const {
+    const MeasurementParticlesMap& measPartMap, int subregion) const {
   ActsExamples::HoughHist houghHist(m_cfg.plane);
 
   for (unsigned int layer : populatedLayers) {
@@ -322,6 +357,8 @@ ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
           std::distance(houghMeasurementStructs.begin(),
                         std::find(houghMeasurementStructs.begin(),
                                   houghMeasurementStructs.end(), meas));
+
+      const auto barcode = measPartMap.find(index)->second;
       for (unsigned y_ = 0; y_ < m_cfg.houghHistSize_y; y_++) {
         const unsigned y_bin_min = y_;
         const unsigned y_bin_max = (y_ + 1);
@@ -331,18 +368,18 @@ ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
                                     meas->phi, meas->layer);
         // Update the houghHist
         for (unsigned y = y_bin_min; y < y_bin_max; y++) {
-          // handle cases
+          // Handle cases
           const double diff = xBins.second - xBins.first;
           if (diff < m_cfg.houghHistSize_x / 2) {
             for (unsigned x = xBins.first; x < xBins.second; x++) {
-              houghHist.fillBin(y, x, index, layer);
+              houghHist.fillBin(y, x, {index, barcode}, layer);
             }
           } else {
             for (unsigned x = 0; x < xBins.first; ++x) {
-              houghHist.fillBin(y, x, index, layer);
+              houghHist.fillBin(y, x, {index, barcode}, layer);
             }
             for (unsigned x = xBins.second; x < m_cfg.houghHistSize_x; ++x) {
-              houghHist.fillBin(y, x, index, layer);
+              houghHist.fillBin(y, x, {index, barcode}, layer);
             }
           }
         }
