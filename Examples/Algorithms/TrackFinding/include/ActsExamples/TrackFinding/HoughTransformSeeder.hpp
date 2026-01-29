@@ -82,6 +82,7 @@
 #include "ActsExamples/Framework/DataHandle.hpp"
 #include "ActsExamples/Framework/IAlgorithm.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
+#include "ActsFatras/EventData/Barcode.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -133,7 +134,15 @@ namespace ActsExamples {
 /// each bin. Size m_houghHistSize_y * m_houghHistSize_x. (NOTE y is row
 /// coordinate) For now, what is stored is actually the index of the object in
 /// the vectors, so we can get the Index layer
-using HoughMeasurement = unsigned;  // measurement index
+// using HoughMeasurement = unsigned;  // measurement index
+struct HoughMeasurement {
+  unsigned index;
+  ActsFatras::Barcode barcode;
+
+  bool operator==(const HoughMeasurement& other) {
+    return index == other.index && barcode == other.barcode;
+  }
+};
 using HoughHist = Acts::HoughTransformUtils::HoughPlane<HoughMeasurement>;
 
 enum HoughHitType { SP = 0, MEASUREMENT = 1 };
@@ -294,6 +303,9 @@ class HoughTransformSeeder final : public IAlgorithm {
   ReadDataHandle<MeasurementContainer> m_inputMeasurements{this,
                                                            "InputMeasurements"};
 
+  ReadDataHandle<MeasurementParticlesMap> m_inputMeasurementParticlesMap{
+      this, "measurement_particles_map"};
+
   ////////////////////////////////////////////////////////////////////////
   /// Convenience
 
@@ -306,7 +318,8 @@ class HoughTransformSeeder final : public IAlgorithm {
 
   ///////////////////////////////////////////////////////////////////////
   // Core functions, the second/ one calls the first one per layer
-  HoughHist createHoughHist(int subregion) const;
+  HoughHist createHoughHist(const MeasurementParticlesMap& measPartMap,
+                            int subregion) const;
 
   ///////////////////////////////////////////////////////////////////////
   // Helpers
