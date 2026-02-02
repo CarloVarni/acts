@@ -353,7 +353,7 @@ ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
 
     for (const auto& meas :
          houghMeasurementStructs | std::views::filter(filter_layer_slice)) {
-      const int index =
+      const std::uint32_t index =
           std::distance(houghMeasurementStructs.begin(),
                         std::find(houghMeasurementStructs.begin(),
                                   houghMeasurementStructs.end(), meas));
