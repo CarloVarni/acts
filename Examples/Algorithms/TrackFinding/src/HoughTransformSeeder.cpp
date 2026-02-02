@@ -485,7 +485,7 @@ double ActsExamples::HoughTransformSeeder::yToX(double y, double r,
     x += (m_cfg.fieldCorrector(0, y, r)).value();
   }
 
-  return x;
+  return std::remainder(x, 2.0 * std::numbers::pi);
 }
 
 // Find the min/max x bins of the hit's line, in each y bin. Max is exclusive.
