@@ -368,7 +368,7 @@ struct ActsExamples::HoughTransformSeeder::Writer {
 
   void writeTree(std::uint64_t eventNumber, int sliceId,
                  std::uint32_t qOverPt_bin, std::uint32_t phi_bin,
-                 std::uint64_t particle_hash, std ::uint32_t nHits) {
+                 std::uint64_t particle_hash, std::uint32_t nHits) {
     {
       std::lock_guard<std::mutex> guard(writer_mutex);
 

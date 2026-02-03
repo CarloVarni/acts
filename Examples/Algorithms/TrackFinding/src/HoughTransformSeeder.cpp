@@ -267,8 +267,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
 
           if (logger().doPrint(Acts::Logging::DEBUG)) {
             for (const auto& [hash, count] : counts) {
-              logger().log(Acts::Logging::DEBUG,
-                           std::format("\t{} -> {}", hash, count));
+              ACTS_DEBUG(std::format("\t{} -> {}", hash, count));
             }
           }
 
