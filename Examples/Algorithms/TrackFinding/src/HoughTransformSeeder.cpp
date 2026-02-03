@@ -15,6 +15,7 @@
 #include "Acts/Geometry/TrackingGeometry.hpp"
 #include "Acts/Surfaces/Surface.hpp"
 #include "Acts/Utilities/Enumerate.hpp"
+#include "Acts/Utilities/Logger.hpp"
 #include "Acts/Utilities/MathHelpers.hpp"
 #include "ActsExamples/EventData/GeometryContainers.hpp"
 #include "ActsExamples/EventData/Index.hpp"
@@ -51,7 +52,8 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     ActsExamples::HoughTransformSeeder::Config cfg, Acts::Logging::Level lvl)
     : ActsExamples::IAlgorithm("HoughTransformSeeder", lvl),
       m_cfg(std::move(cfg)),
-      m_logger(Acts::getDefaultLogger("HoughTransformSeeder", lvl)) {
+      m_logger(Acts::getDefaultLogger("HoughTransformSeeder", lvl)),
+      m_writer(std::make_unique<Writer>("truth.root")) {
   // require spacepoints or input measurements (or both), but at least one kind
   // of input
   bool foundInput = false;
@@ -218,8 +220,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
   // loop over our subregions and run the Hough Transform on each
   for (int subregion : m_cfg.subRegions) {
     ACTS_DEBUG("Processing subregion " << subregion);
-    ActsExamples::HoughHist m_houghHist =
-        createHoughHist(measurementParticleMap, subregion);
+    ActsExamples::HoughHist m_houghHist = createHoughHist(subregion);
 
     const auto hist_name =
         std::format("event_{:06}_{:02}", ctx.eventNumber, subregion);
@@ -229,14 +230,11 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
         new TH2S(hist_name.c_str(), hist_name.c_str(), m_cfg.houghHistSize_y, 0,
                  m_cfg.houghHistSize_y, m_cfg.houghHistSize_x, 0,
                  m_cfg.houghHistSize_x));
-    auto truth_hist = std::unique_ptr<TH2D>(
-        new TH2D(truth_name.c_str(), truth_name.c_str(), m_cfg.houghHistSize_y,
-                 0, m_cfg.houghHistSize_y, m_cfg.houghHistSize_x, 0,
-                 m_cfg.houghHistSize_x));
 
     for (unsigned y = 0; y < m_cfg.houghHistSize_y; y++) {
       for (unsigned x = 0; x < m_cfg.houghHistSize_x; x++) {
         if (int entries = m_houghHist.nLayers(y, x); entries > 0) {
+          ACTS_DEBUG(std::format("bin (q/pT, phi) = ({}, {})", y, x));
           // Flat layers
           // hh_hist->SetBinContent(hh_hist->FindBin(y, x), entries);
 
@@ -247,25 +245,22 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
                 return sum | 0x1 << layer;
               });
           hough_hist->SetBinContent(hough_hist->FindBin(y, x), bits);
+          ACTS_DEBUG(std::format("bitmask={} n_bits={}",
+                                 std::bitset<16>(bits).to_string(), entries));
 
           // Find truth particle contributing the most
           std::vector<uint64_t> particle_hashes;
-          std::transform(
-              m_houghHist.hitIds(y, x).begin(), m_houghHist.hitIds(y, x).end(),
-              std::back_inserter(particle_hashes),
-              [](const HoughMeasurement& meas) { return meas.barcode.hash(); });
-          std::map<std::uint64_t, std::uint32_t> counts;
-          for (std::uint64_t barcode : particle_hashes) {
-            counts[barcode]++;
+          for (const HoughMeasurement index : m_houghHist.hitIds(y, x)) {
+            for (const Index measurement_index :
+                 houghMeasurementStructs[index]->indices) {
+              particle_hashes.push_back(
+                  measurementParticleMap.find(measurement_index)
+                      ->second.hash());
+            }
           }
-          const auto max = std::max_element(counts.begin(), counts.end(),
-                                            [](const auto lhs, const auto rhs) {
-                                              return lhs.second < rhs.second;
-                                            });
-          if (max->second * 2 >= particle_hashes.size()) {
-            truth_hist->SetBinContent(truth_hist->FindBin(y, x),
-                                      static_cast<double>(max->first));
-          }
+          ACTS_DEBUG(std::format("n_measurements={}", particle_hashes.size()));
+
+          m_writer->writeTree(ctx.eventNumber, y, x, particle_hashes);
         }
 
         if (!passThreshold(m_houghHist, x, y)) {
@@ -281,7 +276,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
         std::vector<std::size_t> nHitsPerLayer(m_cfg.nLayers);
         for (auto measurementIndex : m_houghHist.hitIds(y, x)) {
           HoughMeasurementStruct* meas =
-              houghMeasurementStructs[measurementIndex.index].get();
+              houghMeasurementStructs[measurementIndex].get();
           hitIndicesAll[meas->layer].push_back(meas->indices);
           nHitsPerLayer[meas->layer]++;
         }
@@ -322,7 +317,6 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
                             "update");
     file->WriteObject(hough_hist.get(), hist_name.c_str());
     file->WriteObject(peaks_hist.get(), peaks_name.c_str());
-    file->WriteObject(truth_hist.get(), truth_name.c_str());
     file->Close();
   }
   ACTS_DEBUG("Created " << protoTracks.size() << " proto track");
@@ -333,8 +327,14 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
   return ActsExamples::ProcessCode::SUCCESS;
 }
 
+ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::finalize() {
+  m_writer->close();
+
+  return ActsExamples::ProcessCode::SUCCESS;
+}
+
 ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
-    const MeasurementParticlesMap& measPartMap, int subregion) const {
+    int subregion) const {
   ActsExamples::HoughHist houghHist(m_cfg.plane);
 
   for (unsigned int layer : populatedLayers) {
@@ -352,7 +352,6 @@ ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
                         std::find(houghMeasurementStructs.begin(),
                                   houghMeasurementStructs.end(), meas));
 
-      const auto barcode = measPartMap.find(index)->second;
       for (unsigned y_ = 0; y_ < m_cfg.houghHistSize_y; y_++) {
         const unsigned y_bin_min = y_;
         const unsigned y_bin_max = (y_ + 1);
@@ -366,14 +365,14 @@ ActsExamples::HoughHist ActsExamples::HoughTransformSeeder::createHoughHist(
           const double diff = xBins.second - xBins.first;
           if (diff < m_cfg.houghHistSize_x / 2) {
             for (unsigned x = xBins.first; x < xBins.second; x++) {
-              houghHist.fillBin(y, x, {index, barcode}, layer);
+              houghHist.fillBin(y, x, index, layer);
             }
           } else {
             for (unsigned x = 0; x < xBins.first; ++x) {
-              houghHist.fillBin(y, x, {index, barcode}, layer);
+              houghHist.fillBin(y, x, index, layer);
             }
             for (unsigned x = xBins.second; x < m_cfg.houghHistSize_x; ++x) {
-              houghHist.fillBin(y, x, {index, barcode}, layer);
+              houghHist.fillBin(y, x, index, layer);
             }
           }
         }

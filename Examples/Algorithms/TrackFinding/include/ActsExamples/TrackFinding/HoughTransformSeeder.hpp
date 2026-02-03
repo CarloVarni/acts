@@ -82,15 +82,16 @@
 #include "ActsExamples/Framework/DataHandle.hpp"
 #include "ActsExamples/Framework/IAlgorithm.hpp"
 #include "ActsExamples/Framework/ProcessCode.hpp"
-#include "ActsFatras/EventData/Barcode.hpp"
 
 #include <cstddef>
 #include <memory>
 #include <numbers>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <TFile.h>
+#include <TTree.h>
 
 namespace ActsExamples {
 struct AlgorithmContext;
@@ -134,15 +135,7 @@ namespace ActsExamples {
 /// each bin. Size m_houghHistSize_y * m_houghHistSize_x. (NOTE y is row
 /// coordinate) For now, what is stored is actually the index of the object in
 /// the vectors, so we can get the Index layer
-// using HoughMeasurement = unsigned;  // measurement index
-struct HoughMeasurement {
-  unsigned index;
-  ActsFatras::Barcode barcode;
-
-  bool operator==(const HoughMeasurement& other) {
-    return index == other.index && barcode == other.barcode;
-  }
-};
+using HoughMeasurement = unsigned;  // measurement index
 using HoughHist = Acts::HoughTransformUtils::HoughPlane<HoughMeasurement>;
 
 enum HoughHitType { SP = 0, MEASUREMENT = 1 };
@@ -273,6 +266,7 @@ class HoughTransformSeeder final : public IAlgorithm {
   /// @param txt is the algorithm context with event information
   /// @return a process code indication success or failure
   ProcessCode execute(const AlgorithmContext& ctx) const final;
+  ProcessCode finalize() final;
 
   /// Const access to the config
   const Config& config() const { return m_cfg; }
@@ -318,8 +312,7 @@ class HoughTransformSeeder final : public IAlgorithm {
 
   ///////////////////////////////////////////////////////////////////////
   // Core functions, the second/ one calls the first one per layer
-  HoughHist createHoughHist(const MeasurementParticlesMap& measPartMap,
-                            int subregion) const;
+  HoughHist createHoughHist(int subregion) const;
 
   ///////////////////////////////////////////////////////////////////////
   // Helpers
@@ -343,6 +336,51 @@ class HoughTransformSeeder final : public IAlgorithm {
   // HoughMeasurement format
   void addMeasurements(const AlgorithmContext& ctx) const;
   void addSpacePoints(const AlgorithmContext& ctx) const;
+
+  struct Writer;
+  std::unique_ptr<Writer> m_writer;
+};
+
+struct ActsExamples::HoughTransformSeeder::Writer {
+  TFile* file = nullptr;
+  TTree* tree = nullptr;
+  std::mutex writer_mutex;
+
+  std::uint64_t event_number{};
+  std::uint32_t bin_qOverPt{};
+  std::uint32_t bin_phi{};
+  std::vector<std::uint64_t> hashes{};
+
+  explicit Writer(std::string_view filename)
+      : file(TFile::Open(filename.data(), "recreate")) {
+    tree = new TTree("truth", "truth");
+    tree->SetDirectory(file);
+
+    tree->Branch("event_number", &event_number);
+    tree->Branch("bin_qOverPt", &bin_qOverPt);
+    tree->Branch("bin_phi", &bin_phi);
+    tree->Branch("hashes", &hashes);
+  }
+
+  void writeTree(std::uint64_t eventNumber, std::uint32_t qOverPt_bin,
+                 std::uint32_t phi_bin,
+                 const std::vector<std::uint64_t>& particle_hashes) {
+    {
+      std::lock_guard<std::mutex> guard(writer_mutex);
+
+      event_number = eventNumber;
+      bin_qOverPt = qOverPt_bin;
+      bin_phi = phi_bin;
+      hashes = particle_hashes;
+
+      tree->Fill();
+    }
+  }
+
+  void close() {
+    file->Write();
+    file->Close();
+  }
 };
 
 }  // namespace ActsExamples
