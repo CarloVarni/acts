@@ -347,9 +347,11 @@ struct ActsExamples::HoughTransformSeeder::Writer {
   std::mutex writer_mutex;
 
   std::uint64_t event_number{};
+  int slice{};
   std::uint32_t bin_qOverPt{};
   std::uint32_t bin_phi{};
-  std::vector<std::uint64_t> hashes{};
+  std::uint64_t truth_hash{};
+  std::uint32_t truth_hits{};
 
   explicit Writer(std::string_view filename)
       : file(TFile::Open(filename.data(), "recreate")) {
@@ -357,21 +359,25 @@ struct ActsExamples::HoughTransformSeeder::Writer {
     tree->SetDirectory(file);
 
     tree->Branch("event_number", &event_number);
+    tree->Branch("slice", &slice);
     tree->Branch("bin_qOverPt", &bin_qOverPt);
     tree->Branch("bin_phi", &bin_phi);
-    tree->Branch("hashes", &hashes);
+    tree->Branch("truth_hash", &truth_hash);
+    tree->Branch("truth_hits", &truth_hits);
   }
 
-  void writeTree(std::uint64_t eventNumber, std::uint32_t qOverPt_bin,
-                 std::uint32_t phi_bin,
-                 const std::vector<std::uint64_t>& particle_hashes) {
+  void writeTree(std::uint64_t eventNumber, int sliceId,
+                 std::uint32_t qOverPt_bin, std::uint32_t phi_bin,
+                 std::uint64_t particle_hash, std ::uint32_t nHits) {
     {
       std::lock_guard<std::mutex> guard(writer_mutex);
 
       event_number = eventNumber;
+      slice = sliceId;
       bin_qOverPt = qOverPt_bin;
       bin_phi = phi_bin;
-      hashes = particle_hashes;
+      truth_hash = particle_hash;
+      truth_hits = nHits;
 
       tree->Fill();
     }

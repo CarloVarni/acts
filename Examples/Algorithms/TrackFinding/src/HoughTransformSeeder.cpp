@@ -260,7 +260,17 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
           }
           ACTS_DEBUG(std::format("n_measurements={}", particle_hashes.size()));
 
-          m_writer->writeTree(ctx.eventNumber, y, x, particle_hashes);
+          std::map<std::uint64_t, std::uint32_t> counts;
+          for (std::uint64_t barcode : particle_hashes) {
+            counts[barcode]++;
+          }
+          const auto max = std::max_element(counts.begin(), counts.end(),
+                                            [](const auto lhs, const auto rhs) {
+                                              return lhs.second < rhs.second;
+                                            });
+          if (max->second * 2 >= particle_hashes.size()) {
+            m_writer->writeTree(ctx.eventNumber, subregion, y, x, max->first, max->second);
+          }
         }
 
         if (!passThreshold(m_houghHist, x, y)) {
