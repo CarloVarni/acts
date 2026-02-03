@@ -249,19 +249,13 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
           hough_hist->SetBinContent(hough_hist->FindBin(y, x), bits);
 
           // Find truth particle contributing the most
-          std::vector<uint64_t> encoded_barcodes;
+          std::vector<uint64_t> particle_hashes;
           std::transform(
               m_houghHist.hitIds(y, x).begin(), m_houghHist.hitIds(y, x).end(),
-              std::back_inserter(encoded_barcodes),
-              [](const HoughMeasurement& meas) {
-                return (static_cast<uint64_t>(meas.barcode.vertexPrimary())
-                        << 48) +
-                       (static_cast<uint64_t>(meas.barcode.vertexSecondary())
-                        << 32) +
-                       meas.barcode.particle();
-              });
-          std::unordered_map<std::uint64_t, std::uint32_t> counts;
-          for (std::uint64_t barcode : encoded_barcodes) {
+              std::back_inserter(particle_hashes),
+              [](const HoughMeasurement& meas) { return meas.barcode.hash(); });
+          std::map<std::uint64_t, std::uint32_t> counts;
+          for (std::uint64_t barcode : particle_hashes) {
             counts[barcode]++;
           }
           const auto max = std::max_element(counts.begin(), counts.end(),
