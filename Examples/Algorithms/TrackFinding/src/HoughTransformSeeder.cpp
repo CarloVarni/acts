@@ -264,12 +264,21 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
           for (std::uint64_t barcode : particle_hashes) {
             counts[barcode]++;
           }
+
+          if (logger().doPrint(Acts::Logging::DEBUG)) {
+            for (const auto& [hash, count] : counts) {
+              logger().log(Acts::Logging::DEBUG,
+                           std::format("\t{} -> {}", hash, count));
+            }
+          }
+
           const auto max = std::max_element(counts.begin(), counts.end(),
                                             [](const auto lhs, const auto rhs) {
                                               return lhs.second < rhs.second;
                                             });
           if (max->second * 2 >= particle_hashes.size()) {
-            m_writer->writeTree(ctx.eventNumber, subregion, y, x, max->first, max->second);
+            m_writer->writeTree(ctx.eventNumber, subregion, y, x, max->first,
+                                max->second);
           }
         }
 
