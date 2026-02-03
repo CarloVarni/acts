@@ -262,7 +262,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
                                             [](const auto lhs, const auto rhs) {
                                               return lhs.second < rhs.second;
                                             });
-          if (max != nullptr && max->second * 2 >= encoded_barcodes.size()) {
+          if (max->second * 2 >= particle_hashes.size()) {
             truth_hist->SetBinContent(truth_hist->FindBin(y, x),
                                       static_cast<double>(max->first));
           }
