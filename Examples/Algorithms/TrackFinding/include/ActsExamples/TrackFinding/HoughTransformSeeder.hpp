@@ -366,21 +366,22 @@ struct ActsExamples::HoughTransformSeeder::Writer {
     tree->Branch("truth_hits", &truth_hits);
   }
 
+  Writer(const Writer&) = delete;
+  Writer operator=(const Writer&) = delete;
+
   void writeTree(std::uint64_t eventNumber, int sliceId,
                  std::uint32_t qOverPt_bin, std::uint32_t phi_bin,
                  std::uint64_t particle_hash, std::uint32_t nHits) {
-    {
-      std::lock_guard<std::mutex> guard(writer_mutex);
+    std::scoped_lock guard(writer_mutex);
 
-      event_number = eventNumber;
-      slice = sliceId;
-      bin_qOverPt = qOverPt_bin;
-      bin_phi = phi_bin;
-      truth_hash = particle_hash;
-      truth_hits = nHits;
+    event_number = eventNumber;
+    slice = sliceId;
+    bin_qOverPt = qOverPt_bin;
+    bin_phi = phi_bin;
+    truth_hash = particle_hash;
+    truth_hits = nHits;
 
-      tree->Fill();
-    }
+    tree->Fill();
   }
 
   void close() {
