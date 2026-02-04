@@ -266,13 +266,13 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
             }
           }
 
-          const auto max = std::max_element(counts.begin(), counts.end(),
-                                            [](const auto lhs, const auto rhs) {
-                                              return lhs.second < rhs.second;
-                                            });
-          if (max->second * 2 >= particle_hashes.size()) {
-            m_writer->writeTree(ctx.eventNumber, subregion, y, x, max->first,
-                                max->second);
+          const auto& [hash, count] = *std::max_element(
+              counts.begin(), counts.end(), [](const auto lhs, const auto rhs) {
+                return lhs.second < rhs.second;
+              });
+
+          if (count * 2 >= particle_hashes.size()) {
+            m_writer->writeTree(ctx.eventNumber, subregion, y, x, hash, count);
           }
         }
 
