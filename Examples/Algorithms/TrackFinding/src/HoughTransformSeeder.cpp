@@ -34,9 +34,6 @@
 #include <ostream>
 #include <stdexcept>
 
-#include <TFile.h>
-#include <TH2.h>
-
 static inline int quant(double min, double max, unsigned nSteps, double val);
 static inline double unquant(double min, double max, unsigned nSteps, int step);
 static inline double unquant(double min, double max, unsigned nSteps, int step,
@@ -53,7 +50,7 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     : ActsExamples::IAlgorithm("HoughTransformSeeder", lvl),
       m_cfg(std::move(cfg)),
       m_logger(Acts::getDefaultLogger("HoughTransformSeeder", lvl)),
-      m_writer(std::make_unique<Writer>("truth.root")) {
+      m_writer(std::make_unique<Writer>()) {
   // require spacepoints or input measurements (or both), but at least one kind
   // of input
   bool foundInput = false;
@@ -327,13 +324,8 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
       peaks_hist->Fill(peak[0], peak[1]);
     }
 
-    const auto thread_id_hash =
-        std::hash<std::thread::id>{}(std::this_thread::get_id());
-    auto file = TFile::Open(std::format("out_{}.root", thread_id_hash).c_str(),
-                            "update");
-    file->WriteObject(hough_hist.get(), hist_name.c_str());
-    file->WriteObject(peaks_hist.get(), peaks_name.c_str());
-    file->Close();
+    m_writer->writeObj(hough_hist.get());
+    m_writer->writeObj(peaks_hist.get());
   }
   ACTS_DEBUG("Created " << protoTracks.size() << " proto track");
 

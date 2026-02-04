@@ -91,6 +91,7 @@
 #include <vector>
 
 #include <TFile.h>
+#include <TH2.h>
 #include <TTree.h>
 
 namespace ActsExamples {
@@ -342,7 +343,8 @@ class HoughTransformSeeder final : public IAlgorithm {
 };
 
 struct ActsExamples::HoughTransformSeeder::Writer {
-  TFile* file = nullptr;
+  TFile* file_truth = nullptr;
+  TFile* file_histo = nullptr;
   TTree* tree = nullptr;
   std::mutex writer_mutex;
 
@@ -353,10 +355,11 @@ struct ActsExamples::HoughTransformSeeder::Writer {
   std::uint64_t truth_hash{};
   std::uint32_t truth_hits{};
 
-  explicit Writer(std::string_view filename)
-      : file(TFile::Open(filename.data(), "recreate")) {
+  explicit Writer()
+      : file_truth(TFile::Open("truth.root", "recreate")),
+        file_histo(TFile::Open("out.root", "recreate")) {
     tree = new TTree("truth", "truth");
-    tree->SetDirectory(file);
+    tree->SetDirectory(file_truth);
 
     tree->Branch("event_number", &event_number);
     tree->Branch("slice", &slice);
@@ -384,9 +387,19 @@ struct ActsExamples::HoughTransformSeeder::Writer {
     tree->Fill();
   }
 
+  template <class T>
+  void writeObj(T* obj) {
+    std::scoped_lock guard(writer_mutex);
+
+    file_histo->WriteObject(obj, obj->GetName());
+  }
+
   void close() {
-    file->Write();
-    file->Close();
+    file_truth->Write();
+    file_truth->Close();
+
+    file_histo->Write();
+    file_histo->Close();
   }
 };
 
