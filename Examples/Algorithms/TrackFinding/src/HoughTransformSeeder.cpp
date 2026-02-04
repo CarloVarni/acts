@@ -224,8 +224,6 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
 
     const auto hist_name =
         std::format("event_{:06}_{:02}", ctx.eventNumber, subregion);
-    const auto truth_name =
-        std::format("truth_{:06}_{:02}", ctx.eventNumber, subregion);
     auto hough_hist = std::unique_ptr<TH2S>(
         new TH2S(hist_name.c_str(), hist_name.c_str(), m_cfg.houghHistSize_y, 0,
                  m_cfg.houghHistSize_y, m_cfg.houghHistSize_x, 0,
