@@ -243,6 +243,10 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
           ACTS_DEBUG(std::format("bitmask={} n_bits={}",
                                  std::bitset<16>(bits).to_string(), entries));
 
+          if (entries < 5) {
+            continue;
+          }
+
           // Find truth particle contributing the most
           std::vector<uint64_t> particle_hashes;
           for (const HoughMeasurement index : m_houghHist.hitIds(y, x)) {
