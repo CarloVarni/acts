@@ -285,6 +285,8 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
           continue;
         }
 
+        // FIXME: Disabling writing to containters temporarily to avoid memory
+        // issues when generating a ttbar sample with very high pile-up
         continue;
 
         // Now we need to unpack the hits; there should be multiple track
