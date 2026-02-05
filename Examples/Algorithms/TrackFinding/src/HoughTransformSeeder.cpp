@@ -36,8 +36,9 @@
 
 static inline int quant(double min, double max, unsigned nSteps, double val);
 static inline double unquant(double min, double max, unsigned nSteps, int step);
-static inline double unquant(double min, double max, unsigned nSteps, int step,
-                             const std::vector<double>& ptBins);
+static inline double unquantEqudistantPt(double min, double max,
+                                         unsigned nSteps, int step,
+                                         const std::vector<double>& ptBins);
 template <typename T>
 static inline std::string to_string(std::vector<T> v);
 
@@ -456,8 +457,9 @@ static inline double unquant(double min, double max, unsigned nSteps,
 }
 
 // Returns the lower bound of the bin specified by step
-static inline double unquant(double min, double max, unsigned nSteps, int step,
-                             const std::vector<double>& ptBins) {
+static inline double unquantEqudistantPt(double min, double max,
+                                         unsigned nSteps, int step,
+                                         const std::vector<double>& ptBins) {
   if (const double qOverp = unquant(min, max, nSteps, step); qOverp < 0) {
     const double ptBin = ptBins[step];
     return -1. / ptBin;
