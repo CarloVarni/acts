@@ -220,19 +220,20 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
     ACTS_DEBUG("Processing subregion " << subregion);
     ActsExamples::HoughHist m_houghHist = createHoughHist(subregion);
 
-    const auto hist_name =
+    const auto hough_name =
         std::format("event_{:06}_{:02}", ctx.eventNumber, subregion);
-    auto hough_hist = std::unique_ptr<TH2S>(
-        new TH2S(hist_name.c_str(), hist_name.c_str(), m_cfg.houghHistSize_y, 0,
-                 m_cfg.houghHistSize_y, m_cfg.houghHistSize_x, 0,
-                 m_cfg.houghHistSize_x));
+    const auto hough_title = std::format("event_{:06}_{:02};q/p_{{T}};#phi bin",
+                                         ctx.eventNumber, subregion);
+    auto hough_hist = std::unique_ptr<TH2S>(new TH2S(
+        hough_name.c_str(), hough_title.c_str(), m_cfg.houghHistSize_y,
+        m_bins_y.data(), m_cfg.houghHistSize_x, 0, m_cfg.houghHistSize_x));
 
     for (unsigned y = 0; y < m_cfg.houghHistSize_y; y++) {
       for (unsigned x = 0; x < m_cfg.houghHistSize_x; x++) {
         if (int entries = m_houghHist.nLayers(y, x); entries > 0) {
           ACTS_DEBUG(std::format("bin (q/pT, phi) = ({}, {})", y, x));
           // Flat layers
-          // hh_hist->SetBinContent(hh_hist->FindBin(y, x), entries);
+          // hh_hist->SetBinContent(y, x, entries);
 
           // Bit pattern
           const std::uint16_t bits = std::accumulate(
@@ -240,7 +241,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
               std::uint16_t{}, [](std::uint16_t sum, std::uint16_t layer) {
                 return sum | 0x1 << layer;
               });
-          hough_hist->SetBinContent(hough_hist->FindBin(y, x), bits);
+          hough_hist->SetBinContent(y, x, bits);
           ACTS_DEBUG(std::format("bitmask={} n_bits={}",
                                  std::bitset<16>(bits).to_string(), entries));
 
@@ -323,14 +324,15 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
     // Sliding window
     const auto peaks_name =
         std::format("peaks_{:06}_{:02}", ctx.eventNumber, subregion);
-    auto peaks_hist = std::unique_ptr<TH2S>(
-        new TH2S(peaks_name.c_str(), peaks_name.c_str(), m_cfg.houghHistSize_y,
-                 0, m_cfg.houghHistSize_y, m_cfg.houghHistSize_x, 0,
-                 m_cfg.houghHistSize_x));
+    const auto peaks_title = std::format("peaks_{:06}_{:02};q/p_{{T}};#phi bin",
+                                         ctx.eventNumber, subregion);
+    auto peaks_hist = std::unique_ptr<TH2S>(new TH2S(
+        peaks_name.c_str(), peaks_title.c_str(), m_cfg.houghHistSize_y,
+        m_bins_y.data(), m_cfg.houghHistSize_x, 0, m_cfg.houghHistSize_x));
 
     const auto all_peaks = slidingWindowPeaks(m_houghHist, m_cfg.slidingWindow);
     for (const auto& peak : all_peaks) {
-      peaks_hist->Fill(peak[0], peak[1]);
+      peaks_hist->Fill(m_bins_y[peak[0] - 1], peak[1]);
     }
 
     m_writer->writeObj(hough_hist.get());
