@@ -284,6 +284,8 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
           continue;
         }
 
+        continue;
+
         // Now we need to unpack the hits; there should be multiple track
         // candidates if we have multiple hits in a given layer. So the first
         // thing is to unpack the indices (which is what we need) by layer
