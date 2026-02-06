@@ -36,6 +36,9 @@
 
 static inline int quant(double min, double max, unsigned nSteps, double val);
 static inline double unquant(double min, double max, unsigned nSteps, int step);
+static inline double unquantSteps(double previous, double stepSize,
+                                  unsigned nSteps, unsigned int from,
+                                  unsigned iStep);
 static inline double unquantEqudistantPt(double min, double max,
                                          unsigned nSteps, int step,
                                          const std::vector<double>& ptBins);
@@ -162,9 +165,22 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     m_bins_x.push_back(
         unquant(m_cfg.xMin, m_cfg.xMax, m_cfg.houghHistSize_x, i));
   }
+
   for (unsigned i = 0; i <= m_cfg.houghHistSize_y; i++) {
-    m_bins_y.push_back(
-        unquant(m_cfg.yMin, m_cfg.yMax, m_cfg.houghHistSize_y, i));
+    if (m_cfg.binning == Binning::EqudistantQoverPt) {
+      m_bins_y.push_back(
+          unquant(m_cfg.yMin, m_cfg.yMax, m_cfg.houghHistSize_y, i));
+    }
+
+    if (m_cfg.binning == Binning::EqudistantPt) {
+      m_bins_y.push_back(unquantEqudistantPt(m_cfg.yMin, m_cfg.yMax,
+                                             m_cfg.houghHistSize_y, i, ptBins));
+    }
+
+    if (m_cfg.binning == Binning::Steps) {
+      m_bins_y.push_back(unquantSteps(m_bins_y.back(), m_step_y,
+                                      m_cfg.houghHistSize_y, 54, i));
+    }
   }
 
   m_cfg.fieldCorrector
@@ -458,6 +474,23 @@ static inline int quant(double min, double max, unsigned nSteps, double val) {
 static inline double unquant(double min, double max, unsigned nSteps,
                              int step) {
   return min + (max - min) * step / nSteps;
+}
+
+static inline double unquantSteps(double previous, double stepSize,
+                                  unsigned nSteps, unsigned from,
+                                  unsigned iStep) {
+  if (iStep == 0) {
+    return -1;
+  }
+
+  const unsigned half = nSteps / 2;
+  if (iStep < from / 2 || iStep >= nSteps - from / 2) {
+    return previous + stepSize * 2;
+  } else if (iStep >= half - from && iStep < half + from) {
+    return previous + stepSize / 2.;
+  } else {
+    return previous + stepSize;
+  }
 }
 
 // Returns the lower bound of the bin specified by step
