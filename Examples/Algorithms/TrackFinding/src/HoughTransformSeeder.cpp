@@ -247,7 +247,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
 
     for (unsigned y = 0; y < m_cfg.houghHistSize_y; y++) {
       for (unsigned x = 0; x < m_cfg.houghHistSize_x; x++) {
-        if (int entries = m_houghHist.nLayers(y, x); entries > 0) {
+        if (unsigned entries = m_houghHist.nLayers(y, x); entries > 0) {
           ACTS_DEBUG(std::format("bin (q/pT, phi) = ({}, {})", y, x));
           // Flat layers
           // hh_hist->SetBinContent(y + 1, x + 1, entries);
@@ -262,7 +262,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
           ACTS_DEBUG(std::format("bitmask={} n_bits={}",
                                  std::bitset<16>(bits).to_string(), entries));
 
-          if (entries < 5) {
+          if (entries < m_cfg.truthThreshold) {
             continue;
           }
 

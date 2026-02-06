@@ -256,6 +256,8 @@ class HoughTransformSeeder final : public IAlgorithm {
         .xRecenterSize = 3,
         .yRecenterSize = 3};
 
+    std::uint32_t truthThreshold = 5;
+
     Binning binning = Binning::EqudistantQoverPt;
   };
 
