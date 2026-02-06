@@ -238,11 +238,12 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
 
     const auto hough_name =
         std::format("event_{:06}_{:02}", ctx.eventNumber, subregion);
-    const auto hough_title = std::format("event_{:06}_{:02};q/p_{{T}};#phi bin",
-                                         ctx.eventNumber, subregion);
-    auto hough_hist = std::unique_ptr<TH2S>(new TH2S(
-        hough_name.c_str(), hough_title.c_str(), m_cfg.houghHistSize_y,
-        m_bins_y.data(), m_cfg.houghHistSize_x, 0, m_cfg.houghHistSize_x));
+    const auto hough_title =
+        std::format("event_{:06}_{:02};q/p_{{T}} [1/GeV];#varphi [rad]",
+                    ctx.eventNumber, subregion);
+    auto hough_hist = std::unique_ptr<TH2S>(
+        new TH2S(hough_name.c_str(), hough_title.c_str(), m_cfg.houghHistSize_y,
+                 m_bins_y.data(), m_cfg.houghHistSize_x, m_bins_x.data()));
 
     for (unsigned y = 0; y < m_cfg.houghHistSize_y; y++) {
       for (unsigned x = 0; x < m_cfg.houghHistSize_x; x++) {
@@ -340,11 +341,12 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
     // Sliding window
     const auto peaks_name =
         std::format("peaks_{:06}_{:02}", ctx.eventNumber, subregion);
-    const auto peaks_title = std::format("peaks_{:06}_{:02};q/p_{{T}};#phi bin",
-                                         ctx.eventNumber, subregion);
-    auto peaks_hist = std::unique_ptr<TH2S>(new TH2S(
-        peaks_name.c_str(), peaks_title.c_str(), m_cfg.houghHistSize_y,
-        m_bins_y.data(), m_cfg.houghHistSize_x, 0, m_cfg.houghHistSize_x));
+    const auto peaks_title =
+        std::format("peaks_{:06}_{:02};q/p_{{T}} [1/GeV];#varphi [rad]",
+                    ctx.eventNumber, subregion);
+    auto peaks_hist = std::unique_ptr<TH2S>(
+        new TH2S(peaks_name.c_str(), peaks_title.c_str(), m_cfg.houghHistSize_y,
+                 m_bins_y.data(), m_cfg.houghHistSize_x, m_bins_x.data()));
 
     const auto all_peaks = slidingWindowPeaks(m_houghHist, m_cfg.slidingWindow);
     for (const auto& peak : all_peaks) {
