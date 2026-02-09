@@ -267,7 +267,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
           }
 
           // Find truth particle contributing the most
-          std::vector<uint64_t> particle_hashes;
+          std::vector<std::uint64_t> particle_hashes;
           for (const HoughMeasurement index : m_houghHist.hitIds(y, x)) {
             for (const Index measurement_index :
                  houghMeasurementStructs[index]->indices) {
@@ -303,7 +303,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
           continue;
         }
 
-        // FIXME: Disabling writing to containters temporarily to avoid memory
+        // FIXME: Disabling writing to containers temporarily to avoid memory
         // issues when generating a ttbar sample with very high pile-up
         continue;
 
@@ -486,12 +486,14 @@ static inline double unquantSteps(double previous, double stepSize,
   }
 
   const unsigned half = nSteps / 2;
-  if (iStep < from / 2 || iStep >= nSteps - from / 2) {
-    return previous + stepSize * 2;
-  } else if (iStep >= half - from && iStep < half + from) {
-    return previous + stepSize / 2.;
-  } else {
+  const float factor = 2;
+  if (iStep <= from / 2 || iStep > nSteps - from / 2) {
+    return previous + stepSize * factor;
+  } else if (iStep <= half - factor * from / 2 ||
+             iStep > nSteps - half + factor * from / 2) {
     return previous + stepSize;
+  } else {
+    return previous + stepSize / factor;
   }
 }
 
