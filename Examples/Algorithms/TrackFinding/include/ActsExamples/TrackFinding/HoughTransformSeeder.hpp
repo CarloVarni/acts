@@ -259,7 +259,7 @@ class HoughTransformSeeder final : public IAlgorithm {
 
     std::uint32_t truthThreshold = 5;
 
-    Binning binning = Binning::FinerCentral;
+    Binning binning = Binning::EqudistantQoverPt;
 
     bool writeToSingleFile = false;  // Defaults to false for now
   };
