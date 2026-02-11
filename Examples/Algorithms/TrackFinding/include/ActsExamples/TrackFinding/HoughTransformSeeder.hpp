@@ -140,7 +140,7 @@ using HoughMeasurement = unsigned;  // measurement index
 using HoughHist = Acts::HoughTransformUtils::HoughPlane<HoughMeasurement>;
 
 enum HoughHitType { SP = 0, MEASUREMENT = 1 };
-enum class Binning { EqudistantQoverPt, EqudistantPt, Steps };
+enum class Binning { EqudistantQoverPt, EqudistantPt, Steps, FinerCentral };
 
 /// The measurements and SP are ugly to use, this is a convenience struct that
 /// contains the needed information
@@ -258,7 +258,7 @@ class HoughTransformSeeder final : public IAlgorithm {
 
     std::uint32_t truthThreshold = 5;
 
-    Binning binning = Binning::EqudistantQoverPt;
+    Binning binning = Binning::FinerCentral;
   };
 
   /// Construct the seeding algorithm.

@@ -42,6 +42,9 @@ static inline double unquantSteps(double previous, double stepSize,
 static inline double unquantEqudistantPt(double min, double max,
                                          unsigned nSteps, int step,
                                          const std::vector<double>& ptBins);
+static inline double unquantFinerCentral(double previous, double stepSize,
+                                         unsigned nSteps, unsigned int from,
+                                         double factor, unsigned iStep);
 template <typename T>
 static inline std::string to_string(std::vector<T> v);
 
@@ -170,16 +173,15 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     if (m_cfg.binning == Binning::EqudistantQoverPt) {
       m_bins_y.push_back(
           unquant(m_cfg.yMin, m_cfg.yMax, m_cfg.houghHistSize_y, i));
-    }
-
-    if (m_cfg.binning == Binning::EqudistantPt) {
+    } else if (m_cfg.binning == Binning::EqudistantPt) {
       m_bins_y.push_back(unquantEqudistantPt(m_cfg.yMin, m_cfg.yMax,
                                              m_cfg.houghHistSize_y, i, ptBins));
-    }
-
-    if (m_cfg.binning == Binning::Steps) {
+    } else if (m_cfg.binning == Binning::Steps) {
       m_bins_y.push_back(unquantSteps(m_bins_y.back(), m_step_y,
                                       m_cfg.houghHistSize_y, 54, i));
+    } else if (m_cfg.binning == Binning::FinerCentral) {
+      m_bins_y.push_back(unquantFinerCentral(m_bins_y.back(), m_step_y,
+                                             m_cfg.houghHistSize_y, 72, 4., i));
     }
   }
 
@@ -494,6 +496,21 @@ static inline double unquantSteps(double previous, double stepSize,
     return previous + stepSize;
   } else {
     return previous + stepSize / factor;
+  }
+}
+
+static inline double unquantFinerCentral(double previous, double stepSize,
+                                         unsigned nSteps, unsigned from,
+                                         double factor, unsigned iStep) {
+  if (iStep == 0) {
+    return -1;
+  }
+
+  const unsigned half = nSteps / 2;
+  if (iStep <= from / factor || iStep > nSteps - from / factor) {
+    return previous + stepSize * factor;
+  } else {
+    return previous + stepSize * (half - from) / (half - from / factor);
   }
 }
 
