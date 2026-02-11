@@ -199,14 +199,14 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     auto easing = [](double x) {
       // return ((0 < x) - (x < 0)) * 32 *
       // (1 - std::cos((x * std::numbers::pi) / 64));  // InSine
-      return ((0 < x) - (x < 0)) * 32 * (x * x / 1024);  // InSquare
+      return ((0 < x) - (x < 0)) * 11 * (x * x / 121.);  // InSquare
       // return 32 * (x * x * x / 32768);  // InCubic
       // return ((0 < x) - (x < 0)) * (32 - std::sqrt(1024 - x * x));  // InCirc
       // return x;  // Linear
     };
 
-    const double lo_cot = easing(-32.0 + 2. * slice);
-    const double hi_cot = easing(-32.0 + 2. * (slice + 1));
+    const double lo_cot = easing(-11.0 + 11. / 16 * slice);
+    const double hi_cot = easing(-11.0 + 11. / 16. * (slice + 1));
     const double v1 = (meas->z + 200) / meas->radius;
     const double v2 = (meas->z - 200) / meas->radius;
 
