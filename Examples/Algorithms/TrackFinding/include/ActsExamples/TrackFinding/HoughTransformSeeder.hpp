@@ -84,6 +84,7 @@
 #include "ActsExamples/Framework/ProcessCode.hpp"
 
 #include <cstddef>
+#include <format>
 #include <memory>
 #include <numbers>
 #include <string>
@@ -259,6 +260,8 @@ class HoughTransformSeeder final : public IAlgorithm {
     std::uint32_t truthThreshold = 5;
 
     Binning binning = Binning::FinerCentral;
+
+    bool writeToSingleFile = false; // Defaults to false for now
   };
 
   /// Construct the seeding algorithm.
@@ -397,6 +400,16 @@ struct ActsExamples::HoughTransformSeeder::Writer {
     std::scoped_lock guard(writer_mutex);
 
     file_histo->WriteObject(obj, obj->GetName());
+  }
+
+  template <class T>
+  static void writeObjThread(T* obj) {
+    const auto thread_id_hash =
+        std::hash<std::thread::id>{}(std::this_thread::get_id());
+    auto file = TFile::Open(std::format("out_{}.root", thread_id_hash).c_str(),
+                            "update");
+    file->WriteObject(obj, obj->GetName());
+    file->Close();
   }
 
   void close() {

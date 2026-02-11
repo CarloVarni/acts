@@ -355,8 +355,13 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
       peaks_hist->Fill(m_bins_y[peak[0]], peak[1]);
     }
 
-    m_writer->writeObj(hough_hist.get());
-    m_writer->writeObj(peaks_hist.get());
+    if (m_cfg.writeToSingleFile) {
+      m_writer->writeObj(hough_hist.get());
+      m_writer->writeObj(peaks_hist.get());
+    } else {
+      m_writer->writeObjThread(hough_hist.get());
+      m_writer->writeObjThread(peaks_hist.get());
+    }
   }
   ACTS_DEBUG("Created " << protoTracks.size() << " proto track");
 
