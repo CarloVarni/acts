@@ -261,7 +261,7 @@ class HoughTransformSeeder final : public IAlgorithm {
 
     Binning binning = Binning::FinerCentral;
 
-    bool writeToSingleFile = false; // Defaults to false for now
+    bool writeToSingleFile = false;  // Defaults to false for now
   };
 
   /// Construct the seeding algorithm.
