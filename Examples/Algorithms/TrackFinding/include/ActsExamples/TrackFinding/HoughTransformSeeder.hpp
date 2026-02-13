@@ -122,6 +122,24 @@ class TrackingGeometry;
 }
 
 namespace ActsExamples {
+  static const std::array<std::pair<double, double>, 13> sliceBorders = {
+    std::pair<double, double>(-12.2553, -10.3525),
+    std::pair<double, double>(-10.3713, -8.4685),
+    std::pair<double, double>(-8.48734, -6.58452),
+    std::pair<double, double>(-6.60336, -4.70054),
+    std::pair<double, double>(-4.71938, -2.81655),
+    std::pair<double, double>(-2.83539, -0.932571),
+    std::pair<double, double>(-0.951411, 0.951411),
+    std::pair<double, double>(0.932571, 2.83539),
+    std::pair<double, double>(2.81655, 4.71938),
+    std::pair<double, double>(4.70054, 6.60336),
+    std::pair<double, double>(6.58452, 8.48734),
+    std::pair<double, double>(8.4685, 10.3713),
+    std::pair<double, double>(10.3525, 12.2553)
+  };
+}
+
+namespace ActsExamples {
 /// Used in multiple places. The 2d vector refers to the 2d houghHist. For a
 /// single layer, the int refers to the number of hits in the bin of the
 /// houghHist
@@ -201,7 +219,10 @@ class HoughTransformSeeder final : public IAlgorithm {
     // subregion. But since not all hits are considered this provides a way to
     // reduce potential combinatorics
 
-    std::vector<int> subRegions = {-1};
+    // std::vector<int> subRegions = {-1};
+    std::vector<int> subRegions = {-1,
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+      11, 12};
 
     unsigned nLayers = 10;  // total number of layers
 
@@ -259,8 +280,7 @@ class HoughTransformSeeder final : public IAlgorithm {
 
     std::uint32_t truthThreshold = 5;
 
-    Binning binning = Binning::EqudistantQoverPt;
-
+    Binning binning = Binning::FinerCentral;
     bool writeToSingleFile = false;  // Defaults to false for now
   };
 

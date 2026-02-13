@@ -169,6 +169,10 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
         unquant(m_cfg.xMin, m_cfg.xMax, m_cfg.houghHistSize_x, i));
   }
 
+  if (m_cfg.binning == Binning::FinerCentral) {
+    m_step_y = (m_cfg.yMax - m_cfg.yMin) / (50 + 4. * (m_cfg.houghHistSize_y - 50));
+  }
+
   for (unsigned i = 0; i <= m_cfg.houghHistSize_y; i++) {
     if (m_cfg.binning == Binning::EqudistantQoverPt) {
       m_bins_y.push_back(
@@ -181,7 +185,7 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
                                       m_cfg.houghHistSize_y, 54, i));
     } else if (m_cfg.binning == Binning::FinerCentral) {
       m_bins_y.push_back(unquantFinerCentral(m_bins_y.back(), m_step_y,
-                                             m_cfg.houghHistSize_y, 72, 4., i));
+                                             m_cfg.houghHistSize_y, 50, 4., i));
     }
   }
 
@@ -196,17 +200,7 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
       return ResultBool::success(true);
     }
 
-    auto easing = [](double x) {
-      // return ((0 < x) - (x < 0)) * 32 *
-      // (1 - std::cos((x * std::numbers::pi) / 64));  // InSine
-      return ((0 < x) - (x < 0)) * 11 * (x * x / 121.);  // InSquare
-      // return 32 * (x * x * x / 32768);  // InCubic
-      // return ((0 < x) - (x < 0)) * (32 - std::sqrt(1024 - x * x));  // InCirc
-      // return x;  // Linear
-    };
-
-    const double lo_cot = easing(-11.0 + 11. / 16 * slice);
-    const double hi_cot = easing(-11.0 + 11. / 16. * (slice + 1));
+    const auto [lo_cot, hi_cot] = sliceBorders.at(slice);
     const double v1 = (meas->z + 200) / meas->radius;
     const double v2 = (meas->z - 200) / meas->radius;
 
@@ -510,12 +504,12 @@ static inline double unquantFinerCentral(double previous, double stepSize,
   if (iStep == 0) {
     return -1;
   }
-
+  
   const unsigned half = nSteps / 2;
-  if (iStep <= from / factor || iStep > nSteps - from / factor) {
-    return previous + stepSize * factor;
+  if (iStep <= half -  from / 2 || iStep > nSteps - half + from / 2) {
+    return previous + factor * stepSize;
   } else {
-    return previous + stepSize * (half - from) / (half - from / factor);
+    return previous + stepSize;
   }
 }
 
