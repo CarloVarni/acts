@@ -351,8 +351,11 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
                  m_bins_y.data(), m_cfg.houghHistSize_x, m_bins_x.data()));
 
     const auto all_peaks = slidingWindowPeaks(m_houghHist, m_cfg.slidingWindow);
+    ACTS_DEBUG(std::format("Found {} peaks", all_peaks.size()));
     for (const auto& peak : all_peaks) {
-      peaks_hist->Fill(m_bins_y[peak[0]], peak[1]);
+      ACTS_DEBUG(std::format("peak=({},{}) bin=({},{})", m_bins_y[peak[0]],
+                             m_bins_x[peak[1]], peak[0] + 1, peak[1] + 1));
+      peaks_hist->Fill(m_bins_y[peak[0]], m_bins_x[peak[1]]);
     }
 
     if (m_cfg.writeToSingleFile) {
