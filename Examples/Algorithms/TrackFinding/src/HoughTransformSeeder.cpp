@@ -22,6 +22,7 @@
 #include "ActsExamples/EventData/IndexSourceLink.hpp"
 #include "ActsExamples/EventData/Measurement.hpp"
 #include "ActsExamples/EventData/ProtoTrack.hpp"
+#include "ActsExamples/EventData/SimParticle.hpp"
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
 #include "ActsExamples/TrackFinding/DefaultHoughFunctions.hpp"
 #include "ActsExamples/Utilities/GroupBy.hpp"
@@ -94,6 +95,7 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
   m_outputProtoTracks.initialize(m_cfg.outputProtoTracks);
   m_inputMeasurements.initialize(m_cfg.inputMeasurements);
   m_inputMeasurementParticlesMap.initialize("measurement_particles_map");
+  m_inputParticles.initialize("particles_simulated");
 
   if (!m_cfg.trackingGeometry) {
     throw std::invalid_argument(
@@ -229,6 +231,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
   addMeasurements(ctx);
 
   const auto& measurementParticleMap = m_inputMeasurementParticlesMap(ctx);
+  const auto& particles = m_inputParticles(ctx);
 
   static thread_local ProtoTrackContainer protoTracks;
   protoTracks.clear();
@@ -297,7 +300,18 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
               });
 
           if (count * 2 >= particle_hashes.size()) {
-            m_writer->writeTree(ctx.eventNumber, subregion, y, x, hash, count);
+            const auto particle =
+                std::find_if(particles.begin(), particles.end(),
+                             [hash](const SimParticle& p) {
+                               return p.particleId().hash() == hash;
+                             });
+            if (particle != particles.end() &&
+                particle->transverseMomentum() > 1.) {
+              ACTS_DEBUG(std::format("particle={} pt={}", hash,
+                                     particle->transverseMomentum()));
+              m_writer->writeTree(ctx.eventNumber, subregion, y, x, hash,
+                                  count);
+            }
           }
         }
 
