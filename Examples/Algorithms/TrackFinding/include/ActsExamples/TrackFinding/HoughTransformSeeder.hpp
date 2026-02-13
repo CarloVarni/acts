@@ -363,9 +363,12 @@ struct ActsExamples::HoughTransformSeeder::Writer {
   std::uint64_t truth_hash{};
   std::uint32_t truth_hits{};
 
-  explicit Writer()
-      : file_truth(TFile::Open("truth.root", "recreate")),
-        file_histo(TFile::Open("out.root", "recreate")) {
+  explicit Writer(bool use_single_file)
+      : file_truth(TFile::Open("truth.root", "recreate")) {
+    if (use_single_file) {
+      file_histo = TFile::Open("out.root", "recreate");
+    }
+
     tree = new TTree("truth", "truth");
     tree->SetDirectory(file_truth);
 
@@ -416,8 +419,10 @@ struct ActsExamples::HoughTransformSeeder::Writer {
     file_truth->Write();
     file_truth->Close();
 
-    file_histo->Write();
-    file_histo->Close();
+    if (file_histo != nullptr) {
+      file_histo->Write();
+      file_histo->Close();
+    }
   }
 };
 

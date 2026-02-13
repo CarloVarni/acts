@@ -57,7 +57,7 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     : ActsExamples::IAlgorithm("HoughTransformSeeder", lvl),
       m_cfg(std::move(cfg)),
       m_logger(Acts::getDefaultLogger("HoughTransformSeeder", lvl)),
-      m_writer(std::make_unique<Writer>()) {
+      m_writer(std::make_unique<Writer>(m_cfg.writeToSingleFile)) {
   // require spacepoints or input measurements (or both), but at least one kind
   // of input
   bool foundInput = false;
