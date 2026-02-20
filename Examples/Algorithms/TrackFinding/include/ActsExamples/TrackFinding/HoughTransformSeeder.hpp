@@ -142,6 +142,7 @@ using HoughHist = Acts::HoughTransformUtils::HoughPlane<HoughMeasurement>;
 
 enum HoughHitType { SP = 0, MEASUREMENT = 1 };
 enum class Binning { EqudistantQoverPt, EqudistantPt, Steps, FinerCentral };
+enum class Slicing { None, EqudistantEta, Wedges };
 
 /// The measurements and SP are ugly to use, this is a convenience struct that
 /// contains the needed information
@@ -201,7 +202,8 @@ class HoughTransformSeeder final : public IAlgorithm {
     // subregion. But since not all hits are considered this provides a way to
     // reduce potential combinatorics
 
-    std::vector<int> subRegions = {-1};
+    std::vector<int> subRegions = {-1, 0, 1, 2, 3,  4,  5,
+                                   6,  7, 8, 9, 10, 11, 12};
 
     unsigned nLayers = 10;  // total number of layers
 
@@ -260,6 +262,7 @@ class HoughTransformSeeder final : public IAlgorithm {
     std::uint32_t truthThreshold = 5;
 
     Binning binning = Binning::EqudistantQoverPt;
+    Slicing slicing = Slicing::Wedges;
 
     bool writeToSingleFile = false;  // Defaults to false for now
   };
@@ -309,8 +312,8 @@ class HoughTransformSeeder final : public IAlgorithm {
   ReadDataHandle<MeasurementParticlesMap> m_inputMeasurementParticlesMap{
       this, "measurement_particles_map"};
 
-  ReadDataHandle<SimParticleContainer> m_inputParticles{
-      this, "particles_simulated"};
+  ReadDataHandle<SimParticleContainer> m_inputParticles{this,
+                                                        "particles_simulated"};
 
   ////////////////////////////////////////////////////////////////////////
   /// Convenience
@@ -428,5 +431,72 @@ struct ActsExamples::HoughTransformSeeder::Writer {
     }
   }
 };
+
+struct Reg {
+  float center;
+  float width;
+};
+
+struct Wedge {
+  Reg phi;
+  float aleft;
+  float aright;
+  float bleft;
+  float bright;
+
+  Wedge(Reg p, Reg z, Reg eta) : phi(p) {
+    aleft = std::tan(2.0 * std::atan(std::exp(-(eta.center - eta.width))));
+    aright = std::tan(2.0 * std::atan(std::exp(-(eta.center + eta.width))));
+    bleft = -aleft / (z.center - z.width);
+    bright = -aright / (z.center + z.width);
+  }
+
+  static float delta_phi(float phi1, float phi2) {
+    const float delta = phi1 - phi2;
+    if (delta > M_PI) {
+      return delta - M_PI;
+    } else if (delta < 0) {
+      return delta + M_PI;
+    }
+
+    return delta;
+  }
+
+  bool in_rPhiZ(float r, float p, float z) const {
+    if (std::fabs(delta_phi(p, phi.center)) > phi.width) {
+      return false;
+    }
+
+    if (aleft > 0 && aright > 0) {
+      return aleft * z + bleft > r && r > aright * z + bright;
+    } else if (aleft < 0 && aright > 0) {
+      return aleft * z + bleft < r && r > aright * z + bright;
+    }
+    return aleft * z + bleft < r && r < aright * z + bright;
+  }
+};
+
+namespace Wedges {
+static constexpr std::size_t N_WEDGES = 13;
+static constexpr float WIDTH = 0.23076923076923078;
+static constexpr Reg PHI{0, M_PI};
+static constexpr Reg ZZ{0, 1. / 150};
+
+static std::array<Wedge, N_WEDGES> wedges{
+    Wedge(PHI, ZZ, {-2.769230769230769, WIDTH}),
+    Wedge(PHI, ZZ, {-2.3076923076923075, WIDTH}),
+    Wedge(PHI, ZZ, {-1.8461538461538458, WIDTH}),
+    Wedge(PHI, ZZ, {-1.3846153846153846, WIDTH}),
+    Wedge(PHI, ZZ, {-0.9230769230769229, WIDTH}),
+    Wedge(PHI, ZZ, {-0.4615384615384613, WIDTH}),
+    Wedge(PHI, ZZ, {0, WIDTH}),
+    Wedge(PHI, ZZ, {0.4615384615384616, WIDTH}),
+    Wedge(PHI, ZZ, {0.9230769230769234, WIDTH}),
+    Wedge(PHI, ZZ, {1.384615384615385, WIDTH}),
+    Wedge(PHI, ZZ, {1.8461538461538467, WIDTH}),
+    Wedge(PHI, ZZ, {2.3076923076923084, WIDTH}),
+    Wedge(PHI, ZZ, {2.769230769230769, WIDTH}),
+};
+}  // namespace Wedges
 
 }  // namespace ActsExamples

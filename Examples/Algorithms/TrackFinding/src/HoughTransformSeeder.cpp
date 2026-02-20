@@ -192,8 +192,9 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
   m_cfg.layerIDFinder
       .connect<&ActsExamples::DefaultHoughFunctions::findLayerIDDefault>();
 
-  auto slicer = [](const std::shared_ptr<HoughMeasurementStruct>& meas,
-                   int slice) -> ResultBool {
+  auto slicerEquidistantEta =
+      [](const std::shared_ptr<HoughMeasurementStruct>& meas,
+         int slice) -> ResultBool {
     if (slice == -1) {
       return ResultBool::success(true);
     }
@@ -215,7 +216,33 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     return ResultBool::success((v1 - lo_cot) * (v2 - hi_cot) < 0);
   };
 
-  m_cfg.sliceTester.connect<slicer>();
+  auto slicerNone = [](const std::shared_ptr<HoughMeasurementStruct>&,
+                       int slice) -> ResultBool {
+    return ResultBool::success(slice == -1);
+  };
+
+  auto slicerWedges = [](const std::shared_ptr<HoughMeasurementStruct>& meas,
+                         int slice) -> ResultBool {
+    if (slice == -1) {
+      return ResultBool::success(true);
+    }
+
+    return ResultBool::success(
+        Wedges::wedges[slice].in_rPhiZ(meas->radius, meas->phi, meas->z));
+  };
+
+  switch (m_cfg.slicing) {
+    case ActsExamples::Slicing::Wedges:
+      m_cfg.sliceTester.connect<slicerWedges>();
+      break;
+    case ActsExamples::Slicing::EqudistantEta:
+      m_cfg.sliceTester.connect<slicerEquidistantEta>();
+      break;
+    case ActsExamples::Slicing::None:
+      m_cfg.sliceTester.connect<slicerNone>();
+    default:
+      break;
+  }
 }
 
 ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
@@ -690,12 +717,13 @@ void ActsExamples::HoughTransformSeeder::addSpacePoints(
   // std::unordered_map<int, TH2F> zr, xy;
   // for (int slice : m_cfg.subRegions) {
   //   {
-  //     const auto name = (slice == -1) ? "zr_all" : std::format("zr_{}", slice);
-  //     zr[slice] = {name.c_str(), name.c_str(), 800, -3200, 3200, 400, 0, 1200};
+  //     const auto name = (slice == -1) ? "zr_all" : std::format("zr_{}",
+  //     slice); zr[slice] = {name.c_str(), name.c_str(), 800, -3200, 3200, 400,
+  //     0, 1200};
   //   }
   //   {
-  //     const auto name = (slice == -1) ? "xy_all" : std::format("xy_{}", slice);
-  //     xy[slice] = {name.c_str(), name.c_str(), 400,   -1200,
+  //     const auto name = (slice == -1) ? "xy_all" : std::format("xy_{}",
+  //     slice); xy[slice] = {name.c_str(), name.c_str(), 400,   -1200,
   //                  1200,         400,          -1200, 1200};
   //   }
   // }
