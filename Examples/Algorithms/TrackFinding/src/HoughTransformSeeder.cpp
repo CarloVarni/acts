@@ -22,6 +22,7 @@
 #include "ActsExamples/EventData/IndexSourceLink.hpp"
 #include "ActsExamples/EventData/Measurement.hpp"
 #include "ActsExamples/EventData/ProtoTrack.hpp"
+#include "ActsExamples/EventData/SimParticle.hpp"
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
 #include "ActsExamples/TrackFinding/DefaultHoughFunctions.hpp"
 #include "ActsExamples/Utilities/GroupBy.hpp"
@@ -57,7 +58,7 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
     : ActsExamples::IAlgorithm("HoughTransformSeeder", lvl),
       m_cfg(std::move(cfg)),
       m_logger(Acts::getDefaultLogger("HoughTransformSeeder", lvl)),
-      m_writer(std::make_unique<Writer>()) {
+      m_writer(std::make_unique<Writer>(m_cfg.writeToSingleFile)) {
   // require spacepoints or input measurements (or both), but at least one kind
   // of input
   bool foundInput = false;
@@ -94,6 +95,7 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
   m_outputProtoTracks.initialize(m_cfg.outputProtoTracks);
   m_inputMeasurements.initialize(m_cfg.inputMeasurements);
   m_inputMeasurementParticlesMap.initialize("measurement_particles_map");
+  m_inputParticles.initialize("particles_simulated");
 
   if (!m_cfg.trackingGeometry) {
     throw std::invalid_argument(
@@ -169,8 +171,10 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
         unquant(m_cfg.xMin, m_cfg.xMax, m_cfg.houghHistSize_x, i));
   }
 
+  const int fineBins = 50;
+  const float fineFactor = 4.;
   if (m_cfg.binning == Binning::FinerCentral) {
-    m_step_y = (m_cfg.yMax - m_cfg.yMin) / (50 + 4. * (m_cfg.houghHistSize_y - 50));
+    m_step_y = (m_cfg.yMax - m_cfg.yMin) / (fineBins + fineFactor * (m_cfg.houghHistSize_y - fineBins));
   }
 
   for (unsigned i = 0; i <= m_cfg.houghHistSize_y; i++) {
@@ -185,7 +189,7 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
                                       m_cfg.houghHistSize_y, 54, i));
     } else if (m_cfg.binning == Binning::FinerCentral) {
       m_bins_y.push_back(unquantFinerCentral(m_bins_y.back(), m_step_y,
-                                             m_cfg.houghHistSize_y, 50, 4., i));
+                                             m_cfg.houghHistSize_y, fineBins, fineFactor, i));
     }
   }
 
@@ -194,20 +198,57 @@ ActsExamples::HoughTransformSeeder::HoughTransformSeeder(
   m_cfg.layerIDFinder
       .connect<&ActsExamples::DefaultHoughFunctions::findLayerIDDefault>();
 
-  auto slicer = [](const std::shared_ptr<HoughMeasurementStruct>& meas,
-                   int slice) -> ResultBool {
+  auto slicerEquidistantEta =
+      [](const std::shared_ptr<HoughMeasurementStruct>& meas,
+         int slice) -> ResultBool {
     if (slice == -1) {
       return ResultBool::success(true);
     }
 
-    const auto [lo_cot, hi_cot] = sliceBorders.at(slice);
+    auto easing = [](double x) {
+      // return ((0 < x) - (x < 0)) * 32 *
+      // (1 - std::cos((x * std::numbers::pi) / 64));  // InSine
+      return ((0 < x) - (x < 0)) * 11 * (x * x / 121.);  // InSquare
+      // return 32 * (x * x * x / 32768);  // InCubic
+      // return ((0 < x) - (x < 0)) * (32 - std::sqrt(1024 - x * x));  // InCirc
+      // return x;  // Linear
+    };
+
+    const double lo_cot = easing(-11.0 + 11. / 16 * slice);
+    const double hi_cot = easing(-11.0 + 11. / 16. * (slice + 1));
     const double v1 = (meas->z + 200) / meas->radius;
     const double v2 = (meas->z - 200) / meas->radius;
 
     return ResultBool::success((v1 - lo_cot) * (v2 - hi_cot) < 0);
   };
 
-  m_cfg.sliceTester.connect<slicer>();
+  auto slicerNone = [](const std::shared_ptr<HoughMeasurementStruct>&,
+                       int slice) -> ResultBool {
+    return ResultBool::success(slice == -1);
+  };
+
+  auto slicerWedges = [](const std::shared_ptr<HoughMeasurementStruct>& meas,
+                         int slice) -> ResultBool {
+    if (slice == -1) {
+      return ResultBool::success(true);
+    }
+
+    return ResultBool::success(
+        Wedges::wedges[slice].in_rPhiZ(meas->radius, meas->phi, meas->z));
+  };
+
+  switch (m_cfg.slicing) {
+    case ActsExamples::Slicing::Wedges:
+      m_cfg.sliceTester.connect<slicerWedges>();
+      break;
+    case ActsExamples::Slicing::EqudistantEta:
+      m_cfg.sliceTester.connect<slicerEquidistantEta>();
+      break;
+    case ActsExamples::Slicing::None:
+      m_cfg.sliceTester.connect<slicerNone>();
+    default:
+      break;
+  }
 }
 
 ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
@@ -223,6 +264,7 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
   addMeasurements(ctx);
 
   const auto& measurementParticleMap = m_inputMeasurementParticlesMap(ctx);
+  const auto& particles = m_inputParticles(ctx);
 
   static thread_local ProtoTrackContainer protoTracks;
   protoTracks.clear();
@@ -291,7 +333,18 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
               });
 
           if (count * 2 >= particle_hashes.size()) {
-            m_writer->writeTree(ctx.eventNumber, subregion, y, x, hash, count);
+            const auto particle =
+                std::find_if(particles.begin(), particles.end(),
+                             [hash](const SimParticle& p) {
+                               return p.particleId().hash() == hash;
+                             });
+            if (particle != particles.end() &&
+                particle->transverseMomentum() > 1.) {
+              ACTS_DEBUG(std::format("particle={} pt={}", hash,
+                                     particle->transverseMomentum()));
+              m_writer->writeTree(ctx.eventNumber, subregion, y, x, hash,
+                                  count);
+            }
           }
         }
 
@@ -345,8 +398,11 @@ ActsExamples::ProcessCode ActsExamples::HoughTransformSeeder::execute(
                  m_bins_y.data(), m_cfg.houghHistSize_x, m_bins_x.data()));
 
     const auto all_peaks = slidingWindowPeaks(m_houghHist, m_cfg.slidingWindow);
+    ACTS_DEBUG(std::format("Found {} peaks", all_peaks.size()));
     for (const auto& peak : all_peaks) {
-      peaks_hist->Fill(m_bins_y[peak[0]], peak[1]);
+      ACTS_DEBUG(std::format("peak=({},{}) bin=({},{})", m_bins_y[peak[0]],
+                             m_bins_x[peak[1]], peak[0] + 1, peak[1] + 1));
+      peaks_hist->Fill(m_bins_y[peak[0]], m_bins_x[peak[1]]);
     }
 
     if (m_cfg.writeToSingleFile) {
@@ -504,7 +560,7 @@ static inline double unquantFinerCentral(double previous, double stepSize,
   if (iStep == 0) {
     return -1;
   }
-  
+
   const unsigned half = nSteps / 2;
   if (iStep <= half -  from / 2 || iStep > nSteps - half + from / 2) {
     return previous + factor * stepSize;
@@ -663,12 +719,19 @@ void ActsExamples::HoughTransformSeeder::addSpacePoints(
   // construct the combined input container of space point pointers from all
   // configured input sources.
 
-  // auto file = TFile::Open("zr.root", "recreate");
-  // std::vector<TH2F> zr;
-  // for (int i = 0; i < 32; ++i) {
-  //   const auto name = std::format("zr_{}", i);
-  //   zr.emplace_back(name.c_str(), name.c_str(), 600, -3000, 3000, 120, 0,
-  //   1200);
+  // auto file = TFile::Open("hitmaps.root", "recreate");
+  // std::unordered_map<int, TH2F> zr, xy;
+  // for (int slice : m_cfg.subRegions) {
+  //   {
+  //     const auto name = (slice == -1) ? "zr_all" : std::format("zr_{}",
+  //     slice); zr[slice] = {name.c_str(), name.c_str(), 800, -3200, 3200, 400,
+  //     0, 1200};
+  //   }
+  //   {
+  //     const auto name = (slice == -1) ? "xy_all" : std::format("xy_{}",
+  //     slice); xy[slice] = {name.c_str(), name.c_str(), 400,   -1200,
+  //                  1200,         400,          -1200, 1200};
+  //   }
   // }
   for (const auto& isp : m_inputSpacePoints) {
     const auto& spContainer = (*isp)(ctx);
@@ -699,9 +762,13 @@ void ActsExamples::HoughTransformSeeder::addSpacePoints(
           std::shared_ptr<HoughMeasurementStruct>(new HoughMeasurementStruct(
               hitlayer.value(), phi, r, z, eta, indices, HoughHitType::SP));
       houghMeasurementStructs.push_back(meas);
-      // for (int i = 0; i < 32; ++i) {
-      //   if (m_cfg.sliceTester(meas, i).value()) {
-      //     zr[i].Fill(z, r);
+      // for (int slice : m_cfg.subRegions) {
+      //   if (m_cfg.sliceTester(meas, slice).value()) {
+      //     zr[slice].Fill(z, r);
+      //     if ((r < 200 && std::fabs(z) < 600) ||
+      //         (r > 200 && std::fabs(z) < 1200)) {
+      //       xy[slice].Fill(sp.x(), sp.y());
+      //     }
       //   }
       // }
     }

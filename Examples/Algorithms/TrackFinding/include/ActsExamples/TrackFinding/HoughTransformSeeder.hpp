@@ -122,24 +122,6 @@ class TrackingGeometry;
 }
 
 namespace ActsExamples {
-  static const std::array<std::pair<double, double>, 13> sliceBorders = {
-    std::pair<double, double>(-12.2553, -10.3525),
-    std::pair<double, double>(-10.3713, -8.4685),
-    std::pair<double, double>(-8.48734, -6.58452),
-    std::pair<double, double>(-6.60336, -4.70054),
-    std::pair<double, double>(-4.71938, -2.81655),
-    std::pair<double, double>(-2.83539, -0.932571),
-    std::pair<double, double>(-0.951411, 0.951411),
-    std::pair<double, double>(0.932571, 2.83539),
-    std::pair<double, double>(2.81655, 4.71938),
-    std::pair<double, double>(4.70054, 6.60336),
-    std::pair<double, double>(6.58452, 8.48734),
-    std::pair<double, double>(8.4685, 10.3713),
-    std::pair<double, double>(10.3525, 12.2553)
-  };
-}
-
-namespace ActsExamples {
 /// Used in multiple places. The 2d vector refers to the 2d houghHist. For a
 /// single layer, the int refers to the number of hits in the bin of the
 /// houghHist
@@ -160,6 +142,7 @@ using HoughHist = Acts::HoughTransformUtils::HoughPlane<HoughMeasurement>;
 
 enum HoughHitType { SP = 0, MEASUREMENT = 1 };
 enum class Binning { EqudistantQoverPt, EqudistantPt, Steps, FinerCentral };
+enum class Slicing { None, EqudistantEta, Wedges };
 
 /// The measurements and SP are ugly to use, this is a convenience struct that
 /// contains the needed information
@@ -281,6 +264,8 @@ class HoughTransformSeeder final : public IAlgorithm {
     std::uint32_t truthThreshold = 5;
 
     Binning binning = Binning::FinerCentral;
+    Slicing slicing = Slicing::Wedges;
+
     bool writeToSingleFile = false;  // Defaults to false for now
   };
 
@@ -328,6 +313,9 @@ class HoughTransformSeeder final : public IAlgorithm {
 
   ReadDataHandle<MeasurementParticlesMap> m_inputMeasurementParticlesMap{
       this, "measurement_particles_map"};
+
+  ReadDataHandle<SimParticleContainer> m_inputParticles{this,
+                                                        "particles_simulated"};
 
   ////////////////////////////////////////////////////////////////////////
   /// Convenience
@@ -383,9 +371,12 @@ struct ActsExamples::HoughTransformSeeder::Writer {
   std::uint64_t truth_hash{};
   std::uint32_t truth_hits{};
 
-  explicit Writer()
-      : file_truth(TFile::Open("truth.root", "recreate")),
-        file_histo(TFile::Open("out.root", "recreate")) {
+  explicit Writer(bool use_single_file)
+      : file_truth(TFile::Open("truth.root", "recreate")) {
+    if (use_single_file) {
+      file_histo = TFile::Open("out.root", "recreate");
+    }
+
     tree = new TTree("truth", "truth");
     tree->SetDirectory(file_truth);
 
@@ -436,9 +427,79 @@ struct ActsExamples::HoughTransformSeeder::Writer {
     file_truth->Write();
     file_truth->Close();
 
-    file_histo->Write();
-    file_histo->Close();
+    if (file_histo != nullptr) {
+      file_histo->Write();
+      file_histo->Close();
+    }
   }
 };
+
+struct Reg {
+  float center;
+  float width;
+};
+
+struct Wedge {
+  Reg phi;
+  float aleft;
+  float aright;
+  float bleft;
+  float bright;
+
+  Wedge(Reg p, Reg z, Reg eta) : phi(p) {
+    aleft = std::tan(2.0 * std::atan(std::exp(-(eta.center - eta.width))));
+    aright = std::tan(2.0 * std::atan(std::exp(-(eta.center + eta.width))));
+    bleft = -aleft / (z.center - z.width);
+    bright = -aright / (z.center + z.width);
+  }
+
+  static float delta_phi(float phi1, float phi2) {
+    const float delta = phi1 - phi2;
+    if (delta > M_PI) {
+      return delta - M_PI;
+    } else if (delta < 0) {
+      return delta + M_PI;
+    }
+
+    return delta;
+  }
+
+  bool in_rPhiZ(float r, float p, float z) const {
+    if (std::fabs(delta_phi(p, phi.center)) > phi.width) {
+      return false;
+    }
+
+    if (aleft > 0 && aright > 0) {
+      return aleft * z + bleft > r && r > aright * z + bright;
+    } else if (aleft < 0 && aright > 0) {
+      return aleft * z + bleft < r && r > aright * z + bright;
+    }
+    return aleft * z + bleft < r && r < aright * z + bright;
+  }
+};
+
+namespace Wedges {
+static constexpr std::size_t nWedges = 13;
+static constexpr float etaWidth = 0.23076923076923078;
+static constexpr float zWidth = 150;  // [mm]
+static constexpr Reg phi{0, M_PI};
+static constexpr Reg z{0, 1. / zWidth};
+
+static std::array<Wedge, nWedges> wedges{
+    Wedge(phi, z, {-2.769230769230769, etaWidth}),
+    Wedge(phi, z, {-2.3076923076923075, etaWidth}),
+    Wedge(phi, z, {-1.8461538461538458, etaWidth}),
+    Wedge(phi, z, {-1.3846153846153846, etaWidth}),
+    Wedge(phi, z, {-0.9230769230769229, etaWidth}),
+    Wedge(phi, z, {-0.4615384615384613, etaWidth}),
+    Wedge(phi, z, {0, etaWidth}),
+    Wedge(phi, z, {0.4615384615384616, etaWidth}),
+    Wedge(phi, z, {0.9230769230769234, etaWidth}),
+    Wedge(phi, z, {1.384615384615385, etaWidth}),
+    Wedge(phi, z, {1.8461538461538467, etaWidth}),
+    Wedge(phi, z, {2.3076923076923084, etaWidth}),
+    Wedge(phi, z, {2.769230769230769, etaWidth}),
+};
+}  // namespace Wedges
 
 }  // namespace ActsExamples
