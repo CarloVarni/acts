@@ -477,25 +477,26 @@ struct Wedge {
 };
 
 namespace Wedges {
-static constexpr std::size_t N_WEDGES = 13;
-static constexpr float WIDTH = 0.23076923076923078;
-static constexpr Reg PHI{0, M_PI};
-static constexpr Reg ZZ{0, 1. / 150};
+static constexpr std::size_t nWedges = 13;
+static constexpr float etaWidth = 0.23076923076923078;
+static constexpr float zWidth = 150;  // [mm]
+static constexpr Reg phi{0, M_PI};
+static constexpr Reg z{0, 1. / zWidth};
 
-static std::array<Wedge, N_WEDGES> wedges{
-    Wedge(PHI, ZZ, {-2.769230769230769, WIDTH}),
-    Wedge(PHI, ZZ, {-2.3076923076923075, WIDTH}),
-    Wedge(PHI, ZZ, {-1.8461538461538458, WIDTH}),
-    Wedge(PHI, ZZ, {-1.3846153846153846, WIDTH}),
-    Wedge(PHI, ZZ, {-0.9230769230769229, WIDTH}),
-    Wedge(PHI, ZZ, {-0.4615384615384613, WIDTH}),
-    Wedge(PHI, ZZ, {0, WIDTH}),
-    Wedge(PHI, ZZ, {0.4615384615384616, WIDTH}),
-    Wedge(PHI, ZZ, {0.9230769230769234, WIDTH}),
-    Wedge(PHI, ZZ, {1.384615384615385, WIDTH}),
-    Wedge(PHI, ZZ, {1.8461538461538467, WIDTH}),
-    Wedge(PHI, ZZ, {2.3076923076923084, WIDTH}),
-    Wedge(PHI, ZZ, {2.769230769230769, WIDTH}),
+static std::array<Wedge, nWedges> wedges{
+    Wedge(phi, z, {-2.769230769230769, etaWidth}),
+    Wedge(phi, z, {-2.3076923076923075, etaWidth}),
+    Wedge(phi, z, {-1.8461538461538458, etaWidth}),
+    Wedge(phi, z, {-1.3846153846153846, etaWidth}),
+    Wedge(phi, z, {-0.9230769230769229, etaWidth}),
+    Wedge(phi, z, {-0.4615384615384613, etaWidth}),
+    Wedge(phi, z, {0, etaWidth}),
+    Wedge(phi, z, {0.4615384615384616, etaWidth}),
+    Wedge(phi, z, {0.9230769230769234, etaWidth}),
+    Wedge(phi, z, {1.384615384615385, etaWidth}),
+    Wedge(phi, z, {1.8461538461538467, etaWidth}),
+    Wedge(phi, z, {2.3076923076923084, etaWidth}),
+    Wedge(phi, z, {2.769230769230769, etaWidth}),
 };
 }  // namespace Wedges
 
