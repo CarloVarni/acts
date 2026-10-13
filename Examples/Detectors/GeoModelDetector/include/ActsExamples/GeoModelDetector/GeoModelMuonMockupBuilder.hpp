@@ -36,6 +36,13 @@ class GeoModelMuonMockupBuilder : public Acts::ITrackingGeometryBuilder {
     /// The station names to be built (e.g for barrel: BIL, BML etc)
     std::vector<std::string> stationNames{};
 
+    /// Tolerance by which each chamber (parent) volume is inflated w.r.t. the
+    /// GeoModel envelope, such that its boundaries do not coincide with the
+    /// boundaries of the child volumes (RPC / TGC / MDT multilayers). Barrel
+    /// chambers are not inflated along their width (local x), as neighbouring
+    /// sectors touch there.
+    double chamberEnvelope{0.5};  // mm
+
     /// Pointer to the volume bound factory to share the bounds across several
     /// volumes
     std::shared_ptr<Acts::VolumeBoundFactory> volumeBoundFactory =
@@ -53,12 +60,87 @@ class GeoModelMuonMockupBuilder : public Acts::ITrackingGeometryBuilder {
       const Acts::GeometryContext& gctx) const override;
 
  private:
+  // Enum class for the station indices
+  enum class StationIdx : std::uint8_t {
+    BI,   // Inner Barrel
+    BM,   // Middle Barrel
+    BO,   // Outer Barrel
+    EAI,  // Endcap Inner A-side
+    EAM,  // Endcap Middle A-side
+    EAO,  // Endcap Outer A-side
+    ECI,  // Endcap Inner C-side
+    ECM,  // Endcap Middle C-side
+    ECO,  // Endcap Outer C-side
+    nStations
+  };
+  // Enum class for the first level of container indices
+  enum class FirstContainerIdx : std::uint8_t {
+    Central,  // Central container for barrel & NSWs
+    BW_A,     // Big Wheel A-side
+    BW_C,     // Big Wheel C-side
+    nFirstContainers
+  };
+  // Enum class for the second level of container indices when the first is
+  // Central
+  enum class SecondContainerIdx : std::uint8_t {
+    Barrel,  // Barrel container
+    NSWs,    // NSW container
+    nSecondContainers
+  };
+
   Config m_cfg;
 
-  std::shared_ptr<Acts::Experimental::StaticBlueprintNode> buildBarrelNode(
-      const ConvertedVolList_t& boundingBoxes, const std::string& name,
-      Acts::VolumeBoundFactory& boundFactory,
-      const Acts::GeometryIdentifier& geoId) const;
+  using Box_t = ConvertedVolList_t::value_type;
+  using Node_t = Acts::StaticBlueprintNode;
+  using NodePtr_t = std::shared_ptr<Node_t>;
+
+  /// @brief Produce a station node from the provided converted volume boxes
+  NodePtr_t processStation(const Acts::GeometryContext& gctx,
+                           const std::span<Box_t> boundingBoxes,
+                           const std::string& station, const bool isBarrel,
+                           Acts::VolumeBoundFactory& boundFactory,
+                           const Acts::GeometryIdentifier& geoId) const;
+
+  /// @brief Build a child chamber node from the provided converted volume box
+  NodePtr_t buildChildChamber(const Acts::GeometryContext& gctx,
+                              const Box_t& box,
+                              Acts::VolumeBoundFactory& boundFactory,
+                              const Acts::GeometryIdentifier& geoId) const;
+
+  /// @brief Helper struct to store cylinder bounds, used to compute the overall bounds
+  ///        of a station tracking volume from its component volumes
+  struct cylBounds {
+    /// @brief Lowest radius
+    double rMin{std::numeric_limits<double>::max()};
+    /// @brief Highest radius
+    double rMax{std::numeric_limits<double>::lowest()};
+    /// @brief Lowest longitudinal coordinate
+    double zMin{std::numeric_limits<double>::max()};
+    /// @brief Highest longitudinal coordinate
+    double zMax{std::numeric_limits<double>::lowest()};
+  };
+  /// @brief Helper function to update the cylinder bounds of each station across its component volumes (chambers)
+  /// @tparam VolBounds_t: The bounds type of the chamber volume
+  /// @param volume: The chamber volume to extract the bounds from
+  /// @param bounds: The cylBounds object to be updated
+  template <Acts::VolumeBounds::BoundsType VolBounds_t>
+  void updateBounds(const Acts::GeometryContext& gctx,
+                    const Acts::TrackingVolume& volume,
+                    cylBounds& bounds) const;
+
+  /// @brief Return the chamber bounds inflated by Config::chamberEnvelope
+  std::shared_ptr<Acts::VolumeBounds> inflateChamberBounds(
+      const Acts::VolumeBounds& bounds,
+      Acts::VolumeBoundFactory& boundFactory) const;
+
+  // Helper function returning the station idx from a box volume
+  StationIdx getStationIdx(const Box_t& box) const;
+  // Helper function returning the first-level container idx from a station idx
+  FirstContainerIdx getFirstContainerIdx(const StationIdx& stationIdx) const;
+  // Helper function converting the station idx to string
+  static std::string stationIdxToString(const StationIdx idx);
+  // Helper function converting the first-level container idx to string
+  static std::string firstContainerIdxToString(const FirstContainerIdx idx);
 
   /// Private access method to the logger
   const Acts::Logger& logger() const { return *m_logger; }

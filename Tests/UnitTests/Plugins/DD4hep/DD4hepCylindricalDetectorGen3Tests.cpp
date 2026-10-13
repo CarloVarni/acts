@@ -9,7 +9,6 @@
 #include <boost/test/unit_test.hpp>
 
 #include "Acts/Definitions/Units.hpp"
-#include "Acts/Detector/Detector.hpp"
 #include "Acts/Geometry/Blueprint.hpp"
 #include "Acts/Geometry/BlueprintNode.hpp"
 #include "Acts/Geometry/ContainerBlueprintNode.hpp"
@@ -48,7 +47,7 @@ using namespace ActsPlugins;
 
 namespace ActsTests {
 
-GeometryContext tContext;
+auto tContext = GeometryContext::dangerouslyDefaultConstruct();
 CylindricalTrackingGeometry cGeometry = CylindricalTrackingGeometry(tContext);
 
 const char* beampipe_head_xml =
@@ -426,14 +425,14 @@ BOOST_AUTO_TEST_CASE(DD4hepCylidricalDetectorExplicit) {
 
   auto worldSolidDim = lcdd->worldVolume().solid().dimensions();  // better way?
 
-  Experimental::Blueprint::Config cfg;
+  Blueprint::Config cfg;
   // Is the following correct?
   cfg.envelope[AxisX] = {worldSolidDim[0], worldSolidDim[0]};
   cfg.envelope[AxisY] = {worldSolidDim[1], worldSolidDim[1]};
   cfg.envelope[AxisZ] = {worldSolidDim[2], worldSolidDim[2]};
   // cfg.envelope[AxisR] = {0_mm, worldSolidDim[1]};
 
-  auto blueprint = std::make_unique<Experimental::Blueprint>(cfg);
+  auto blueprint = std::make_unique<Blueprint>(cfg);
   auto& cylinder = blueprint->addCylinderContainer("Detector", AxisR);
 
   // ------- Add Beam Pipe to Blueprint -------
@@ -458,9 +457,9 @@ BOOST_AUTO_TEST_CASE(DD4hepCylidricalDetectorExplicit) {
     geoId.addMaterial("BeamPipe_Material", [&](auto& mat) {
       mat.configureFace(
           OuterCylinder,
-          {AxisRPhi, Bound,
-           20},  // Where do these 20-s come from? (here and on the next line)
-          {AxisZ, Bound, 20});
+          // Where do these 20-s come from? (here and on the next line)
+          AxisSpec::DeferredEquidistant(20, AxisRPhi),
+          AxisSpec::DeferredEquidistant(20, AxisZ));
       mat.addStaticVolume(beamPipeTransform,
                           std::make_shared<CylinderVolumeBounds>(
                               0, beamPipeRMax, beamPipeHalfZ),
@@ -474,7 +473,9 @@ BOOST_AUTO_TEST_CASE(DD4hepCylidricalDetectorExplicit) {
   auto pixelBarrelElement = find_element(*pixelElement, "PixelBarrel");
 
   cylinder.addMaterial("Pixel_Material", [&](auto& mat) {
-    mat.configureFace(OuterCylinder, {AxisRPhi, Bound, 20}, {AxisZ, Bound, 20});
+    mat.configureFace(OuterCylinder,
+                      AxisSpec::DeferredEquidistant(20, AxisRPhi),
+                      AxisSpec::DeferredEquidistant(20, AxisZ));
     auto& pixelContainer = mat.addCylinderContainer("Pixel", AxisZ);
 
     // Add barrel container
@@ -500,10 +501,10 @@ BOOST_AUTO_TEST_CASE(DD4hepCylidricalDetectorExplicit) {
     int layerId{0};
     for (const auto& [nameLayer, layer] : pixelBarrelElement->children()) {
       for (const auto& [nameModule, module] : layer.children()) {
-        std::string detAxis =
-            getParamOr<std::string>("axis_definitions", module, "XYZ");
+        auto detAxis = TGeoAxes::parse(
+            getParamOr<std::string>("axis_definitions", module, "XYZ"));
         auto dd4hepDetEl = std::make_shared<DD4hepDetectorElement>(
-            module, detAxis, 1_cm, false, nullptr);
+            module, detAxis, 1_cm, nullptr);
         detectorElements.push_back(dd4hepDetEl);
         layers[layerId].push_back(dd4hepDetEl->surface().getSharedPtr());
       }
@@ -511,7 +512,7 @@ BOOST_AUTO_TEST_CASE(DD4hepCylidricalDetectorExplicit) {
     }
 
     for (const auto& [ilayer, surfaces] : layers) {
-      Experimental::BlueprintNode* lparent = nullptr;
+      BlueprintNode* lparent = nullptr;
 
       // Outermost layer can't have material, because it will get merged
       // with the outer cylinder shell of the endcap cylinders
@@ -543,8 +544,9 @@ BOOST_AUTO_TEST_CASE(DD4hepCylidricalDetectorExplicit) {
       if (ilayer < static_cast<int>(layers.size() - 1)) {
         auto& lmat = barrel.addMaterial(
             std::format("Pixel_Barrel_L{}_Material", ilayer));
-        lmat.configureFace(OuterCylinder, {AxisRPhi, Bound, 40},
-                           {AxisZ, Bound, 20});
+        lmat.configureFace(OuterCylinder,
+                           AxisSpec::DeferredEquidistant(40, AxisRPhi),
+                           AxisSpec::DeferredEquidistant(20, AxisZ));
         lparent = &lmat;
       } else {
         lparent = &barrel;
@@ -587,10 +589,10 @@ BOOST_AUTO_TEST_CASE(DD4hepCylidricalDetectorExplicit) {
       layerId = 0;
       for (const auto& [nameLayer, layer] : pixelEndcapElement->children()) {
         for (const auto& [nameModule, module] : layer.children()) {
-          std::string detAxis =
-              getParamOr<std::string>("axis_definitions", module, "XYZ");
+          auto detAxis = TGeoAxes::parse(
+              getParamOr<std::string>("axis_definitions", module, "XYZ"));
           auto dd4hepDetEl = std::make_shared<DD4hepDetectorElement>(
-              module, detAxis, 1_cm, false, nullptr);
+              module, detAxis, 1_cm, nullptr);
           detectorElements.push_back(dd4hepDetEl);
           initialLayers[layerId].push_back(
               dd4hepDetEl->surface().getSharedPtr());
@@ -602,7 +604,8 @@ BOOST_AUTO_TEST_CASE(DD4hepCylidricalDetectorExplicit) {
       std::vector<LayerData> protoLayers;
       protoLayers.reserve(initialLayers.size());
       for (const auto& [key, surfaces] : initialLayers) {
-        auto& layer = protoLayers.emplace_back(GeometryContext(), surfaces);
+        auto& layer = protoLayers.emplace_back(
+            GeometryContext::dangerouslyDefaultConstruct(), surfaces);
         layer.protoLayer.envelope[AxisR] = {2_mm, 2_mm};
         layer.protoLayer.envelope[AxisZ] = {1_mm, 1_mm};
       }
@@ -613,8 +616,8 @@ BOOST_AUTO_TEST_CASE(DD4hepCylidricalDetectorExplicit) {
                                  std::abs(b.protoLayer.medium(AxisZ));
                         });
 
-      std::vector<LayerData> mergedLayers =
-          mergeLayers(GeometryContext(), protoLayers);
+      std::vector<LayerData> mergedLayers = mergeLayers(
+          GeometryContext::dangerouslyDefaultConstruct(), protoLayers);
 
       // Create layers from proto layers
       for (const auto& [key, pl] : enumerate(mergedLayers)) {
@@ -643,7 +646,8 @@ BOOST_AUTO_TEST_CASE(DD4hepCylidricalDetectorExplicit) {
         if (key < mergedLayers.size() - 1) {
           ec.addMaterial(layerName + "_Material", [&](auto& lmat) {
             lmat.configureFace(ecid < 0 ? NegativeDisc : PositiveDisc,
-                               {AxisR, Bound, 40}, {AxisPhi, Bound, 40});
+                               AxisSpec::DeferredEquidistant(40, AxisR),
+                               AxisSpec::DeferredEquidistant(40, AxisPhi));
             addLayer(lmat);
           });
         } else {
@@ -659,7 +663,7 @@ BOOST_AUTO_TEST_CASE(DD4hepCylidricalDetectorExplicit) {
   blueprint->graphviz(dotOut);
 
   // Final step
-  GeometryContext gctx;
+  auto gctx = GeometryContext::dangerouslyDefaultConstruct();
   auto logger = getDefaultLogger("Geo", Logging::VERBOSE);
   auto trackingGeometry = blueprint->construct({}, gctx, *logger);
 

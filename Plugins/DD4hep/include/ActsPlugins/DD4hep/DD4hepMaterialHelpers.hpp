@@ -9,7 +9,6 @@
 #pragma once
 
 #include "Acts/Material/ProtoSurfaceMaterial.hpp"
-#include "Acts/Utilities/BinningData.hpp"
 #include "Acts/Utilities/BinningType.hpp"
 #include "Acts/Utilities/Logger.hpp"
 
@@ -27,6 +26,8 @@ class Layer;
 }
 
 namespace ActsPlugins {
+/// @addtogroup dd4hep_plugin
+/// @{
 
 /// Helper method to translate DD4hep material to Acts::ISurfaceMaterial
 ///
@@ -74,11 +75,16 @@ void addLayerProtoMaterial(
 /// @param binning the Binning prescription for the ActsExtension
 /// @param logger a @c Logger for output
 ///
-/// @return Shared pointer to ProtoSurfaceMaterial created from DD4hep parameters
-std::shared_ptr<Acts::ProtoSurfaceMaterial> createProtoMaterial(
+/// Ranges remain deferred until material mapping resolves them from the
+/// surface. Cylinder binPhi counts refer to the local rphi axis. Nonpositive
+/// counts represent a homogeneous (single-bin) dimension.
+/// @return Proto-grid material with deferred ranges
+/// @throws std::invalid_argument if the prescription does not contain two axes
+std::shared_ptr<Acts::ProtoGridSurfaceMaterial> createProtoMaterial(
     const dd4hep::rec::VariantParameters& params, const std::string& valueTag,
     const std::vector<std::pair<const std::string, Acts::BinningOption> >&
         binning,
     const Acts::Logger& logger = Acts::getDummyLogger());
 
+/// @}
 }  // namespace ActsPlugins

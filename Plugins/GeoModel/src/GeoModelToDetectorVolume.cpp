@@ -8,15 +8,12 @@
 
 #include "ActsPlugins/GeoModel/GeoModelToDetectorVolume.hpp"
 
-#include "Acts/Detector/GeometryIdGenerator.hpp"
-#include "Acts/Detector/PortalGenerators.hpp"
 #include "Acts/Geometry/CuboidVolumeBounds.hpp"
 #include "Acts/Geometry/CutoutCylinderVolumeBounds.hpp"
 #include "Acts/Geometry/CylinderVolumeBounds.hpp"
 #include "Acts/Geometry/GeometryIdentifier.hpp"
 #include "Acts/Geometry/TrapezoidVolumeBounds.hpp"
-#include "Acts/Navigation/DetectorVolumeFinders.hpp"
-#include "Acts/Navigation/InternalNavigation.hpp"
+#include "Acts/Utilities/TransformHelpers.hpp"
 
 #include <numbers>
 
@@ -39,7 +36,7 @@ namespace ActsPlugins::GeoModel {
 Transform3 volumePosInSpace(const PVConstLink& physVol) {
   if (auto fullPhys = dynamic_pointer_cast<const GeoVFullPhysVol>(physVol);
       fullPhys != nullptr) {
-    return fullPhys->getAbsoluteTransform();
+    return makeTransform3(fullPhys->getAbsoluteTransform());
   }
   /// @brief GeoNodePositioning is the class which handles
   ///        the absolute placement of a GeoVPhysVol. Its constructor
@@ -51,14 +48,14 @@ Transform3 volumePosInSpace(const PVConstLink& physVol) {
   };
 
   GeoVolumePositioner positioner{physVol};
-  return positioner.getAbsoluteTransform();
+  return makeTransform3(positioner.getAbsoluteTransform());
 }
 std::shared_ptr<Volume> convertVolume(const Transform3& trf,
                                       const GeoShape* shape,
                                       VolumeBoundFactory& boundFactory) {
   assert(shape);
   std::shared_ptr<VolumeBounds> bounds{};
-  GeoTrf::Transform3D newTrf = trf;
+  Transform3 newTrf = trf;
   const ShapeType id = shape->typeID();
   if (id == GeoTube::getClassTypeID()) {
     const auto* tube = dynamic_cast<const GeoTube*>(shape);
@@ -69,7 +66,8 @@ std::shared_ptr<Volume> convertVolume(const Transform3& trf,
     bounds = boundFactory.makeBounds<CylinderVolumeBounds>(
         tubs->getRMin(), tubs->getRMax(), tubs->getZHalfLength(),
         tubs->getDPhi() / 2);
-    newTrf = trf * GeoTrf::RotateZ3D(tubs->getSPhi() + 0.5 * tubs->getDPhi());
+    newTrf = trf * AngleAxis3(tubs->getSPhi() + 0.5 * tubs->getDPhi(),
+                              Vector3::UnitZ());
   } else if (id == GeoBox::getClassTypeID()) {
     const auto* box = dynamic_cast<const GeoBox*>(shape);
     bounds = boundFactory.makeBounds<CuboidVolumeBounds>(
@@ -95,25 +93,25 @@ std::shared_ptr<Volume> convertVolume(const Transform3& trf,
         // y axis in ACTS is z axis in geomodel
         bounds = boundFactory.makeBounds<TrapezoidVolumeBounds>(x1, x2, z, y1);
         constexpr double rotationAngle = std::numbers::pi / 2.;
-        newTrf = trf * GeoTrf::RotateX3D(rotationAngle);
+        newTrf = trf * AngleAxis3(rotationAngle, Vector3::UnitX());
       } else {
         bounds = boundFactory.makeBounds<TrapezoidVolumeBounds>(x2, x1, z, y1);
         constexpr double rotationAngle = std::numbers::pi;
-        newTrf = trf * GeoTrf::RotateY3D(rotationAngle) *
-                 GeoTrf::RotateZ3D(rotationAngle);
+        newTrf = trf * AngleAxis3(rotationAngle, Vector3::UnitY()) *
+                 AngleAxis3(rotationAngle, Vector3::UnitZ());
       }
     } else if (x1 == x2) {
       if (y1 < y2) {
         bounds = boundFactory.makeBounds<TrapezoidVolumeBounds>(y1, y2, z, x1);
         auto rotationAngle = std::numbers::pi / 2.;
-        newTrf = trf * GeoTrf::RotateZ3D(rotationAngle) *
-                 GeoTrf::RotateX3D(rotationAngle);
+        newTrf = trf * AngleAxis3(rotationAngle, Vector3::UnitZ()) *
+                 AngleAxis3(rotationAngle, Vector3::UnitX());
       } else {
         bounds = boundFactory.makeBounds<TrapezoidVolumeBounds>(y2, y1, z, x1);
         auto rotationAngle = std::numbers::pi;
-        newTrf = trf * GeoTrf::RotateX3D(rotationAngle) *
-                 GeoTrf::RotateZ3D(rotationAngle / 2) *
-                 GeoTrf::RotateX3D(rotationAngle / 2);
+        newTrf = trf * AngleAxis3(rotationAngle, Vector3::UnitX()) *
+                 AngleAxis3(rotationAngle / 2, Vector3::UnitZ()) *
+                 AngleAxis3(rotationAngle / 2, Vector3::UnitX());
       }
     } else {
       throw std::runtime_error("convertVolume() - Translating the GeoTrd " +
@@ -130,21 +128,12 @@ std::shared_ptr<Volume> convertVolume(const Transform3& trf,
     const auto shiftShape =
         dynamic_pointer_cast<const GeoShapeShift>(compressed);
     const GeoShape* shapeOp = shiftShape->getOp();
-    return convertVolume(newTrf * shiftShape->getX(), shapeOp, boundFactory);
+    return convertVolume(newTrf * makeTransform3(shiftShape->getX()), shapeOp,
+                         boundFactory);
   } else {
     throw std::runtime_error("Cannot convert " + printGeoShape(shape));
   }
   return std::make_shared<Volume>(newTrf, bounds);
-}
-
-std::shared_ptr<Experimental::DetectorVolume> convertDetectorVolume(
-    const GeometryContext& context, Volume& vol, const std::string& name,
-    const std::vector<std::shared_ptr<Surface>>& sensitives) {
-  auto portalGenerator = Experimental::defaultPortalAndSubPortalGenerator();
-  return Experimental::DetectorVolumeFactory::construct(
-      portalGenerator, context, name, vol.transform(), vol.volumeBoundsPtr(),
-      sensitives, std::vector<std::shared_ptr<Experimental::DetectorVolume>>{},
-      Experimental::tryNoVolumes(), Experimental::tryAllPortalsAndSurfaces());
 }
 
 }  // namespace ActsPlugins::GeoModel

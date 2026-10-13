@@ -8,11 +8,12 @@
 
 #pragma once
 
+#include "Acts/EventData/MultiComponentTrackParameters.hpp"
 #include "Acts/EventData/MultiTrajectory.hpp"
 #include "Acts/Geometry/GeometryContext.hpp"
 #include "Acts/MagneticField/MagneticFieldContext.hpp"
-#include "Acts/Propagator/MultiEigenStepperLoop.hpp"
-#include "Acts/Propagator/Propagator.hpp"
+#include "Acts/Propagator/PropagatorOptions.hpp"
+#include "Acts/TrackFitting/GsfComponent.hpp"
 #include "Acts/TrackFitting/detail/VoidFitterComponents.hpp"
 #include "Acts/Utilities/CalibrationContext.hpp"
 #include "Acts/Utilities/Delegate.hpp"
@@ -20,30 +21,28 @@
 
 namespace Acts {
 
+/// @addtogroup track_fitting
+/// @{
+
 /// @enum ComponentMergeMethod
 ///
 /// Available reduction methods for the reduction of a Gaussian mixture
+//! [component merge method]
 enum class ComponentMergeMethod { eMean, eMaxWeight };
+//! [component merge method]
 
-/// @struct GsfComponent
-///
-/// Encapsulates a component of a Gaussian mixture as used by the GSF
-struct GsfComponent {
-  /// Weight of this component in the Gaussian mixture
-  double weight = 0;
-  /// Bound track parameters for this component
-  BoundVector boundPars = BoundVector::Zero();
-  /// Covariance matrix for the bound track parameters
-  BoundSquareMatrix boundCov = BoundSquareMatrix::Identity();
-};
-
+/// Column names and types for the optional GSF track-container columns
 namespace GsfConstants {
+/// Track-container column name holding the final multi-component state
 constexpr std::string_view kFinalMultiComponentStateColumn =
     "gsf-final-multi-component-state";
+/// Type stored in the final multi-component-state column
 using FinalMultiComponentState =
-    std::optional<Acts::MultiComponentBoundTrackParameters>;
+    std::optional<MultiComponentBoundTrackParameters>;
+/// Track-container column name for the summed forward material @f$x/X_0@f$
 constexpr std::string_view kFwdSumMaterialXOverX0 =
     "gsf-fwd-sum-material-x-over-x0";
+/// Track-container column name for the maximum forward material @f$x/X_0@f$
 constexpr std::string_view kFwdMaxMaterialXOverX0 =
     "gsf-fwd-max-material-x-over-x0";
 }  // namespace GsfConstants
@@ -69,8 +68,10 @@ struct GsfExtensions {
   using OutlierFinder = Delegate<bool(ConstTrackStateProxy)>;
 
   /// Type alias for component reducer delegate function
+  //! [mixture reducer]
   using ComponentReducer =
       Delegate<void(std::vector<GsfComponent> &, std::size_t, const Surface &)>;
+  //! [mixture reducer]
 
   /// The Calibrator is a dedicated calibration algorithm that allows
   /// to calibrate measurements using track information, this could be
@@ -101,36 +102,56 @@ struct GsfExtensions {
   }
 };
 
+/// Options for configuring the Gaussian-sum filter fit.
 template <typename traj_t>
 struct GsfOptions {
+  /// Geometry context for this fit
   std::reference_wrapper<const GeometryContext> geoContext;
+  /// Magnetic field context for this fit
   std::reference_wrapper<const MagneticFieldContext> magFieldContext;
+  /// Calibration context for this fit
   std::reference_wrapper<const CalibrationContext> calibrationContext;
 
+  /// Extensions for GSF components
   GsfExtensions<traj_t> extensions;
 
+  /// Propagator options
   PropagatorPlainOptions propagatorPlainOptions;
 
+  /// Reference surface for the final track parameters
   const Surface *referenceSurface = nullptr;
 
+  /// Maximum number of components in the mixture
   std::size_t maxComponents = 4;
 
+  /// Minimum weight required to keep a component
   double weightCutoff = 1.e-4;
 
+  /// Abort the fit if an error occurs
   bool abortOnError = false;
 
+  /// Disable all material handling during the fit
   bool disableAllMaterialHandling = false;
 
-  double reverseFilteringCovarianceScaling = 1.0;
+  /// Scaling factor for the covariance matrix before reverse filtering.
+  /// Note that the default value is not tuned and might need adjustment for
+  /// different use cases.
+  double reverseFilteringCovarianceScaling = 100.0;
 
-  /// Whether to use the external-surfaces mechanism of the navigator which
-  /// switches off the boundary-check for measurement surfaces.
-  bool useExternalSurfaces = true;
+  /// Whether to drop the bounds check of the navigator on the measurement
+  /// surfaces, so it targets them even where the track misses them.
+  bool useExtendedSurfaces = true;
 
+  /// Column name for final multi-component state storage
   std::string_view finalMultiComponentStateColumn = "";
 
+  /// Method for merging components
   ComponentMergeMethod componentMergeMethod = ComponentMergeMethod::eMaxWeight;
 
+  /// Constructor from contexts
+  /// @param geoCtxt The geometry context
+  /// @param magFieldCtxt The magnetic field context
+  /// @param calibCtxt The calibration context
   GsfOptions(const GeometryContext &geoCtxt,
              const MagneticFieldContext &magFieldCtxt,
              const CalibrationContext &calibCtxt)
@@ -139,5 +160,7 @@ struct GsfOptions {
         calibrationContext(calibCtxt),
         propagatorPlainOptions(geoCtxt, magFieldCtxt) {}
 };
+
+/// @}
 
 }  // namespace Acts

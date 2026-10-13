@@ -16,8 +16,6 @@
 #include "Acts/Geometry/TrackingVolume.hpp"
 #include "Acts/Navigation/SurfaceArrayNavigationPolicy.hpp"
 #include "Acts/Utilities/Zip.hpp"
-#include "ActsPlugins/ActSVG/DetectorVolumeSvgConverter.hpp"
-#include "ActsPlugins/ActSVG/PortalSvgConverter.hpp"
 #include "ActsPlugins/ActSVG/SurfaceArraySvgConverter.hpp"
 #include "ActsPlugins/ActSVG/SurfaceSvgConverter.hpp"
 
@@ -141,18 +139,18 @@ void convertPortalLink(const GeometryContext& gctx,
 
     std::vector<Vector2> centers;
 
-    const auto localBins = grid.grid().numLocalBinsAny();
+    const auto localBins = grid.grid().multiAxisAny().getNBinsAny();
     if (grid.dim() == 2) {
       for (std::size_t i = 1; i <= localBins[0]; ++i) {
         for (std::size_t j = 1; j <= localBins[1]; ++j) {
-          auto center = grid.grid().binCenterAny({i, j});
+          auto center = grid.grid().multiAxisAny().getBinCenterAny({i, j});
           assert(center.size() == 2);
           centers.push_back(Vector2(center[0], center[1]));
         }
       }
     } else {
       for (std::size_t i = 1; i <= localBins[0]; ++i) {
-        auto center = grid.grid().binCenterAny({i});
+        auto center = grid.grid().multiAxisAny().getBinCenterAny({i});
         assert(center.size() == 1);
         if (axis0 == grid.direction()) {
           centers.push_back(Vector2(center[0], 0.));
@@ -273,7 +271,7 @@ struct Visitor : TrackingGeometryVisitor {
     Svg::ProtoVolume pVolume;
     pVolume._name = volume.volumeName();
 
-    auto volumeTransform = volume.transform();
+    const Transform3& volumeTransform = volume.localToGlobalTransform(gctx);
 
     // https://github.com/acts-project/actsvg/blob/2f1aaa58365a1dd1af62dc27aea5039459a65a38/meta/include/actsvg/display/geometry.hpp#L687-L692
     enum svgBv : unsigned int {
@@ -373,7 +371,7 @@ std::vector<actsvg::svg::object> drawTrackingGeometry(
             ss << surface->geometryId();
             auto object = actsvg::display::surface(ss.str(), proto, _view);
 
-            if (highlightMaterial && surface->surfaceMaterial() != nullptr) {
+            if (highlightMaterial && surface->hasMaterial()) {
               object._stroke._sc._rgb = {255, 0, 0};
               object._stroke._width = 1.5;
             }

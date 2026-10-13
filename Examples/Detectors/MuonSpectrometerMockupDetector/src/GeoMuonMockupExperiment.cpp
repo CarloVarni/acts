@@ -8,29 +8,33 @@
 
 #include "ActsExamples/MuonSpectrometerMockupDetector/GeoMuonMockupExperiment.hpp"
 
+#include "Acts/Definitions/Algebra.hpp"
 #include "Acts/Utilities/Helpers.hpp"
 #include "Acts/Utilities/MathHelpers.hpp"
 
 #include <format>
 #include <iostream>
+#include <type_traits>
+
+#include <GeoModelWrite/WriteGeoModel.h>
 
 #include "GeoGenericFunctions/Variable.h"
 #include "GeoModelHelpers/MaterialManager.h"
 #include "GeoModelHelpers/defineWorld.h"
 #include "GeoModelHelpers/printVolume.h"
-#include "GeoModelIOHelpers/GMIO.h"
 #include "GeoModelKernel/GeoBox.h"
 #include "GeoModelKernel/GeoSerialTransformer.h"
-#include "GeoModelKernel/GeoTransform.h"
 #include "GeoModelKernel/GeoTrd.h"
 #include "GeoModelKernel/GeoTube.h"
+#include "GeoModelKernel/GeoTubs.h"
 #include "GeoModelKernel/GeoXF.h"
-#include "GeoModelKernel/throwExcept.h"
 
 using namespace Acts;
+
 namespace {
 constexpr double rot90deg = 90. * GeoModelKernelUnits::deg;
 }
+
 namespace ActsExamples {
 
 std::string to_string(GeoMuonMockupExperiment::MuonLayer layer) {
@@ -68,21 +72,6 @@ ActsPlugins::GeoModelTree GeoMuonMockupExperiment::constructMS() {
 
   m_publisher->setName("Muon");
 
-  const double dX = 2. * (m_cfg.barrelRadii[2] - 0.5 * m_stationHeightBarrel) *
-                    std::sin(0.5 * m_sectorSize);
-
-  double outerRadius = Acts::fastHypot(
-      m_cfg.barrelRadii[2] + 0.5 * m_stationHeightBarrel, 0.5 * dX);
-
-  auto barrelCylinder = make_intrusive<GeoTube>(
-      (m_cfg.barrelRadii[0] - 0.5 * m_stationHeightBarrel), outerRadius,
-      (m_cfg.nEtaStations + 1) * (m_chamberLength + m_cfg.stationDistInZ));
-  auto barrelLogVol = make_intrusive<GeoLogVol>(
-      "BarrelEnvelope", barrelCylinder,
-      MaterialManager::getManager()->getMaterial("std::air"));
-
-  auto barrelEnvelope = make_intrusive<GeoPhysVol>(barrelLogVol);
-
   auto toyBox = make_intrusive<GeoBox>(10. * GeoModelKernelUnits::cm,
                                        10. * GeoModelKernelUnits::cm,
                                        10. * GeoModelKernelUnits::cm);
@@ -90,47 +79,27 @@ ActsPlugins::GeoModelTree GeoMuonMockupExperiment::constructMS() {
       "MuonEnvelope", cacheShape(toyBox),
       MaterialManager::getManager()->getMaterial("special::Ether")));
 
-  for (MuonLayer layer :
-       {MuonLayer::Inner, MuonLayer::Middle, MuonLayer::Outer}) {
-    for (unsigned sector = 1; sector <= m_cfg.nSectors; ++sector) {
-      for (unsigned etaIdx = 1; etaIdx <= m_cfg.nEtaStations; ++etaIdx) {
-        const double z_displacement =
-            0.25 * m_chamberLength +
-            etaIdx * (m_chamberLength + m_cfg.stationDistInZ);
-        const double radius = m_cfg.barrelRadii[toUnderlying(layer)];
-        barrelEnvelope->add(
-            makeTransform(GeoTrf::TranslateZ3D(z_displacement) *
-                          GeoTrf::RotateZ3D(sector * m_sectorSize) *
-                          GeoTrf::TranslateX3D(radius)));
-        barrelEnvelope->add(assembleBarrelStation(layer, sector, etaIdx));
-        ///
-        barrelEnvelope->add(
-            makeTransform(GeoTrf::TranslateZ3D(-z_displacement) *
-                          GeoTrf::RotateZ3D(sector * m_sectorSize) *
-                          GeoTrf::TranslateX3D(radius) *
-                          GeoTrf::RotateX3D(180. * GeoModelKernelUnits::deg)));
-        barrelEnvelope->add(
-            assembleBarrelStation(layer, sector, -static_cast<int>(etaIdx)));
-      }
-    }
+  if (m_cfg.buildBarrel) {
+    buildBarrel(muonEnvelope);
   }
-  muonEnvelope->add(barrelEnvelope);
+
   /// Construct the endcaps
   if (m_cfg.buildEndcaps) {
     const double midWheelZ = barrelZ + 0.5 * m_stationHeightEndcap;
     const double outWheelZ =
         midWheelZ + m_stationHeightEndcap + m_cfg.bigWheelDistZ;
-    using enum ActsExamples::GeoMuonMockupExperiment::MuonLayer;
+    using enum GeoMuonMockupExperiment::MuonLayer;
     assembleBigWheel(muonEnvelope, Middle, midWheelZ);
     assembleBigWheel(muonEnvelope, Middle, -midWheelZ);
     assembleBigWheel(muonEnvelope, Outer, outWheelZ);
     assembleBigWheel(muonEnvelope, Outer, -outWheelZ);
     const double innerWheelZ = 0.8 * barrelZ;
     const double innerWheelR =
-        0.95 * m_cfg.barrelRadii[toUnderlying(MuonLayer::Inner)];
+        0.90 * m_cfg.barrelRadii[toUnderlying(MuonLayer::Inner)];
     assembleSmallWheel(muonEnvelope, innerWheelR, innerWheelZ);
     assembleSmallWheel(muonEnvelope, innerWheelR, -innerWheelZ);
   }
+
   const unsigned nChambers =
       2 * m_cfg.nSectors * m_cfg.nEtaStations *
       static_cast<unsigned>(MuonLayer::nLayers);  // barrel part
@@ -156,9 +125,39 @@ ActsPlugins::GeoModelTree GeoMuonMockupExperiment::constructMS() {
 
   using VolumeMap_t = ActsPlugins::GeoModelTree::VolumePublisher::VolumeMap_t;
   VolumeMap_t publishedVol{};
-  for (const auto& [fpV, pubKey] : m_publisher->getPublishedFPV()) {
+  // Older GeoModel (e.g. 6.27) hands back a multimap<node, key>, while newer
+  // GeoModel (6.31) hands back a map<key, node>, i.e. the two pair elements are
+  // swapped. Detect which way round it is from the map's mapped_type.
+  using PublishedFPV_t = decltype(m_publisher->getPublishedFPV());
+  constexpr bool nodeIsMapped =
+      std::is_same_v<typename PublishedFPV_t::mapped_type, GeoVFullPhysVol*>;
+
+  for (const auto& published : m_publisher->getPublishedFPV()) {
+    auto* fpV = [&published]() {
+      if constexpr (nodeIsMapped) {
+        return published.second;
+      } else {
+        return published.first;
+      }
+    }();
+    const auto& pubKey = [&published]() -> const auto& {
+      if constexpr (nodeIsMapped) {
+        return published.first;
+      } else {
+        return published.second;
+      }
+    }();
+
     try {
-      const auto key = std::any_cast<std::string>(pubKey);
+      const std::string key = [](const auto& a) {
+        if constexpr (std::is_same_v<std::remove_cvref_t<decltype(pubKey)>,
+                                     std::any>) {
+          return std::any_cast<std::string>(a);
+        } else {
+          return std::get<std::string>(a);
+        }
+      }(pubKey);
+
       if (!publishedVol
                .insert(std::make_pair(key, static_cast<GeoFullPhysVol*>(fpV)))
                .second) {
@@ -192,6 +191,161 @@ ActsPlugins::GeoModelTree GeoMuonMockupExperiment::constructMS() {
   m_publisher.reset();
   return outTree;
 }
+void GeoMuonMockupExperiment::buildBarrel(const PVLink& muonEnvelope) {
+  if (!m_cfg.buildBarrel) {
+    ACTS_DEBUG("Barrel not configured to be built");
+    return;
+  }
+  unsigned absorberCounter{0};
+
+  const double dX = 2. * (m_cfg.barrelRadii[2] - 0.5 * m_stationHeightBarrel) *
+                    std::sin(0.5 * m_sectorSize);
+
+  const double outerRadius = Acts::fastHypot(
+      m_cfg.barrelRadii[2] + 0.5 * m_stationHeightBarrel, 0.5 * dX);
+
+  auto barrelCylinder = make_intrusive<GeoTube>(
+      (m_cfg.barrelRadii[0] - 0.5 * m_stationHeightBarrel), outerRadius,
+      (m_cfg.nEtaStations + 1) * (m_chamberLength + m_cfg.stationDistInZ));
+  auto barrelLogVol = make_intrusive<GeoLogVol>(
+      "BarrelEnvelope", barrelCylinder,
+      MaterialManager::getManager()->getMaterial("std::air"));
+
+  auto barrelEnvelope = make_intrusive<GeoPhysVol>(barrelLogVol);
+
+  /// Axis transformation from ACTS chamber frame to Geomodel chamber frame.
+  /// This will be used for barrel boxes (cuboids) only. In the ACTS
+  /// chamber frame the Z axis is along the thickness of the chamber, Y
+  /// along the chamber length (bending direction) and X along the
+  /// chamber width (tube direction)
+  const GeoTrf::Transform3D ActsToGeomodelChamberFrame{
+      GeoTrf::GeoRotation{rot90deg, rot90deg, 0.}};
+
+  for (MuonLayer layer :
+       {MuonLayer::Inner, MuonLayer::Middle, MuonLayer::Outer}) {
+    const double radius = m_cfg.barrelRadii[toUnderlying(layer)];
+    for (unsigned sector = 1; sector <= m_cfg.nSectors; ++sector) {
+      for (unsigned etaIdx = 1; etaIdx <= m_cfg.nEtaStations; ++etaIdx) {
+        const double z_displacement =
+            0.25 * m_chamberLength +
+            etaIdx * (m_chamberLength + m_cfg.stationDistInZ);
+        barrelEnvelope->add(makeTransform(
+            GeoTrf::TranslateZ3D(z_displacement) *
+            GeoTrf::RotateZ3D(sector * m_sectorSize) *
+            GeoTrf::TranslateX3D(radius) * ActsToGeomodelChamberFrame));
+        barrelEnvelope->add(assembleBarrelStation(layer, sector, etaIdx));
+        /// Transform of the negative eta station
+        barrelEnvelope->add(
+            makeTransform(GeoTrf::TranslateZ3D(-z_displacement) *
+                          GeoTrf::RotateZ3D(sector * m_sectorSize) *
+                          GeoTrf::TranslateX3D(radius) *
+                          GeoTrf::RotateX3D(180. * GeoModelKernelUnits::deg) *
+                          ActsToGeomodelChamberFrame));
+        barrelEnvelope->add(
+            assembleBarrelStation(layer, sector, -static_cast<int>(etaIdx)));
+      }
+    }
+    ///
+    ///
+    if (layer == MuonLayer::Inner || !m_cfg.buildAbsorbers) {
+      continue;
+    }
+    /// Fetch the previous radius
+    const double midRadius =
+        0.5 * (m_cfg.barrelRadii[toUnderlying(layer) - 1] + radius);
+    const double absorberHeight =
+        m_cfg.absorberRelWidth * ((radius - midRadius) - m_stationHeightBarrel);
+
+    const double absorberLength =
+        0.5 * (barrelCylinder->getZHalfLength()) / m_cfg.nAbsorberZ;
+
+    auto absorberShape = cacheShape(make_intrusive<GeoTubs>(
+        midRadius - absorberHeight, midRadius + absorberHeight,
+        absorberLength - 0.5 * GeoModelKernelUnits::cm, 0.,
+        359. * GeoModelKernelUnits::degree / m_cfg.nAbsorberSectors));
+
+    auto absorberLogVol = [&]() {
+      const std::string& matName = m_cfg.absorberMaterials.at(
+          absorberCounter % m_cfg.absorberMaterials.size());
+      ++absorberCounter;
+      return cacheVolume(make_intrusive<GeoLogVol>(
+          std::format("passiveAbsorber_{:}", matName), absorberShape,
+          MaterialManager::getManager()->getMaterial(matName)));
+    };
+    for (unsigned sectionZ = 1; sectionZ < m_cfg.nAbsorberZ; ++sectionZ) {
+      const double z_displacement = (0.1 + 2. * sectionZ) * absorberLength;
+
+      for (unsigned sector = 0; sector < m_cfg.nAbsorberSectors; ++sector) {
+        const double absorberPhi =
+            (360. * GeoModelKernelUnits::degree / m_cfg.nAbsorberSectors) *
+            sector;
+
+        barrelEnvelope->add(makeTransform(GeoTrf::TranslateZ3D(z_displacement) *
+                                          GeoTrf::RotateZ3D(absorberPhi)));
+        barrelEnvelope->add(
+            cacheVolume(make_intrusive<GeoPhysVol>(absorberLogVol())));
+        barrelEnvelope->add(
+            makeTransform(GeoTrf::TranslateZ3D(-z_displacement) *
+                          GeoTrf::RotateZ3D(absorberPhi)));
+        barrelEnvelope->add(
+            cacheVolume(make_intrusive<GeoPhysVol>(absorberLogVol())));
+      }
+    }
+  }
+  muonEnvelope->add(barrelEnvelope);
+}
+
+void GeoMuonMockupExperiment::buildEndcapAbsorber(const PVLink& wheelEnvelope) {
+  if (!m_cfg.buildAbsorbers) {
+    return;
+  }
+  const auto* wheelShape =
+      dynamic_cast<const GeoTube*>(wheelEnvelope->getLogVol()->getShape());
+
+  auto absorberWheelShape = cacheShape(
+      make_intrusive<GeoTube>(wheelShape->getRMin(), wheelShape->getRMax(),
+                              0.5 * m_cfg.endCapAbsorberZ));
+
+  auto* matMan = MaterialManager::getManager();
+  auto absorberWheelLogVol = cacheVolume(
+      make_intrusive<GeoLogVol>("AbsorberEndcapWheel", absorberWheelShape,
+                                matMan->getMaterial("std::air")));
+
+  auto absorberWheelEnvelope =
+      cacheVolume(make_intrusive<GeoPhysVol>(absorberWheelLogVol));
+
+  const double dR =
+      (wheelShape->getRMax() - wheelShape->getRMin()) / m_cfg.nAbsorberZ;
+  unsigned absorberCounter{1};
+  auto absorberLogVol = [&](const unsigned rIdx) {
+    const double rMin = wheelShape->getRMin() + rIdx * dR;
+    auto absorberShape = make_intrusive<GeoTubs>(
+        rMin, rMin + dR, 0.5 * m_cfg.endCapAbsorberZ - 0.25, 0.,
+        359.9 * GeoModelKernelUnits::degree / m_cfg.nAbsorberSectors);
+
+    const std::string& matName = m_cfg.absorberMaterials.at(
+        absorberCounter % m_cfg.absorberMaterials.size());
+    ++absorberCounter;
+    return cacheVolume(make_intrusive<GeoLogVol>(
+        std::format("passiveAbsorber_{:}", matName), cacheShape(absorberShape),
+        MaterialManager::getManager()->getMaterial(matName)));
+  };
+
+  for (unsigned rIdx = 0; rIdx < m_cfg.nAbsorberZ; ++rIdx) {
+    for (unsigned sector = 0; sector < m_cfg.nAbsorberSectors; ++sector) {
+      const double absorberPhi =
+          (360. * GeoModelKernelUnits::degree / m_cfg.nAbsorberSectors) *
+          sector;
+      absorberWheelEnvelope->add(makeTransform(GeoTrf::RotateZ3D(absorberPhi)));
+      absorberWheelEnvelope->add(
+          cacheVolume(make_intrusive<GeoPhysVol>(absorberLogVol(rIdx))));
+    }
+  }
+  wheelEnvelope->add(makeTransform(GeoTrf::TranslateZ3D(
+      -wheelShape->getZHalfLength() + 0.5 * m_cfg.endCapAbsorberZ)));
+  wheelEnvelope->add(cacheVolume(absorberWheelEnvelope));
+}
+
 PVLink GeoMuonMockupExperiment::assembleEndcapStation(const double lowR,
                                                       const MuonLayer layer,
                                                       const unsigned sector,
@@ -208,6 +362,7 @@ PVLink GeoMuonMockupExperiment::assembleEndcapStation(const double lowR,
       "MuonEndcapStation", cacheShape(envelopeTrd),
       MaterialManager::getManager()->getMaterial("std::air"));
   auto envelopeVol = make_intrusive<GeoPhysVol>(cacheVolume(logVol));
+
   double currentX = -envelopeTrd->getXHalfLength1() + 0.5 * m_tgcChamberHeight;
   if (layer == MuonLayer::Middle) {
     envelopeVol->add(makeTransform(GeoTrf::TranslateX3D(currentX)));
@@ -277,7 +432,6 @@ FpvLink GeoMuonMockupExperiment::assembleTgcChamber(const double bottomWidth,
 void GeoMuonMockupExperiment::assembleBigWheel(const PVLink& envelopeVol,
                                                const MuonLayer layer,
                                                const double wheelZ) {
-  envelopeVol->add(makeTransform(GeoTrf::TranslateZ3D(wheelZ)));
   const double lowR = m_cfg.endCapWheelLowR;
   const double effR = (m_chamberLength + m_cfg.stationDistInR);
 
@@ -286,34 +440,39 @@ void GeoMuonMockupExperiment::assembleBigWheel(const PVLink& envelopeVol,
       static_cast<unsigned>(
           (m_cfg.barrelRadii[toUnderlying(MuonLayer::Outer)] - lowR) / effR);
   const double highR = lowR + nEta * effR;
-  auto envelopeShape =
-      make_intrusive<GeoTube>(lowR, highR, 0.5 * m_stationHeightEndcap);
+
+  const double envZ = 0.5 * m_stationHeightEndcap +
+                      0.5 * (m_cfg.endCapAbsorberZ + 1.) *
+                          static_cast<double>(m_cfg.buildAbsorbers);
+  auto envelopeShape = make_intrusive<GeoTube>(lowR, highR, envZ);
   auto envelopeLogVol = make_intrusive<GeoLogVol>(
       "EndcapEnvelope", cacheShape(envelopeShape),
       MaterialManager::getManager()->getMaterial("std::air"));
 
   auto wheelEnvelope = make_intrusive<GeoPhysVol>(cacheVolume(envelopeLogVol));
-
-  for (unsigned stationEta = 0; stationEta < nEta; ++stationEta) {
-    const double radius = lowR + stationEta * effR;
-    for (unsigned sector = 1; sector <= m_cfg.nSectors; ++sector) {
-      if (wheelZ > 0) {
-        wheelEnvelope->add(
-            makeTransform(GeoTrf::RotateZ3D(sector * m_sectorSize) *
-                          GeoTrf::TranslateX3D(radius + 0.5 * m_chamberLength) *
-                          GeoTrf::RotateY3D(90. * GeoModelKernelUnits::deg) *
-                          GeoTrf::RotateZ3D(180. * GeoModelKernelUnits::deg)));
-      } else {
-        wheelEnvelope->add(
-            makeTransform(GeoTrf::RotateZ3D(sector * m_sectorSize) *
-                          GeoTrf::TranslateX3D(radius + 0.5 * m_chamberLength) *
-                          GeoTrf::RotateY3D(90. * GeoModelKernelUnits::deg)));
-      }
+  for (unsigned sector = 1; sector <= m_cfg.nSectors; ++sector) {
+    for (unsigned stationEta = 0; stationEta < nEta; ++stationEta) {
+      const double radius = lowR + stationEta * effR;
+      wheelEnvelope->add(makeTransform(
+          GeoTrf::TranslateZ3D((-envelopeShape->getZHalfLength() +
+                                m_cfg.endCapAbsorberZ +
+                                0.5 * m_stationHeightEndcap + 1.) *
+                               static_cast<double>(m_cfg.buildAbsorbers)) *
+          GeoTrf::RotateZ3D(sector * m_sectorSize) *
+          GeoTrf::TranslateX3D(radius + 0.5 * m_chamberLength) *
+          GeoTrf::RotateY3D(90. * GeoModelKernelUnits::deg) *
+          GeoTrf::RotateZ3D(180. * GeoModelKernelUnits::deg)));
       const int castEta =
           copySign(1, wheelZ) * static_cast<int>(stationEta + 1);
       wheelEnvelope->add(assembleEndcapStation(radius, layer, sector, castEta));
     }
   }
+  buildEndcapAbsorber(wheelEnvelope);
+  envelopeVol->add(makeTransform(
+      GeoTrf::RotateX3D((wheelZ < 0.) ? 180. * GeoModelKernelUnits::degree
+                                      : 0.) *
+      GeoTrf::TranslateZ3D(std::abs(wheelZ))));
+
   envelopeVol->add(wheelEnvelope);
 }
 
@@ -385,52 +544,56 @@ void GeoMuonMockupExperiment::publishFPV(const PVLink& envelopeVol,
 PVLink GeoMuonMockupExperiment::assembleBarrelStation(const MuonLayer layer,
                                                       const unsigned sector,
                                                       const int etaIdx) {
+  /// We are working now in the ACTS chamber frame, where Z is along the
+  /// thickness of the chamber, Y along the chamber length (bending direction)
+  /// and X along the chamber width (tube direction)
   const double envelopeWidth =
       2. *
       (m_cfg.barrelRadii[toUnderlying(layer)] - 0.5 * m_stationHeightBarrel) *
       std::sin(0.5 * m_sectorSize);
 
   auto box = make_intrusive<GeoBox>(
-      0.5 * m_stationHeightBarrel, 0.5 * envelopeWidth,
-      0.5 * m_chamberLength + 0.1 * GeoModelKernelUnits::mm);
+      0.5 * envelopeWidth,
+      0.5 * m_chamberLength + 0.1 * GeoModelKernelUnits::mm,
+      0.5 * m_stationHeightBarrel);
   auto logVol = make_intrusive<GeoLogVol>(
       "MuonBarrelLogVol", cacheShape(box),
       MaterialManager::getManager()->getMaterial("std::air"));
   auto envelopeVol = make_intrusive<GeoPhysVol>(cacheVolume(logVol));
 
   /// add the rpc at doubletR = 1
-  auto placeRpc = [&](const double currentX, unsigned dRIdx) {
-    const double stepdZ = m_chamberLength / m_cfg.nRpcAlongZ;
-    const double stepdY = envelopeWidth / m_cfg.nRpcAlongPhi;
+  auto placeRpc = [&](const double currentZ, unsigned dRIdx) {
+    const double stepdY = m_chamberLength / m_cfg.nRpcAlongZ;
+    const double stepdX = envelopeWidth / m_cfg.nRpcAlongPhi;
 
-    for (unsigned dZ = 0; dZ < m_cfg.nRpcAlongZ; ++dZ) {
-      for (unsigned dY = 0; dY < m_cfg.nRpcAlongPhi; ++dY) {
+    for (unsigned dY = 0; dY < m_cfg.nRpcAlongZ; ++dY) {
+      for (unsigned dX = 0; dX < m_cfg.nRpcAlongPhi; ++dX) {
         envelopeVol->add(makeTransform(GeoTrf::Translate3D(
-            currentX, -0.5 * envelopeWidth + stepdY * (dY + 0.5),
-            -0.5 * m_chamberLength + stepdZ * (dZ + 0.5))));
+            -0.5 * envelopeWidth + stepdX * (dX + 0.5),
+            -0.5 * m_chamberLength + stepdY * (dY + 0.5), currentZ)));
         publishFPV(envelopeVol, assembleRpcChamber(envelopeWidth),
                    std::format("{:}_RPC_{:}_{:}_{:}_{:}_{:}", to_string(layer),
-                               etaIdx, sector, dRIdx, dY, dZ));
+                               etaIdx, sector, dRIdx, dX, dY));
       }
     }
   };
 
-  double currentX = -box->getXHalfLength();
-  currentX += 0.5 * m_rpcChamberHeight;
-  placeRpc(currentX, 1);
-  currentX += 0.5 * m_rpcChamberHeight + s_rpcMdtDistance;
-  currentX += 0.5 * m_multiLayerHeight;
-  envelopeVol->add(makeTransform(GeoTrf::TranslateX3D(currentX)));
+  double currentZ = -box->getZHalfLength();
+  currentZ += 0.5 * m_rpcChamberHeight;
+  placeRpc(currentZ, 1);
+  currentZ +=
+      0.5 * m_rpcChamberHeight + s_rpcMdtDistance + 0.5 * m_multiLayerHeight;
+  envelopeVol->add(makeTransform(GeoTrf::TranslateZ3D(currentZ)));
   publishFPV(envelopeVol, assembleMultilayerBarrel(1, envelopeWidth),
              std::format("{}_BMDT_{}_{}_1", to_string(layer), etaIdx, sector));
-  currentX += 0.5 * m_multiLayerHeight + m_cfg.multiLayerSeparation +
+  currentZ += 0.5 * m_multiLayerHeight + m_cfg.multiLayerSeparation +
               0.5 * m_multiLayerHeight;
-  envelopeVol->add(makeTransform(GeoTrf::TranslateX3D(currentX)));
+  envelopeVol->add(makeTransform(GeoTrf::TranslateZ3D(currentZ)));
   publishFPV(envelopeVol, assembleMultilayerBarrel(2, envelopeWidth),
              std::format("{}_BMDT_{}_{}_2", to_string(layer), etaIdx, sector));
-  currentX += 0.5 * m_rpcChamberHeight + s_rpcMdtDistance;
-  currentX += 0.5 * m_multiLayerHeight;
-  placeRpc(currentX, 2);
+  currentZ +=
+      0.5 * m_rpcChamberHeight + s_rpcMdtDistance + 0.5 * m_multiLayerHeight;
+  placeRpc(currentZ, 2);
   return envelopeVol;
 }
 
@@ -524,8 +687,10 @@ PVLink GeoMuonMockupExperiment::buildAbsorber(const double thickness,
                                               const double length) {
   GeoShapePtr shape{};
   if (std::abs(widthS - widthL) < std::numeric_limits<double>::epsilon()) {
-    shape = make_intrusive<GeoBox>(0.5 * thickness, 0.5 * widthS, 0.5 * length);
+    // For geoBoxes we use the ACTS chamber frame
+    shape = make_intrusive<GeoBox>(0.5 * widthS, 0.5 * length, 0.5 * thickness);
   } else {
+    // For geoTrd we use the GeoModel chamber frame
     shape = make_intrusive<GeoTrd>(0.5 * thickness, 0.5 * thickness,
                                    0.5 * widthS, 0.5 * widthL, 0.5 * length);
   }
@@ -539,38 +704,38 @@ FpvLink GeoMuonMockupExperiment::assembleRpcChamber(const double chamberWidth) {
   auto* matMan = MaterialManager::getManager();
   constexpr double margin = 0.98;
   auto rpcBox = make_intrusive<GeoBox>(
-      0.5 * m_rpcChamberHeight,
-      0.5 * chamberWidth / m_cfg.nRpcAlongPhi * margin,
-      0.5 * (m_chamberLength / m_cfg.nRpcAlongZ * margin));
+      0.5 * (chamberWidth / m_cfg.nRpcAlongPhi) * margin,
+      0.5 * (m_chamberLength / m_cfg.nRpcAlongZ) * margin,
+      0.5 * m_rpcChamberHeight);
   auto envLogVol = cacheVolume(make_intrusive<GeoLogVol>(
       "RpcChamber", cacheShape(rpcBox), matMan->getMaterial("std::Copper")));
   auto rpcEnvelope = make_intrusive<GeoFullPhysVol>(envLogVol);
   ///
-  double currentX = -rpcBox->getXHalfLength() + 0.5 * s_rpcGasSingletSeparation;
+  double currentZ = -rpcBox->getZHalfLength() + 0.5 * s_rpcGasSingletSeparation;
 
   for (unsigned gap = 1; gap <= m_cfg.nRpcGasGaps; ++gap) {
-    currentX += 0.5 * s_rpcGasHeight;
+    currentZ += 0.5 * s_rpcGasHeight;
 
     auto gasBox =
-        make_intrusive<GeoBox>(0.5 * s_rpcGasHeight, rpcBox->getYHalfLength(),
-                               rpcBox->getZHalfLength());
+        make_intrusive<GeoBox>(rpcBox->getXHalfLength(),
+                               rpcBox->getYHalfLength(), 0.5 * s_rpcGasHeight);
     auto gasLogVol = cacheVolume(make_intrusive<GeoLogVol>(
         "RpcGasGap", cacheShape(gasBox), matMan->getMaterial("std::ArCO2")));
 
     rpcEnvelope->add(geoId(gap));
-    rpcEnvelope->add(makeTransform(GeoTrf::TranslateX3D(currentX)));
+    rpcEnvelope->add(makeTransform(GeoTrf::TranslateZ3D(currentZ)));
     rpcEnvelope->add(cacheVolume(make_intrusive<GeoPhysVol>(gasLogVol)));
 
-    currentX += 0.5 * s_rpcGasHeight;
+    currentZ += 0.5 * s_rpcGasHeight;
     if (gap == m_cfg.nRpcGasGaps) {
       break;
     }
-    currentX += 0.5 * s_rpcGasSingletSeparation;
-    rpcEnvelope->add(makeTransform(GeoTrf::TranslateX3D(currentX)));
+    currentZ += 0.5 * s_rpcGasSingletSeparation;
+    rpcEnvelope->add(makeTransform(GeoTrf::TranslateZ3D(currentZ)));
     rpcEnvelope->add(buildAbsorber(
-        s_rpcGasSingletSeparation, 2. * rpcBox->getYHalfLength(),
-        2. * rpcBox->getYHalfLength(), 2. * rpcBox->getZHalfLength()));
-    currentX += 0.5 * s_rpcGasSingletSeparation;
+        s_rpcGasSingletSeparation, 2. * rpcBox->getXHalfLength(),
+        2. * rpcBox->getXHalfLength(), 2. * rpcBox->getYHalfLength()));
+    currentZ += 0.5 * s_rpcGasSingletSeparation;
   }
   return rpcEnvelope;
 };
@@ -618,7 +783,7 @@ FpvLink GeoMuonMockupExperiment::assembleMultilayerBarrel(
   const double envelopeWidth = tubeLength;
 
   auto envelopeBox = make_intrusive<GeoBox>(
-      0.5 * m_multiLayerHeight, 0.5 * envelopeWidth, 0.5 * m_chamberLength);
+      0.5 * envelopeWidth, 0.5 * m_chamberLength, 0.5 * m_multiLayerHeight);
   auto envelopeLogVol =
       make_intrusive<GeoLogVol>("MultilayerEnv", cacheShape(envelopeBox),
                                 matMan->getMaterial("std::air"));
@@ -626,23 +791,23 @@ FpvLink GeoMuonMockupExperiment::assembleMultilayerBarrel(
   auto envelopeVol =
       make_intrusive<GeoFullPhysVol>(cacheVolume(envelopeLogVol));
 
-  double currentX = -envelopeBox->getXHalfLength();
+  double currentZ = -envelopeBox->getZHalfLength();
   if (ml == 1 && m_cfg.mdtFoamThickness > 0.) {
-    currentX += 0.5 * m_cfg.mdtFoamThickness;
-    envelopeVol->add(makeTransform(GeoTrf::TranslateX3D(currentX)));
+    currentZ += 0.5 * m_cfg.mdtFoamThickness;
+    envelopeVol->add(makeTransform(GeoTrf::TranslateZ3D(currentZ)));
     envelopeVol->add(buildAbsorber(m_cfg.mdtFoamThickness, envelopeWidth,
                                    envelopeWidth, m_chamberLength));
-    currentX += 0.5 * m_cfg.mdtFoamThickness + s_mdtFoamTubeDistance;
+    currentZ += 0.5 * m_cfg.mdtFoamThickness + s_mdtFoamTubeDistance;
   }
   PVLink tubeVol = buildTubes(envelopeWidth, envelopeWidth);
-  currentX += 0.5 * m_tubeLayersHeight;
-  envelopeVol->add(makeTransform(GeoTrf::RotateX3D(rot90deg) *
-                                 GeoTrf::TranslateX3D(currentX)));
+  currentZ += 0.5 * m_tubeLayersHeight;
+  envelopeVol->add(makeTransform(GeoTrf::TranslateZ3D(currentZ) *
+                                 GeoTrf::RotateY3D(-rot90deg)));
   envelopeVol->add(tubeVol);
   if (ml == 2 && m_cfg.mdtFoamThickness > 0.) {
-    currentX += 0.5 * m_tubeLayersHeight + 0.5 * m_cfg.mdtFoamThickness +
+    currentZ += 0.5 * m_tubeLayersHeight + 0.5 * m_cfg.mdtFoamThickness +
                 s_mdtFoamTubeDistance;
-    envelopeVol->add(makeTransform(GeoTrf::TranslateX3D(currentX)));
+    envelopeVol->add(makeTransform(GeoTrf::TranslateZ3D(currentZ)));
     envelopeVol->add(buildAbsorber(m_cfg.mdtFoamThickness, envelopeWidth,
                                    envelopeWidth, m_chamberLength));
   }
@@ -713,9 +878,12 @@ void GeoMuonMockupExperiment::assembleSmallWheel(const PVLink& envelope,
     ACTS_DEBUG("Small wheel will not be assembled");
     return;
   }
+  const double envZ =
+      0.5 * m_innerWheelHeight + 0.5 * (m_cfg.endCapAbsorberZ + 1.) *
+                                     static_cast<double>(m_cfg.buildAbsorbers);
 
-  auto envelopeShape = make_intrusive<GeoTube>(m_cfg.endCapWheelLowR, outerR,
-                                               0.5 * m_innerWheelHeight);
+  auto envelopeShape =
+      make_intrusive<GeoTube>(m_cfg.endCapWheelLowR, outerR, envZ);
   auto envelopeVol = make_intrusive<GeoLogVol>(
       "InnerWheelEnvelope", cacheShape(envelopeShape),
       MaterialManager::getManager()->getMaterial("std::air"));
@@ -724,16 +892,23 @@ void GeoMuonMockupExperiment::assembleSmallWheel(const PVLink& envelope,
   const double wedgeL = envelopeShape->getRMax() - envelopeShape->getRMin();
 
   for (unsigned sector = 1; sector <= m_cfg.nSectors; ++sector) {
-    envelopeWheel->add(
-        makeTransform(GeoTrf::RotateZ3D(sector * m_sectorSize) *
-                      GeoTrf::TranslateX3D(0.5 * (envelopeShape->getRMax() +
-                                                  envelopeShape->getRMin())) *
-                      GeoTrf::RotateY3D(90. * GeoModelKernelUnits::deg)));
+    envelopeWheel->add(makeTransform(
+        GeoTrf::TranslateZ3D((-envelopeShape->getZHalfLength() +
+                              m_cfg.endCapAbsorberZ + 0.5 * m_innerWheelHeight +
+                              1.) *
+                             static_cast<double>(m_cfg.buildAbsorbers)) *
+        GeoTrf::RotateZ3D(sector * m_sectorSize) *
+        GeoTrf::TranslateX3D(
+            0.5 * (envelopeShape->getRMax() + envelopeShape->getRMin())) *
+        GeoTrf::RotateY3D(90. * GeoModelKernelUnits::deg)));
 
     envelopeWheel->add(
         assembleSmallWheelSector(wedgeL, copySign(1, wheelZ), sector));
   }
-  envelope->add(makeTransform(GeoTrf::TranslateZ3D(wheelZ)));
+  envelope->add(makeTransform(
+      GeoTrf::RotateX3D(wheelZ < 0. ? 180. * GeoModelKernelUnits::degree : 0.) *
+      GeoTrf::TranslateZ3D(std::abs(wheelZ))));
+  buildEndcapAbsorber(envelopeWheel);
   envelope->add(envelopeWheel);
 }
 }  // namespace ActsExamples

@@ -18,11 +18,10 @@
 namespace Acts::Ccl {
 
 template <typename Cluster>
-void reserve(Cluster& /*cl*/, std::size_t /*n*/) {}
-
-template <Acts::Ccl::CanReserve Cluster>
 void reserve(Cluster& cl, std::size_t n) {
-  clusterReserve(cl, n);
+  if constexpr (Acts::Ccl::CanReserve<Cluster>) {
+    clusterReserve(cl, n);
+  }
 }
 
 template <typename Cell, std::size_t GridDim>
@@ -66,15 +65,17 @@ struct ConnectionsBase {
 template <std::size_t GridDim>
 class Connections {};
 
-// On 1-D grid, cells have 1 backward neighbor
+// On 1-D grid, cells have 1 backward space neighbor, but there can be up to 2
+// cells with different times in that space that can connect
 template <>
-struct Connections<1> : public ConnectionsBase<1> {
+struct Connections<1> : public ConnectionsBase<2> {
   using ConnectionsBase::ConnectionsBase;
 };
 
-// On a 2-D grid, cells have 4 backward neighbors
+// On a 2-D grid, cells have 4 backward space neighbors, but there can be up to
+// 2 cells with different times in each of those spaces that can connect
 template <>
-struct Connections<2> : public ConnectionsBase<4> {
+struct Connections<2> : public ConnectionsBase<8> {
   using ConnectionsBase::ConnectionsBase;
 };
 
@@ -259,17 +260,6 @@ void labelClusters(Acts::Ccl::ClusteringData& data, CellCollection& cells,
   for (const Label label : data.labels) {
     ++data.nClusters[label - 1];
   }
-}
-
-template <typename CellCollection, typename ClusterCollection,
-          std::size_t GridDim, typename Connect>
-ClusterCollection createClusters(CellCollection& cells, Connect&& connect) {
-  ClusterCollection clusters;
-  Acts::Ccl::ClusteringData data;
-  Acts::Ccl::createClusters<CellCollection, ClusterCollection, GridDim,
-                            Connect>(data, cells, clusters,
-                                     std::forward<Connect>(connect));
-  return clusters;
 }
 
 template <typename CellCollection, typename ClusterCollection,

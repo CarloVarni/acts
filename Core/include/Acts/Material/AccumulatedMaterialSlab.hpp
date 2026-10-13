@@ -16,9 +16,11 @@ namespace Acts {
 
 /// Accumulate material properties from multiple hits/track and multiple tracks.
 ///
-/// This is a helper class for the `SurfaceMaterialMapper` to handle material
-/// accumulation and averaging for one surface bin. The accumulation procedure
-/// is done in two steps:
+/// @ingroup material_mapping
+///
+/// This is a helper class for the `BinnedSurfaceMaterialAccumulator` to handle
+/// material accumulation and averaging for one surface bin. The accumulation
+/// procedure is done in two steps:
 ///
 /// 1.  The per-track store accumulates material steps from one track/particle.
 ///     Multiple material steps can be assigned to the same bin time by

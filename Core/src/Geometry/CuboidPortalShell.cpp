@@ -15,15 +15,16 @@
 #include "Acts/Geometry/PortalLinkBase.hpp"
 #include "Acts/Geometry/TrackingVolume.hpp"
 #include "Acts/Utilities/AxisDefinitions.hpp"
+#include "Acts/Utilities/ThrowAssert.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <functional>
 #include <numeric>
+#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
-
-#include <boost/algorithm/string/join.hpp>
 
 namespace Acts {
 
@@ -31,7 +32,7 @@ void CuboidPortalShell::fill(TrackingVolume& volume) {
   using enum CuboidVolumeBounds::Face;
   for (Face face : {NegativeZFace, PositiveZFace, NegativeXFace, PositiveXFace,
                     NegativeYFace, PositiveYFace}) {
-    const auto& portalAtFace = portalPtr(face);
+    const auto& portalAtFace = portal(face);
     if (portalAtFace != nullptr) {
       portalAtFace->fill(volume);
       volume.addPortal(portalAtFace);
@@ -39,7 +40,8 @@ void CuboidPortalShell::fill(TrackingVolume& volume) {
   }
 }
 
-SingleCuboidPortalShell::SingleCuboidPortalShell(TrackingVolume& volume)
+SingleCuboidPortalShell::SingleCuboidPortalShell(const GeometryContext& gctx,
+                                                 TrackingVolume& volume)
     : m_volume{&volume} {
   using enum CuboidVolumeBounds::Face;
   if (m_volume->volumeBounds().type() != VolumeBounds::BoundsType::eCuboid) {
@@ -51,7 +53,7 @@ SingleCuboidPortalShell::SingleCuboidPortalShell(TrackingVolume& volume)
       dynamic_cast<const CuboidVolumeBounds&>(m_volume->volumeBounds());
 
   std::vector<OrientedSurface> orientedSurfaces =
-      bounds.orientedSurfaces(m_volume->transform());
+      bounds.orientedSurfaces(m_volume->localToGlobalTransform(gctx));
 
   auto handle = [&](Face face, std::size_t from) {
     const auto& source = orientedSurfaces.at(from);
@@ -67,11 +69,7 @@ SingleCuboidPortalShell::SingleCuboidPortalShell(TrackingVolume& volume)
   handle(PositiveYFace, positiveFaceZX);
 }
 
-Portal* SingleCuboidPortalShell::portal(Face face) {
-  return portalPtr(face).get();
-}
-
-std::shared_ptr<Portal> SingleCuboidPortalShell::portalPtr(Face face) {
+std::shared_ptr<Portal> SingleCuboidPortalShell::portal(Face face) {
   return m_portals.at(toUnderlying(face));
 }
 
@@ -118,7 +116,8 @@ std::string SingleCuboidPortalShell::label() const {
 
 CuboidStackPortalShell::CuboidStackPortalShell(
     const GeometryContext& gctx, std::vector<CuboidPortalShell*> shells,
-    AxisDirection direction, const Logger& logger)
+    AxisDirection direction, const Logger& logger,
+    PortalMaterialMergePolicy materialPolicy)
     : m_direction(direction), m_shells{std::move(shells)} {
   using enum CuboidVolumeBounds::Face;
   using enum AxisDirection;
@@ -164,41 +163,52 @@ CuboidStackPortalShell::CuboidStackPortalShell(
     throw std::invalid_argument("Invalid shell");
   }
 
-  std::ranges::sort(m_shells, [*this](const auto& shellA, const auto& shellB) {
-    switch (m_direction) {
-      case AxisX:
-        return (shellA->transform().translation().x() <
-                shellB->transform().translation().x());
-      case AxisY:
-        return (shellA->transform().translation().y() <
-                shellB->transform().translation().y());
-      case AxisZ:
-        return (shellA->transform().translation().z() <
-                shellB->transform().translation().z());
-      default:
-        throw std::invalid_argument(
-            "CuboidPortalShell: Invalid axis direction");
-    }
-  });
+  throw_assert(!m_shells.empty(), "CuboidStackPortalShell: No shells supplied");
+  const Transform3 globalToStack =
+      m_shells.front()->localToGlobalTransform(gctx).inverse();
+  throw_assert(
+      std::ranges::is_sorted(
+          m_shells, std::less{},
+          [&](const auto* shell) {
+            const Vector3 localPosition =
+                globalToStack *
+                shell->localToGlobalTransform(gctx).translation();
+            return localPosition[toUnderlying(m_direction)];
+          }),
+      "CuboidStackPortalShell: Shells must be ordered along the local stacking "
+      "axis");
 
   auto merge = [&](Face face) {
     std::vector<std::shared_ptr<Portal>> portals;
-    std::ranges::transform(
-        m_shells, std::back_inserter(portals),
-        [face](auto* shell) { return shell->portalPtr(face); });
+    std::ranges::transform(m_shells, std::back_inserter(portals),
+                           [face](auto* shell) { return shell->portal(face); });
 
-    auto merged = std::accumulate(
-        std::next(portals.begin()), portals.end(), portals.front(),
-        [&](const auto& aPortal,
-            const auto& bPortal) -> std::shared_ptr<Portal> {
-          assert(aPortal != nullptr);
-          assert(bPortal != nullptr);
+    std::shared_ptr<Portal> merged;
+    try {
+      merged = std::accumulate(
+          std::next(portals.begin()), portals.end(), portals.front(),
+          [&](const auto& aPortal,
+              const auto& bPortal) -> std::shared_ptr<Portal> {
+            assert(aPortal != nullptr);
+            assert(bPortal != nullptr);
 
-          AxisDirection onSurfaceAxis = onSurfaceDirs.at(face);
+            AxisDirection onSurfaceAxis = onSurfaceDirs.at(face);
 
-          return std::make_shared<Portal>(
-              Portal::merge(gctx, *aPortal, *bPortal, onSurfaceAxis, logger));
-        });
+            return std::make_shared<Portal>(
+                Portal::merge(gctx, *aPortal, *bPortal, onSurfaceAxis, logger,
+                              materialPolicy));
+          });
+    } catch (const PortalMergingException& e) {
+      std::stringstream ss;
+      ss << "Failed to merge portals at face " << face << " while building "
+         << label() << " (stacking in " << m_direction << "). Shells involved:";
+      for (const auto* shell : m_shells) {
+        ss << "\n  - " << shell->label();
+      }
+      ss << "\nUnderlying error: " << e.what();
+      ACTS_ERROR(ss.str());
+      throw PortalMergingException{ss.str()};
+    }
 
     assert(merged != nullptr);
     assert(merged->isValid());
@@ -216,7 +226,7 @@ CuboidStackPortalShell::CuboidStackPortalShell(
       ACTS_VERBOSE("Fusing " << shellA->label() << " and " << shellB->label());
 
       auto fused = std::make_shared<Portal>(Portal::fuse(
-          gctx, *shellA->portalPtr(faceA), *shellB->portalPtr(faceB), logger));
+          gctx, *shellA->portal(faceA), *shellB->portal(faceB), logger));
 
       assert(fused != nullptr && "Invalid fused portal");
       assert(fused->isValid() && "Fused portal is invalid");
@@ -240,15 +250,20 @@ std::size_t CuboidStackPortalShell::size() const {
   return 6;
 }
 
-Portal* CuboidStackPortalShell::portal(Face face) {
-  return portalPtr(face).get();
+std::vector<CuboidStackPortalShell::Face> CuboidStackPortalShell::mergedFaces(
+    AxisDirection direction) {
+  // The side faces (parallel to the stacking direction) are merged, the front
+  // and back faces are fused.
+  const auto& [frontFace, backFace, sideFaces] =
+      CuboidVolumeBounds::facesFromAxisDirection(direction);
+  return {sideFaces.begin(), sideFaces.end()};
 }
 
-std::shared_ptr<Portal> CuboidStackPortalShell::portalPtr(Face face) {
+std::shared_ptr<Portal> CuboidStackPortalShell::portal(Face face) {
   if (face == m_backFace) {
-    return m_shells.back()->portalPtr(face);
+    return m_shells.back()->portal(face);
   } else {
-    return m_shells.front()->portalPtr(face);
+    return m_shells.front()->portal(face);
   }
 }
 
@@ -274,19 +289,19 @@ bool CuboidStackPortalShell::isValid() const {
   });
 }
 
-const Transform3& CuboidStackPortalShell::transform() const {
-  return m_shells.front()->transform();
+const Transform3& CuboidStackPortalShell::localToGlobalTransform(
+    const GeometryContext& gctx) const {
+  return m_shells.front()->localToGlobalTransform(gctx);
 }
 
 std::string CuboidStackPortalShell::label() const {
+  // Deliberately shallow: only describe this shell, not the whole subtree.
+  // Expanding child labels recursively makes error messages for non-trivial
+  // geometries unreadable. The immediate children are reported separately where
+  // relevant (e.g. in merge-failure messages).
   std::stringstream ss;
-  ss << "CuboidStackShell(dir=" << m_direction << ", children=";
-
-  std::vector<std::string> labels;
-  std::ranges::transform(m_shells, std::back_inserter(labels),
-                         [](const auto* shell) { return shell->label(); });
-  ss << boost::algorithm::join(labels, "|");
-  ss << ")";
+  ss << "CuboidStackShell(dir=" << m_direction << ", " << m_shells.size()
+     << " children)";
   return ss.str();
 }
 

@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(CuboidVolumeBuilderTest) {
   CuboidVolumeBuilder cvb;
 
   // Create a test context
-  GeometryContext tgContext = GeometryContext();
+  GeometryContext tgContext = GeometryContext::dangerouslyDefaultConstruct();
 
   // Create configurations for surfaces
   std::vector<CuboidVolumeBuilder::SurfaceConfig> surfaceConfig;
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(CuboidVolumeBuilderTest) {
     BOOST_REQUIRE_NE(pSur, nullptr);
     CHECK_CLOSE_ABS(pSur->center(tgContext), cfg.position, 1e-9);
     BOOST_CHECK_NE(pSur->surfaceMaterial(), nullptr);
-    BOOST_CHECK_NE(pSur->associatedDetectorElement(), nullptr);
+    BOOST_CHECK_EQUAL(pSur->isSensitive(), true);
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(CuboidVolumeBuilderTest) {
                     volumeConfig.layers.size() * 2 +
                         1u);  // #layers = navigation + material layers
   BOOST_CHECK_EQUAL(trVol->volumeName(), volumeConfig.name);
-  BOOST_CHECK_NE(trVol->volumeMaterial(), nullptr);
+  BOOST_CHECK(trVol->hasMaterial());
 
   // Test the building
   volumeConfig.layers.clear();
@@ -228,15 +228,21 @@ BOOST_AUTO_TEST_CASE(CuboidVolumeBuilderTest) {
   std::unique_ptr<const TrackingGeometry> detector =
       tgb.trackingGeometry(tgContext);
   BOOST_CHECK_EQUAL(
-      detector->lowestTrackingVolume(tgContext, Vector3(1_mm, 0_mm, 0_mm))
+      detector
+          ->resolveLowestTrackingVolume(tgContext, Vector3(1_mm, 0_mm, 0_mm))
+          .value()
           ->volumeName(),
       volumeConfig.name);
   BOOST_CHECK_EQUAL(
-      detector->lowestTrackingVolume(tgContext, Vector3(-1_mm, 0_mm, 0_mm))
+      detector
+          ->resolveLowestTrackingVolume(tgContext, Vector3(-1_mm, 0_mm, 0_mm))
+          .value()
           ->volumeName(),
       volumeConfig2.name);
   BOOST_CHECK_EQUAL(
-      detector->lowestTrackingVolume(tgContext, Vector3(1000_m, 0_m, 0_m)),
+      detector
+          ->resolveLowestTrackingVolume(tgContext, Vector3(1000_m, 0_m, 0_m))
+          .value(),
       nullptr);
 }
 

@@ -68,27 +68,27 @@ struct MeasurementsCreator {
   /// @param [in] state State of the propagator
   template <typename propagator_state_t, typename stepper_t,
             typename navigator_t>
-  void act(propagator_state_t& state, const stepper_t& stepper,
-           const navigator_t& navigator, result_type& result,
-           const Acts::Logger& logger) const {
+  Acts::Result<void> act(propagator_state_t& state, const stepper_t& stepper,
+                         const navigator_t& navigator, result_type& result,
+                         const Acts::Logger& logger) const {
     using namespace Acts::UnitLiterals;
 
     // only generate measurements on surfaces
     if (!navigator.currentSurface(state.navigation)) {
-      return;
+      return Acts::Result<void>::success();
     }
     const Acts::Surface& surface = *navigator.currentSurface(state.navigation);
     const Acts::GeometryIdentifier geoId = surface.geometryId();
     // only generate measurements on sensitive surface
     if (!geoId.sensitive()) {
       ACTS_VERBOSE("Create no measurements on non-sensitive surface " << geoId);
-      return;
+      return Acts::Result<void>::success();
     }
     // only generate measurements if a resolution is configured
     auto found = resolutions.find(geoId);
     if (found == resolutions.end()) {
       ACTS_VERBOSE("No resolution configured for sensitive surface " << geoId);
-      return;
+      return Acts::Result<void>::success();
     }
     const MeasurementResolution& resolution = *found;
 
@@ -102,11 +102,11 @@ struct MeasurementsCreator {
     Acts::BoundVector parameters = Acts::BoundVector::Zero();
     parameters[Acts::eBoundLoc0] = loc[Acts::eBoundLoc0];
     parameters[Acts::eBoundLoc1] = loc[Acts::eBoundLoc1];
-    const auto& direction = stepper.position(state.stepping);
+    const Acts::Vector3 direction = stepper.direction(state.stepping);
     parameters[Acts::eBoundPhi] = Acts::VectorHelpers::phi(direction);
     parameters[Acts::eBoundTheta] = Acts::VectorHelpers::theta(direction);
-    parameters[Acts::eBoundQOverP] = state.stepping.pars[Acts::eFreeQOverP];
-    parameters[Acts::eBoundTime] = state.stepping.pars[Acts::eFreeTime];
+    parameters[Acts::eBoundQOverP] = stepper.qOverP(state.stepping);
+    parameters[Acts::eBoundTime] = stepper.time(state.stepping);
     result.truthParameters.push_back(std::move(parameters));
 
     std::normal_distribution<double> normalDist(0., 1.);
@@ -142,6 +142,7 @@ struct MeasurementsCreator {
       result.outlierSourceLinks.emplace_back(Acts::eBoundLoc0, Acts::eBoundLoc1,
                                              out, cov, geoId, sourceId);
     }
+    return Acts::Result<void>::success();
   }
 };
 

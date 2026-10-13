@@ -24,9 +24,10 @@
 
 #include "CsvOutputData.hpp"
 
-ActsExamples::CsvSimHitWriter::CsvSimHitWriter(
-    const ActsExamples::CsvSimHitWriter::Config& config,
-    Acts::Logging::Level level)
+namespace ActsExamples {
+
+CsvSimHitWriter::CsvSimHitWriter(const Config& config,
+                                 Acts::Logging::Level level)
     : WriterT(config.inputSimHits, "CsvSimHitWriter", level), m_cfg(config) {
   // inputSimHits is already checked by base constructor
   if (m_cfg.outputStem.empty()) {
@@ -34,14 +35,14 @@ ActsExamples::CsvSimHitWriter::CsvSimHitWriter(
   }
 }
 
-ActsExamples::ProcessCode ActsExamples::CsvSimHitWriter::writeT(
-    const AlgorithmContext& ctx, const ActsExamples::SimHitContainer& simHits) {
+ProcessCode CsvSimHitWriter::writeT(const AlgorithmContext& ctx,
+                                    const SimHitContainer& simHits) {
   // open per-event file for all simhit components
   std::string pathSimHit = perEventFilepath(
       m_cfg.outputDir, m_cfg.outputStem + ".csv", ctx.eventNumber);
 
-  ActsExamples::NamedTupleCsvWriter<SimHitData> writerSimHit(
-      pathSimHit, m_cfg.outputPrecision);
+  BoostDescribeCsvWriter<SimHitData> writerSimHit(pathSimHit,
+                                                  m_cfg.outputPrecision);
 
   // CsvOutputData struct
   SimHitData simhit;
@@ -52,7 +53,7 @@ ActsExamples::ProcessCode ActsExamples::CsvSimHitWriter::writeT(
     const Acts::Vector4& momentum4Before = simHit.momentum4Before();
 
     simhit.geometry_id = simHit.geometryId().value();
-    const auto particleID = simHit.particleId().asVector();
+    const auto particleID = simHit.particleId().asArray();
     simhit.particle_id_pv = particleID[0];
     simhit.particle_id_sv = particleID[1];
     simhit.particle_id_part = particleID[2];
@@ -79,5 +80,7 @@ ActsExamples::ProcessCode ActsExamples::CsvSimHitWriter::writeT(
     writerSimHit.append(simhit);
   }  // end simHit loop
 
-  return ActsExamples::ProcessCode::SUCCESS;
+  return ProcessCode::SUCCESS;
 }
+
+}  // namespace ActsExamples

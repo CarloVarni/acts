@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "Acts/TrackFitting/GsfComponent.hpp"
 #include "Acts/TrackFitting/KalmanFitter.hpp"
 #include "Acts/Utilities/Result.hpp"
 
@@ -15,6 +16,8 @@
 
 namespace Acts {
 
+/// @addtogroup track_finding
+/// @{
 namespace CkfTypes {
 
 /// expected max number of track states that are expected to be added by
@@ -94,6 +97,15 @@ struct CombinatorialKalmanFilterExtensions {
   ///   which makes uses of @ref MeasurementSelector and SourceLinkAccessor
   TrackStateCreator createTrackStates;
 
+  // The following options are only relevant if a multi stepper is used
+
+  /// Type alias for component reducer delegate function
+  using ComponentReducer =
+      Delegate<void(std::vector<GsfComponent>&, std::size_t, const Surface&)>;
+
+  /// Takes a vector of components and reduces its number
+  ComponentReducer mixtureReducer;
+
  private:
   /// Default branch stopper which will never stop
   /// @return false
@@ -102,4 +114,7 @@ struct CombinatorialKalmanFilterExtensions {
     return BranchStopperResult::Continue;
   }
 };
+
+/// @}
+
 }  // namespace Acts

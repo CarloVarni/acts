@@ -9,15 +9,15 @@
 #include "ActsExamples/TrackFitting/RefittingAlgorithm.hpp"
 
 #include "Acts/Definitions/Algebra.hpp"
-#include "Acts/EventData/GenericBoundTrackParameters.hpp"
+#include "Acts/Definitions/TrackParametrization.hpp"
+#include "Acts/Definitions/Units.hpp"
+#include "Acts/EventData/BoundTrackParameters.hpp"
 #include "Acts/EventData/MultiTrajectory.hpp"
 #include "Acts/EventData/SourceLink.hpp"
-#include "Acts/EventData/TrackContainer.hpp"
-#include "Acts/EventData/TrackParameters.hpp"
 #include "Acts/EventData/TrackProxy.hpp"
 #include "Acts/EventData/VectorMultiTrajectory.hpp"
 #include "Acts/EventData/VectorTrackContainer.hpp"
-#include "Acts/Propagator/Propagator.hpp"
+#include "Acts/Surfaces/PerigeeSurface.hpp"
 #include "Acts/Surfaces/Surface.hpp"
 #include "Acts/Utilities/Result.hpp"
 #include "ActsExamples/Framework/AlgorithmContext.hpp"
@@ -25,7 +25,9 @@
 #include "ActsExamples/TrackFitting/TrackFitterFunction.hpp"
 
 #include <algorithm>
-#include <functional>
+#include <array>
+#include <cstdint>
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <stdexcept>
@@ -33,9 +35,11 @@
 #include <utility>
 #include <vector>
 
-ActsExamples::RefittingAlgorithm::RefittingAlgorithm(Config config,
-                                                     Acts::Logging::Level level)
-    : ActsExamples::IAlgorithm("RefittingAlgorithm", level),
+namespace ActsExamples {
+
+RefittingAlgorithm::RefittingAlgorithm(
+    Config config, std::unique_ptr<const Acts::Logger> logger)
+    : IAlgorithm("RefittingAlgorithm", std::move(logger)),
       m_cfg(std::move(config)) {
   if (m_cfg.inputTracks.empty()) {
     throw std::invalid_argument("Missing input tracks collection");
@@ -48,13 +52,57 @@ ActsExamples::RefittingAlgorithm::RefittingAlgorithm(Config config,
   m_outputTracks.initialize(m_cfg.outputTracks);
 }
 
-ActsExamples::ProcessCode ActsExamples::RefittingAlgorithm::execute(
-    const ActsExamples::AlgorithmContext& ctx) const {
+ProcessCode RefittingAlgorithm::execute(const AlgorithmContext& ctx) const {
   const auto& inputTracks = m_inputTracks(ctx);
 
   auto trackContainer = std::make_shared<Acts::VectorTrackContainer>();
   auto trackStateContainer = std::make_shared<Acts::VectorMultiTrajectory>();
   TrackContainer tracks(trackContainer, trackStateContainer);
+
+  std::shared_ptr<const Acts::Surface> perigeeSurface =
+      Acts::Surface::makeShared<Acts::PerigeeSurface>(
+          Acts::Vector3{0., 0., 0.});
+
+  // The following code is only necessary if a beamspot constraint is in use but
+  // unguarded for lifetime and simplicity reasons. The Core KF does not support
+  // a beamspot constraint by itself but it can be achieved by injecting a fake
+  // measurement on the perigee surface and processing it first in the fitter.
+  // This can lead to problems if the beamspot constraint moves the initial
+  // parameters too far and we start to miss following surfaces and
+  // measurements. But in a refitting scenario with increased bounds and direct
+  // navigation it *should* work OK.
+
+  auto beamSpotVectorTrackStateContainer =
+      std::make_shared<Acts::VectorMultiTrajectory>();
+  auto beamSpotTrackState = beamSpotVectorTrackStateContainer->makeTrackState();
+
+  const Acts::Vector2 beamSpotMeasValue{0., 0.};
+
+  beamSpotTrackState.setReferenceSurface(perigeeSurface);
+
+  if (m_cfg.beamSpotConstraint.has_value()) {
+    ACTS_DEBUG("Using provided beam spot constraint matrix");
+    beamSpotTrackState.allocateCalibrated(beamSpotMeasValue,
+                                          m_cfg.beamSpotConstraint.value());
+  } else {
+    ACTS_DEBUG("No beam spot constraint provided, using zero matrix");
+    beamSpotTrackState.allocateCalibrated(beamSpotMeasValue,
+                                          Acts::SquareMatrix2::Zero());
+  }
+
+  beamSpotTrackState.setProjectorSubspaceIndices(
+      std::array<std::uint8_t, 2>{Acts::eBoundLoc0, Acts::eBoundLoc1});
+
+  Acts::SourceLink testSL{42};
+  beamSpotTrackState.setUncalibratedSourceLink(std::move(testSL));
+
+  auto beamSpotConstVectorTrackStateContainer =
+      std::make_shared<Acts::ConstVectorMultiTrajectory>(
+          std::move(*beamSpotVectorTrackStateContainer));
+
+  auto beamSpotConstTrackState =
+      beamSpotConstVectorTrackStateContainer->getTrackState(
+          beamSpotTrackState.index());
 
   // Perform the fit for each input track
   std::vector<Acts::SourceLink> trackSourceLinks;
@@ -64,8 +112,9 @@ ActsExamples::ProcessCode ActsExamples::RefittingAlgorithm::execute(
   auto itrack = 0ul;
   for (const auto& track : inputTracks) {
     // Check if you are not in picking mode
+    ++itrack;
     if (m_cfg.pickTrack > -1 &&
-        static_cast<std::size_t>(m_cfg.pickTrack) != itrack++) {
+        static_cast<std::size_t>(m_cfg.pickTrack) != itrack - 1) {
       continue;
     }
 
@@ -74,15 +123,33 @@ ActsExamples::ProcessCode ActsExamples::RefittingAlgorithm::execute(
       continue;
     }
 
-    TrackFitterFunction::GeneralFitterOptions options{
-        ctx.geoContext, ctx.magFieldContext, ctx.calibContext,
-        &track.referenceSurface(),
-        Acts::PropagatorPlainOptions(ctx.geoContext, ctx.magFieldContext)};
-    options.doRefit = true;
+    // Reusing the track parameters on the beam spot perigee is only valid if
+    // the track is already expressed with respect to it.
+    const auto& refSurface = track.referenceSurface();
+    const bool useBeamSpotConstraint = m_cfg.beamSpotConstraint.has_value();
+    if (useBeamSpotConstraint && *perigeeSurface != refSurface) {
+      ACTS_ERROR("Track " << itrack
+                          << " is not parametrized on the beam spot perigee "
+                             "surface, cannot apply the beam spot constraint");
+      return ProcessCode::ABORT;
+    }
 
-    Acts::BoundTrackParameters initialParams(
-        track.referenceSurface().getSharedPtr(), track.parameters(),
-        track.covariance(), track.particleHypothesis());
+    // The fitter matches measurements by surface pointer, so with a beamspot
+    // constraint the fit has to start on the very surface that carries it.
+    const std::shared_ptr<const Acts::Surface> initialSurface =
+        useBeamSpotConstraint ? perigeeSurface : refSurface.getSharedPtr();
+
+    TrackFitterFunction::GeneralFitterOptions options{
+        ctx.recoGeoContext,
+        ctx.magFieldContext,
+        ctx.calibContext,
+        perigeeSurface.get(),
+        Acts::PropagatorPlainOptions(ctx.recoGeoContext, ctx.magFieldContext),
+        true};
+
+    Acts::BoundTrackParameters initialParams(initialSurface, track.parameters(),
+                                             track.covariance(),
+                                             track.particleHypothesis());
 
     if (initialParams.covariance()) {
       for (auto i = 0ul; i < m_cfg.initialVarInflation.size(); ++i) {
@@ -105,14 +172,20 @@ ActsExamples::ProcessCode ActsExamples::RefittingAlgorithm::execute(
     }
 
     if (surfSequence.empty()) {
-      ACTS_WARNING("Empty track " << itrack << " found.");
+      ACTS_DEBUG("Empty track " << itrack << " found.");
       continue;
+    }
+
+    if (useBeamSpotConstraint) {
+      RefittingCalibrator::RefittingSourceLink beamSpotSL{
+          beamSpotConstTrackState};
+      trackSourceLinks.emplace_back(Acts::SourceLink{beamSpotSL});
     }
 
     std::ranges::reverse(surfSequence);
 
     ACTS_VERBOSE("Initial parameters: "
-                 << initialParams.fourPosition(ctx.geoContext).transpose()
+                 << initialParams.fourPosition(ctx.recoGeoContext).transpose()
                  << " -> " << initialParams.direction().transpose());
 
     ACTS_DEBUG("Invoke direct fitter for track " << itrack);
@@ -125,20 +198,26 @@ ActsExamples::ProcessCode ActsExamples::RefittingAlgorithm::execute(
       if (refittedTrack.hasReferenceSurface()) {
         ACTS_VERBOSE("Refitted parameters for track " << itrack);
         ACTS_VERBOSE("  " << track.parameters().transpose());
+        ACTS_VERBOSE("Measurements: " << refittedTrack.nMeasurements());
+        ACTS_VERBOSE("Outliers: " << refittedTrack.nOutliers());
       } else {
         ACTS_DEBUG("No refitted parameters for track " << itrack);
       }
     } else {
-      ACTS_WARNING("Fit failed for track "
-                   << itrack << " with error: " << result.error() << ", "
-                   << result.error().message());
+      ACTS_DEBUG("Fit failed for event "
+                 << ctx.eventNumber << " track " << itrack << " with error: "
+                 << result.error() << ", " << result.error().message());
     }
     ++itrack;
   }
 
-  std::stringstream ss;
-  trackStateContainer->statistics().toStream(ss);
-  ACTS_DEBUG(ss.str());
+  ACTS_DEBUG("Fitted tracks: " << trackContainer->size());
+
+  if (logger().doPrint(Acts::Logging::DEBUG)) {
+    std::stringstream ss;
+    trackStateContainer->statistics().toStream(ss);
+    ACTS_DEBUG(ss.str());
+  }
 
   ConstTrackContainer constTracks{
       std::make_shared<Acts::ConstVectorTrackContainer>(
@@ -147,5 +226,7 @@ ActsExamples::ProcessCode ActsExamples::RefittingAlgorithm::execute(
           std::move(*trackStateContainer))};
 
   m_outputTracks(ctx, std::move(constTracks));
-  return ActsExamples::ProcessCode::SUCCESS;
+  return ProcessCode::SUCCESS;
 }
+
+}  // namespace ActsExamples

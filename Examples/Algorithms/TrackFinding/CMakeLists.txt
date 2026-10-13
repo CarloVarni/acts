@@ -1,8 +1,6 @@
 acts_add_library(
     ExamplesTrackFinding
-    SHARED
-    src/SeedingAlgorithm.cpp
-    src/SeedingOrthogonalAlgorithm.cpp
+    src/MeasurementFilterAlgorithm.cpp
     src/SpacePointMaker.cpp
     src/TrackFindingAlgorithm.cpp
     src/TrackFindingAlgorithmFunction.cpp
@@ -10,7 +8,7 @@ acts_add_library(
     src/AdaptiveHoughTransformSeeder.cpp
     src/TrackParamsEstimationAlgorithm.cpp
     src/MuonHoughSeeder.cpp
-    src/GbtsSeedingAlgorithm.cpp
+    src/GraphBasedSeedingAlgorithm.cpp
     src/TrackParamsLookupEstimation.cpp
     src/GridTripletSeedingAlgorithm.cpp
     src/OrthogonalTripletSeedingAlgorithm.cpp
@@ -24,7 +22,7 @@ target_include_directories(
 target_link_libraries(
     ActsExamplesTrackFinding
     PUBLIC Acts::ExamplesMagneticField
-    PRIVATE ROOT::Core ROOT::Geom ROOT::Graf ROOT::Hist ROOT::Gpad
+    PRIVATE Acts::PluginJson
 )
 
 acts_compile_headers(ExamplesTrackFinding GLOB "include/**/*.hpp")
@@ -33,8 +31,8 @@ acts_compile_headers(ExamplesTrackFinding GLOB "include/**/*.hpp")
 if(ACTS_BUILD_EXAMPLES_HASHING)
     target_sources(
         ActsExamplesTrackFinding
-        PRIVATE src/SeedingAlgorithmHashing.cpp
+        PRIVATE src/HashingPrototypeSeedingAlgorithm.cpp
     )
 
-    target_link_libraries(ActsExamplesTrackFinding PUBLIC Acts::PluginHashing)
+    target_link_libraries(ActsExamplesTrackFinding PUBLIC Annoy)
 endif()

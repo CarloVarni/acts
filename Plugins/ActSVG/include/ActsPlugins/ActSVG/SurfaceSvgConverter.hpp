@@ -14,6 +14,8 @@
 #include <actsvg/core.hpp>
 #include <actsvg/meta.hpp>
 
+#include <stdexcept>
+
 namespace Acts {
 
 class Surface;
@@ -21,10 +23,14 @@ class Surface;
 
 namespace ActsPlugins::Svg {
 
+/// @cond
 using ProtoSurface = actsvg::proto::surface<std::vector<Acts::Vector3>>;
+/// @endcond
 
+/// @ingroup actsvg_plugin
 namespace SurfaceConverter {
 
+/// @ingroup actsvg_plugin
 /// Nested Options struct
 struct Options {
   /// A The style for the surfaces
@@ -35,9 +41,9 @@ struct Options {
 
 /// Convert into a svg::proto surface
 ///
-/// @param gtcx is the geometry context of the conversion call
+/// @param gctx is the geometry context of the conversion call
 /// @param surface is the surface to convert
-/// @param cOption is the conversion options struct
+/// @param cOptions is the conversion options struct
 ///
 /// @return a proto surface object
 ProtoSurface convert(const Acts::GeometryContext& gctx,
@@ -46,6 +52,7 @@ ProtoSurface convert(const Acts::GeometryContext& gctx,
 
 }  // namespace SurfaceConverter
 
+/// @ingroup actsvg_plugin
 namespace View {
 
 /// Convert into an ActsPlugins::Svg::object with an x-y view
@@ -101,6 +108,7 @@ static inline actsvg::svg::object zrphi(const ProtoSurface& pSurface,
 
 }  // namespace View
 
+/// @ingroup actsvg_plugin
 namespace Sheet {
 
 /// Convert into an ActsPlugins::Svg::object with an XY sheet
@@ -109,9 +117,17 @@ namespace Sheet {
 /// @param identification is the to be translated id_ for actsvg
 ///
 /// @return an svg object that can be written out directly to disc
-static inline actsvg::svg::object xy(const ProtoSurface& pSurface,
-                                     const std::string& identification) {
-  return actsvg::display::surface_sheet_xy(identification, pSurface);
+///
+/// @deprecated actsvg 0.4.57 removed display::surface_sheet_xy and offers no
+/// replacement, so this always throws. Use View::xy for a plain projection.
+[[deprecated(
+    "actsvg removed the surface sheet display in 0.4.57; this always throws")]]
+static inline actsvg::svg::object xy(
+    [[maybe_unused]] const ProtoSurface& pSurface,
+    [[maybe_unused]] const std::string& identification) {
+  throw std::runtime_error(
+      "ActsPlugins::Svg::Sheet::xy: actsvg removed the surface sheet display "
+      "in 0.4.57 and offers no replacement");
 }
 
 }  // namespace Sheet

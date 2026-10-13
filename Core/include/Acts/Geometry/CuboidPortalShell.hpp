@@ -10,6 +10,7 @@
 
 #include "Acts/Definitions/Algebra.hpp"
 #include "Acts/Geometry/CuboidVolumeBounds.hpp"
+#include "Acts/Geometry/Portal.hpp"
 #include "Acts/Geometry/PortalShell.hpp"
 #include "Acts/Geometry/TrackingVolume.hpp"
 #include "Acts/Utilities/AxisDefinitions.hpp"
@@ -29,16 +30,11 @@ class CuboidPortalShell : public PortalShellBase {
   /// Type alias for cuboid volume bounds face enumeration
   using Face = CuboidVolumeBounds::Face;
 
-  /// Retrieve the portal associated to the given face. Can be nullptr if unset.
-  /// @param face The face to retrieve the portal for
-  /// @return The portal associated to the face
-  virtual Portal* portal(Face face) = 0;
-
   /// Retrieve a shared_ptr for the portal associated to the given face. Can be
   /// nullptr if unset.
   /// @param face The face to retrieve the portal for
   /// @return The portal associated to the face
-  virtual std::shared_ptr<Portal> portalPtr(Face face) = 0;
+  virtual std::shared_ptr<Portal> portal(Face face) = 0;
 
   /// Set the portal associated to the given face.
   /// @param portal The portal to set
@@ -49,8 +45,10 @@ class CuboidPortalShell : public PortalShellBase {
   void fill(TrackingVolume& volume) override;
 
   /// @brief Get the transformation matrix for this cuboid portal shell
+  /// @param gctx The geometry context
   /// @return Reference to the transformation matrix
-  virtual const Transform3& transform() const = 0;
+  virtual const Transform3& localToGlobalTransform(
+      const GeometryContext& gctx) const = 0;
 };
 
 /// Output stream operator for the CuboidPortalShell::Face enum
@@ -64,17 +62,16 @@ std::ostream& operator<<(std::ostream& os, CuboidPortalShell::Face face);
 class SingleCuboidPortalShell : public CuboidPortalShell {
  public:
   /// Construct a single cuboid portal shell for the given volume
+  /// @param gctx The current geometry context object, e.g. alignment
   /// @param volume The volume to create the shell for
-  explicit SingleCuboidPortalShell(TrackingVolume& volume);
+  explicit SingleCuboidPortalShell(const GeometryContext& gctx,
+                                   TrackingVolume& volume);
 
   /// @copydoc PortalShellBase::size
   std::size_t size() const final;
 
   /// @copydoc CuboidPortalShell::portal
-  Portal* portal(Face face) final;
-
-  /// @copydoc CuboidPortalShell::portalPtr
-  std::shared_ptr<Portal> portalPtr(Face face) final;
+  std::shared_ptr<Portal> portal(Face face) final;
 
   /// @copydoc CuboidPortalShell::setPortal
   void setPortal(std::shared_ptr<Portal> portal, Face face) final;
@@ -88,8 +85,9 @@ class SingleCuboidPortalShell : public CuboidPortalShell {
   /// @copydoc PortalShellBase::label
   std::string label() const override;
 
-  const Transform3& transform() const override {
-    return m_volume->transform();
+  const Transform3& localToGlobalTransform(
+      const GeometryContext& gctx) const override {
+    return m_volume->localToGlobalTransform(gctx);
   };
 
  private:
@@ -105,22 +103,35 @@ class CuboidStackPortalShell final : public CuboidPortalShell {
   /// Construct the portal shell stack from the given shells
   /// @param gctx The geometry context
   /// @param shells The shells to stack
-  /// @note The shells must be ordered in the given direction
+  /// @note The shells must be ordered in increasing local stack coordinates
+  ///       along the given direction. The supplied order is preserved.
+  /// @throws AssertionFailureException If the supplied shells are empty or
+  ///         are not ordered along the local stacking axis.
   /// @param direction The stacking direction (along x/y/z axis) in local stack coordinates
   /// @param logger A logging instance for debugging
+  /// @param materialPolicy How to treat material designated on faces that are
+  ///        merged during stacking. By default this is a fatal error; in
+  ///        @ref PortalMaterialMergePolicy::eDiscardAndMark mode the material is
+  ///        discarded and the merged surface is tagged with a marker.
   CuboidStackPortalShell(const GeometryContext& gctx,
                          std::vector<CuboidPortalShell*> shells,
                          AxisDirection direction,
-                         const Logger& logger = getDummyLogger());
+                         const Logger& logger = getDummyLogger(),
+                         PortalMaterialMergePolicy materialPolicy =
+                             PortalMaterialMergePolicy::eThrow);
+
+  /// Return the faces that are *merged* (as opposed to fused) when stacking in
+  /// the given direction. Material designated on these faces of a child shell
+  /// cannot survive the stacking and will cause a merge failure.
+  /// @param direction The stacking direction
+  /// @return The faces that get merged for the given direction
+  static std::vector<Face> mergedFaces(AxisDirection direction);
 
   /// @copydoc PortalShellBase::size
   std::size_t size() const override;
 
   /// @copydoc CuboidPortalShell::portal
-  Portal* portal(Face face) override;
-
-  /// @copydoc CuboidPortalShell::portalPtr
-  std::shared_ptr<Portal> portalPtr(Face face) override;
+  std::shared_ptr<Portal> portal(Face face) override;
 
   /// @copydoc CuboidPortalShell::setPortal
   void setPortal(std::shared_ptr<Portal> portal, Face face) override;
@@ -136,8 +147,10 @@ class CuboidStackPortalShell final : public CuboidPortalShell {
   std::string label() const override;
 
   /// Return the stack's group transform
+  /// @param gctx The geometry context
   /// @return Reference to the transform of the cuboid stack
-  const Transform3& transform() const override;
+  const Transform3& localToGlobalTransform(
+      const GeometryContext& gctx) const override;
 
  private:
   /// Shell stacking direction in local stack coordinates

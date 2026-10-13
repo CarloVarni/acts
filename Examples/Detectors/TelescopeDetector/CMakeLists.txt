@@ -1,9 +1,9 @@
 acts_add_library(
     ExamplesDetectorTelescope
-    SHARED
     src/TelescopeDetector.cpp
     src/TelescopeDetectorElement.cpp
     src/BuildTelescopeDetector.cpp
+    src/BuildTelescopeDetectorGen3.cpp
 )
 
 target_include_directories(
@@ -24,13 +24,13 @@ if(ACTS_BUILD_EXAMPLES_GEANT4)
 
     target_sources(
         ActsExamplesDetectorTelescope
-        PUBLIC
+        PRIVATE
             src/TelescopeDetectorGeant4.cpp
             src/TelescopeG4DetectorConstruction.cpp
     )
 else()
     target_sources(
         ActsExamplesDetectorTelescope
-        PUBLIC src/TelescopeDetectorGeant4Stub.cpp
+        PRIVATE src/TelescopeDetectorGeant4Stub.cpp
     )
 endif()

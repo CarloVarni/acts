@@ -68,21 +68,21 @@ struct SteppingLogger {
   /// @param [in,out] result is the mutable result object
   template <typename propagator_state_t, typename stepper_t,
             typename navigator_t>
-  void act(propagator_state_t& state, const stepper_t& stepper,
-           const navigator_t& navigator, result_type& result,
-           const Logger& /*logger*/) const {
+  Result<void> act(propagator_state_t& state, const stepper_t& stepper,
+                   const navigator_t& navigator, result_type& result,
+                   const Logger& /*logger*/) const {
     // Don't log if you have reached the target or are sterile
     if (sterile || state.stage == PropagatorStage::postPropagation) {
-      return;
+      return Result<void>::success();
     }
 
     // Record the propagation state
     Step step;
-    step.stepSize = state.stepping.stepSize;
+    step.stepSize = stepper.stepSize(state.stepping);
     step.navDir = state.options.direction;
     step.position = stepper.position(state.stepping);
     step.momentum = stepper.momentum(state.stepping);
-    step.nTotalTrials = state.stepping.nStepTrials;
+    step.nTotalTrials = stepper.statistics(state.stepping).nAttemptedSteps;
 
     // Record the information about the surface
     if (navigator.currentSurface(state.navigation) != nullptr) {
@@ -93,6 +93,7 @@ struct SteppingLogger {
       step.geoID = navigator.currentVolume(state.navigation)->geometryId();
     }
     result.steps.push_back(std::move(step));
+    return Result<void>::success();
   }
 };
 

@@ -22,14 +22,54 @@ namespace Acts {
 /// @brief This is the central definition of the Acts
 /// payload object regarding detector geometry status (e.g. alignment)
 ///
+/// @ingroup context
+///
 /// It is propagated through the code to allow for event/thread
-/// dependent geometry changes
-
+/// dependent geometry changes.
+///
+/// ## Construction
+///
+/// For typical use cases with alignment or conditions data:
+/// @code
+/// MyAlignmentData alignment = ...;
+/// GeometryContext gctx{alignment};
+/// @endcode
+///
+/// For testing or simple applications without alignment:
+/// @code
+/// auto gctx = GeometryContext::dangerouslyDefaultConstruct();
+/// @endcode
 class GeometryContext : public ContextType {
  public:
-  /// Inherit all constructors
-  using ContextType::ContextType;
+  /// Static factory method for default construction
+  /// @note Use this when you need a default context for testing or
+  ///       simple applications without alignment/conditions data
+  /// @return A default-constructed GeometryContext
+  static GeometryContext dangerouslyDefaultConstruct() {
+    return GeometryContext();
+  }
+
+  /// Move construct from arbitrary type (inherited from ContextType)
+  /// @tparam T The type of the value to construct from
+  /// @param value The value to construct from
+  template <typename T>
+    requires(!std::is_same_v<std::decay_t<T>, GeometryContext> &&
+             !std::is_base_of_v<ContextType, std::decay_t<T> >)
+  explicit GeometryContext(T&& value) : ContextType(std::forward<T>(value)) {}
+
+  /// Copy construct from arbitrary type (inherited from ContextType)
+  /// @tparam T The type of the value to construct from
+  /// @param value The value to construct from
+  template <typename T>
+    requires(!std::is_same_v<std::decay_t<T>, GeometryContext> &&
+             !std::is_base_of_v<ContextType, std::decay_t<T> >)
+  explicit GeometryContext(const T& value) : ContextType(value) {}
+
+  /// Inherit assignment operators
   using ContextType::operator=;
+
+ private:
+  GeometryContext() = default;
 };
 
 /// Helper struct that stores an object and a context, and will print it to

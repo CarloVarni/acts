@@ -32,6 +32,9 @@
 #include <nlohmann/json.hpp>
 
 namespace Acts {
+
+/// @addtogroup json_plugin
+/// @{
 class ISurfaceMaterial;
 class ITrackingGeometryJsonDecorator;
 class IVolumeMaterial;
@@ -57,22 +60,12 @@ using TrackingVolumeAndMaterial =
 /// @brief read the material from Json
 class MaterialMapJsonConverter {
  public:
-  using SurfaceMaterialMap
-      [[deprecated("Use Acts::SurfaceMaterialMaps directly")]] =
-          SurfaceMaterialMaps;
-  using VolumeMaterialMap
-      [[deprecated("Use Acts::VolumeMaterialMaps directly")]] =
-          VolumeMaterialMaps;
-  using DetectorMaterialMaps
-      [[deprecated("Use Acts::TrackingGeometryMaterial directly")]] =
-          TrackingGeometryMaterial;
-
   /// @class Config
   /// Configuration of the Converter
   class Config {
    public:
     /// Default geometry context to extract surface transforms
-    GeometryContext context = GeometryContext();
+    GeometryContext context = GeometryContext::dangerouslyDefaultConstruct();
 
     /// Steering to handle sensitive data
     bool processSensitives = true;
@@ -160,9 +153,9 @@ class MaterialMapJsonConverter {
 
   /// Name of the surface hierarchy
   std::string m_surfaceName = "Material Surface Map";
-  /// Geometry hierarchy writer for surface material.
-  Acts::GeometryHierarchyMapJsonConverter<const ISurfaceMaterial*,
-                                          Acts::IVolumeMaterialJsonDecorator>
+  /// Geometry hierarchy writer for surface material. The material entries
+  /// are encoded by this converter, so the container only sees ready json.
+  Acts::GeometryHierarchyMapJsonConverter<nlohmann::json>
       m_surfaceMaterialConverter;
   /// Geometry hierarchy writer for surface.
   Acts::GeometryHierarchyMapJsonConverter<Acts::SurfaceAndMaterialWithContext,
@@ -173,4 +166,5 @@ class MaterialMapJsonConverter {
   const Logger& logger() const { return *m_logger; }
 };
 
+/// @}
 }  // namespace Acts

@@ -3,7 +3,7 @@
 import os
 import acts
 import acts.examples
-from acts.examples import GenericDetector, StructureSelector, AlignmentDecorator
+from acts.examples import GenericDetector, StructureSelector
 from acts.examples.odd import getOpenDataDetector
 from acts.examples.simulation import (
     addParticleGun,
@@ -80,6 +80,7 @@ def runPropagation(
 
 
 if "__main__" == __name__:
+    # from acts.examples.alignment import AlignmentDecorator
     matDeco = None
     contextDecorators = []
     # matDeco = acts.IMaterialDecorator.fromFile("material.json")
@@ -102,7 +103,7 @@ if "__main__" == __name__:
     # structureSelector = StructureSelector(trackingGeometry)
     # pixelBarrelID = acts.GeometryIdentifier(volume=17)
     # pixelBarrelTransforms = structureSelector.selectedTransforms(
-    #     acts.GeometryContext(), pixelBarrelID
+    #     acts.GeometryContext.dangerouslyDefaultConstruct(), pixelBarrelID
     # )
     # alignDecoConfig = AlignmentDecorator.Config()
     # alignDecoConfig.nominalStore = acts.examples.GeoIdAlignmentStore(

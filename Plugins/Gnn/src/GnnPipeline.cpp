@@ -9,6 +9,7 @@
 #include "ActsPlugins/Gnn/GnnPipeline.hpp"
 
 #include "Acts/Utilities/Helpers.hpp"
+#include "ActsPlugins/Gnn/detail/NvtxUtils.hpp"
 
 #ifdef ACTS_GNN_WITH_CUDA
 #include "ActsPlugins/Gnn/detail/CudaUtils.hpp"
@@ -33,11 +34,12 @@ GnnPipeline::GnnPipeline(
     std::shared_ptr<GraphConstructionBase> graphConstructor,
     std::vector<std::shared_ptr<EdgeClassificationBase>> edgeClassifiers,
     std::shared_ptr<TrackBuildingBase> trackBuilder,
-    std::unique_ptr<const Logger> logger)
+    std::unique_ptr<const Logger> logger, bool shrinkNodes)
     : m_logger(std::move(logger)),
       m_graphConstructor(std::move(graphConstructor)),
       m_edgeClassifiers(std::move(edgeClassifiers)),
-      m_trackBuilder(std::move(trackBuilder)) {
+      m_trackBuilder(std::move(trackBuilder)),
+      m_shrinkNodes(shrinkNodes) {
   if (!m_graphConstructor) {
     throw std::invalid_argument("Missing graph construction module");
   }
@@ -52,7 +54,7 @@ GnnPipeline::GnnPipeline(
 
 std::vector<std::vector<int>> GnnPipeline::run(
     std::vector<float> &features, const std::vector<std::uint64_t> &moduleIds,
-    std::vector<int> &spacepointIDs, Device device, const GnnHook &hook,
+    std::vector<int> &spacePointIds, Device device, const GnnHook &hook,
     GnnTiming *timing) const {
   ExecutionContext ctx;
   ctx.device = device;
@@ -66,8 +68,10 @@ std::vector<std::vector<int>> GnnPipeline::run(
 
   try {
     auto t0 = std::chrono::high_resolution_clock::now();
+    ACTS_NVTX_START(graph_construction);
     auto tensors =
-        (*m_graphConstructor)(features, spacepointIDs.size(), moduleIds, ctx);
+        (*m_graphConstructor)(features, spacePointIds.size(), moduleIds, ctx);
+    ACTS_NVTX_STOP(graph_construction);
     auto t1 = std::chrono::high_resolution_clock::now();
 
     if (timing != nullptr) {
@@ -81,8 +85,17 @@ std::vector<std::vector<int>> GnnPipeline::run(
     }
 
     for (const auto &edgeClassifier : m_edgeClassifiers) {
+      if (m_shrinkNodes) {
+        const auto nodesBefore = tensors.nodeFeatures.shape()[0];
+        tensors = removeUnusedNodes(std::move(tensors), spacePointIds, ctx);
+        ACTS_DEBUG("Removed unused nodes: " << nodesBefore << " -> "
+                                            << tensors.nodeFeatures.shape()[0]);
+      }
+
       t0 = std::chrono::high_resolution_clock::now();
+      ACTS_NVTX_START(edge_classifier);
       tensors = (*edgeClassifier)(std::move(tensors), ctx);
+      ACTS_NVTX_STOP(edge_classifier);
       t1 = std::chrono::high_resolution_clock::now();
 
       if (timing != nullptr) {
@@ -93,7 +106,9 @@ std::vector<std::vector<int>> GnnPipeline::run(
     }
 
     t0 = std::chrono::high_resolution_clock::now();
-    auto res = (*m_trackBuilder)(std::move(tensors), spacepointIDs, ctx);
+    ACTS_NVTX_START(track_building);
+    auto res = (*m_trackBuilder)(std::move(tensors), spacePointIds, ctx);
+    ACTS_NVTX_STOP(track_building);
     t1 = std::chrono::high_resolution_clock::now();
 
     if (timing != nullptr) {

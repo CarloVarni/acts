@@ -1,0 +1,380 @@
+// This file is part of the ACTS project.
+//
+// Copyright (C) 2016 CERN for the benefit of the ACTS project
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+#include "Acts/Seeding/DoubletSeedFinder.hpp"
+
+#include "Acts/EventData/SpacePointContainer.hpp"
+#include "Acts/Utilities/MathHelpers.hpp"
+
+#include <stdexcept>
+
+#include <boost/mp11.hpp>
+#include <boost/mp11/algorithm.hpp>
+
+namespace Acts {
+
+namespace {
+
+template <bool isBottomCandidate, bool interactionPointCut, bool sortedByR,
+          bool experimentCuts, bool useTime>
+class Impl final : public DoubletSeedFinder {
+ public:
+  explicit Impl(const DerivedConfig& config) : m_cfg(config) {}
+
+  const DerivedConfig& config() const override { return m_cfg; }
+
+  /// Iterates over dublets and tests the compatibility by applying a series of
+  /// cuts that can be tested with only two SPs.
+  ///
+  /// @param config Doublet cuts that define the compatibility of space points
+  /// @param middleSp Space point candidate to be used as middle SP in a seed
+  /// @param middleSpInfo Information about the middle space point
+  /// @param candidateSps Range or subet of space points to be used as candidates
+  ///   for middle SP in a seed
+  /// @param compatibleDoublets Output container for compatible doublets
+  template <typename CandidateSps>
+  void createDoubletsImpl(const ConstSpacePointProxy& middleSp,
+                          const MiddleSpInfo& middleSpInfo,
+                          CandidateSps candidateSps,
+                          DoubletsForMiddleSp& compatibleDoublets) const {
+    const float impactMax =
+        isBottomCandidate ? -m_cfg.impactMax : m_cfg.impactMax;
+
+    const float xM = middleSp.xy()[0];
+    const float yM = middleSp.xy()[1];
+    const float zM = middleSp.zr()[0];
+    const float rM = middleSp.zr()[1];
+    const float varianceZM = middleSp.varianceZ();
+    const float varianceRM = middleSp.varianceR();
+
+    // time of the middle space point and its variance. only filled when the
+    // time cut is enabled
+    [[maybe_unused]] float tM = 0;
+    [[maybe_unused]] float varianceTM = 0;
+    if constexpr (useTime) {
+      tM = middleSp.time();
+      varianceTM = middleSp.varianceT();
+    }
+
+    // equivalent to impactMax / (rM * rM);
+    const float vIPAbs = impactMax * middleSpInfo.uIP2;
+
+    const auto outsideRangeCheck = [](const float value, const float min,
+                                      const float max) {
+      // intentionally using `|` after profiling. faster due to better branch
+      // prediction
+      return static_cast<bool>(static_cast<int>(value < min) |
+                               static_cast<int>(value > max));
+    };
+
+    const auto calculateError = [&](float varianceZO, float varianceRO,
+                                    float iDeltaR2, float cotTheta) {
+      return iDeltaR2 * ((varianceZM + varianceZO) +
+                         (cotTheta * cotTheta) * (varianceRM + varianceRO));
+    };
+
+    const SpacePointContainer& container = candidateSps.container();
+    for (auto [indexO, xyO, zrO, varianceZO, varianceRO] : candidateSps.zip(
+             container.xyColumn(), container.zrColumn(),
+             container.varianceZColumn(), container.varianceRColumn())) {
+      const float xO = xyO[0];
+      const float yO = xyO[1];
+      const float zO = zrO[0];
+      const float rO = zrO[1];
+
+      float deltaR = 0;
+      if constexpr (isBottomCandidate) {
+        deltaR = rM - rO;
+
+        if constexpr (sortedByR) {
+          // if r-distance is too small we are done
+          if (deltaR < m_cfg.deltaRMin) {
+            break;
+          }
+        }
+      } else {
+        deltaR = rO - rM;
+
+        if constexpr (sortedByR) {
+          // if r-distance is too big we are done
+          if (deltaR > m_cfg.deltaRMax) {
+            break;
+          }
+        }
+      }
+
+      if constexpr (!sortedByR) {
+        if (outsideRangeCheck(deltaR, m_cfg.deltaRMin, m_cfg.deltaRMax)) {
+          continue;
+        }
+      }
+
+      float deltaZ = 0;
+      if constexpr (isBottomCandidate) {
+        deltaZ = zM - zO;
+      } else {
+        deltaZ = zO - zM;
+      }
+
+      if (outsideRangeCheck(deltaZ, m_cfg.deltaZMin, m_cfg.deltaZMax)) {
+        continue;
+      }
+
+      // the longitudinal impact parameter zOrigin is defined as (zM - rM *
+      // cotTheta) where cotTheta is the ratio Z/R (forward angle) of space
+      // point duplet but instead we calculate (zOrigin * deltaR) and multiply
+      // collisionRegion by deltaR to avoid divisions
+      const float zOriginTimesDeltaR = zM * deltaR - rM * deltaZ;
+      // check if duplet origin on z axis within collision region
+      if (outsideRangeCheck(zOriginTimesDeltaR,
+                            m_cfg.collisionRegionMin * deltaR,
+                            m_cfg.collisionRegionMax * deltaR)) {
+        continue;
+      }
+
+      // check the time compatibility of the two space points. the time
+      // difference is corrected for the time of flight along the straight line
+      // between them, assuming an outgoing particle at the speed of light
+      // (which is 1 in ACTS units). placed after the cheap range checks above
+      // to avoid the square root for candidates that are rejected anyway
+      if constexpr (useTime) {
+        const ConstSpacePointProxy otherSp = container[indexO];
+        const float distance = fastHypot(xO - xM, yO - yM, zO - zM);
+        float dt = 0;
+        if constexpr (isBottomCandidate) {
+          dt = tM - otherSp.time() - distance;
+        } else {
+          dt = otherSp.time() - tM - distance;
+        }
+        const float varianceDt = varianceTM + otherSp.varianceT();
+        if (dt * dt > m_cfg.timeCutNSigma2 * varianceDt) {
+          continue;
+        }
+      }
+
+      // if interactionPointCut is false we apply z cuts before coordinate
+      // transformation to avoid unnecessary calculations. If
+      // interactionPointCut is true we apply the curvature cut first because it
+      // is more frequent but requires the coordinate transformation
+      if constexpr (!interactionPointCut) {
+        // check if duplet cotTheta is within the region of interest
+        // cotTheta is defined as (deltaZ / deltaR) but instead we multiply
+        // cotThetaMax by deltaR to avoid division
+        if (outsideRangeCheck(deltaZ, -m_cfg.cotThetaMax * deltaR,
+                              m_cfg.cotThetaMax * deltaR)) {
+          continue;
+        }
+
+        // transform SP coordinates to the u-v reference frame
+        const float deltaX = xO - xM;
+        const float deltaY = yO - yM;
+
+        const float xNewFrame =
+            deltaX * middleSpInfo.cosPhiM + deltaY * middleSpInfo.sinPhiM;
+        const float yNewFrame =
+            deltaY * middleSpInfo.cosPhiM - deltaX * middleSpInfo.sinPhiM;
+
+        const float deltaR2 = deltaX * deltaX + deltaY * deltaY;
+        const float iDeltaR2 = 1 / deltaR2;
+
+        const float uT = xNewFrame * iDeltaR2;
+        const float vT = yNewFrame * iDeltaR2;
+
+        const float iDeltaR = std::sqrt(iDeltaR2);
+        const float cotTheta = deltaZ * iDeltaR;
+
+        // discard doublets based on experiment specific cuts (also applied
+        // here, in the interactionPointCut == false branch, not only in the
+        // branch below -- otherwise the cut would silently never run when the
+        // IP cut is disabled)
+        if constexpr (experimentCuts) {
+          if (!m_cfg.experimentCuts(middleSp, container[indexO], cotTheta,
+                                    isBottomCandidate)) {
+            continue;
+          }
+        }
+
+        const float er =
+            calculateError(varianceZO, varianceRO, iDeltaR2, cotTheta);
+
+        // fill output vectors
+        compatibleDoublets.emplace_back(indexO, cotTheta, iDeltaR, er, uT, vT,
+                                        xNewFrame, yNewFrame);
+        continue;
+      }
+
+      // transform SP coordinates to the u-v reference frame
+      const float deltaX = xO - xM;
+      const float deltaY = yO - yM;
+
+      const float xNewFrame =
+          deltaX * middleSpInfo.cosPhiM + deltaY * middleSpInfo.sinPhiM;
+      const float yNewFrame =
+          deltaY * middleSpInfo.cosPhiM - deltaX * middleSpInfo.sinPhiM;
+
+      const float deltaR2 = deltaX * deltaX + deltaY * deltaY;
+      const float iDeltaR2 = 1 / deltaR2;
+
+      const float uT = xNewFrame * iDeltaR2;
+      const float vT = yNewFrame * iDeltaR2;
+
+      // We check the interaction point by evaluating the minimal distance
+      // between the origin and the straight line connecting the two points in
+      // the doublets. Using a geometric similarity, the Im is given by
+      // yNewFrame * rM / deltaR > config.impactMax
+      // However, we make here an approximation of the impact parameter
+      // which is valid under the assumption yNewFrame / xNewFrame is small
+      // The correct computation would be:
+      // yNewFrame * yNewFrame * rM * rM > config.impactMax *
+      // config.impactMax * deltaR2
+      if (std::abs(rM * yNewFrame) > impactMax * xNewFrame) {
+        // in the rotated frame the interaction point is positioned at x = -rM
+        // and y ~= impactParam
+        const float vIP = (yNewFrame > 0) ? -vIPAbs : vIPAbs;
+
+        // we can obtain aCoef as the slope dv/du of the linear function,
+        // estimated using du and dv between the two SP bCoef is obtained by
+        // inserting aCoef into the linear equation
+        const float aCoef = (vT - vIP) / (uT - middleSpInfo.uIP);
+        const float bCoef = vIP - aCoef * middleSpInfo.uIP;
+        // the distance of the straight line from the origin (radius of the
+        // circle) is related to aCoef and bCoef by d^2 = bCoef^2 / (1 +
+        // aCoef^2) = 1 / (radius^2) and we can apply the cut on the curvature
+        if ((bCoef * bCoef) * m_cfg.minHelixDiameter2 > 1 + aCoef * aCoef) {
+          continue;
+        }
+      }
+
+      // check if duplet cotTheta is within the region of interest
+      // cotTheta is defined as (deltaZ / deltaR) but instead we multiply
+      // cotThetaMax by deltaR to avoid division
+      if (outsideRangeCheck(deltaZ, -m_cfg.cotThetaMax * deltaR,
+                            m_cfg.cotThetaMax * deltaR)) {
+        continue;
+      }
+
+      const float iDeltaR = std::sqrt(iDeltaR2);
+      const float cotTheta = deltaZ * iDeltaR;
+
+      // discard doublets based on experiment specific cuts
+      if constexpr (experimentCuts) {
+        if (!m_cfg.experimentCuts(middleSp, container[indexO], cotTheta,
+                                  isBottomCandidate)) {
+          continue;
+        }
+      }
+
+      const float er =
+          calculateError(varianceZO, varianceRO, iDeltaR2, cotTheta);
+
+      // fill output vectors
+      compatibleDoublets.emplace_back(indexO, cotTheta, iDeltaR, er, uT, vT,
+                                      xNewFrame, yNewFrame);
+    }
+  }
+
+  void createDoublets(const ConstSpacePointProxy& middleSp,
+                      const MiddleSpInfo& middleSpInfo,
+                      SpacePointContainer::ConstSubset candidateSps,
+                      DoubletsForMiddleSp& compatibleDoublets) const override {
+    createDoubletsImpl(middleSp, middleSpInfo, candidateSps,
+                       compatibleDoublets);
+  }
+
+  void createDoublets(const ConstSpacePointProxy& middleSp,
+                      const MiddleSpInfo& middleSpInfo,
+                      SpacePointContainer::ConstRange candidateSps,
+                      DoubletsForMiddleSp& compatibleDoublets) const override {
+    createDoubletsImpl(middleSp, middleSpInfo, candidateSps,
+                       compatibleDoublets);
+  }
+
+ private:
+  DerivedConfig m_cfg;
+};
+
+}  // namespace
+
+std::unique_ptr<DoubletSeedFinder> DoubletSeedFinder::create(
+    const DerivedConfig& config) {
+  using BooleanOptions =
+      boost::mp11::mp_list<std::bool_constant<false>, std::bool_constant<true>>;
+
+  using IsBottomCandidateOptions = BooleanOptions;
+  using InteractionPointCutOptions = BooleanOptions;
+  using SortedByROptions = BooleanOptions;
+  using ExperimentCutsOptions = BooleanOptions;
+  using UseTimeOptions = BooleanOptions;
+
+  using DoubletOptions =
+      boost::mp11::mp_product<boost::mp11::mp_list, IsBottomCandidateOptions,
+                              InteractionPointCutOptions, SortedByROptions,
+                              ExperimentCutsOptions, UseTimeOptions>;
+
+  std::unique_ptr<DoubletSeedFinder> result;
+  boost::mp11::mp_for_each<DoubletOptions>([&](auto option) {
+    using OptionType = decltype(option);
+
+    using IsBottomCandidate = boost::mp11::mp_at_c<OptionType, 0>;
+    using InteractionPointCut = boost::mp11::mp_at_c<OptionType, 1>;
+    using SortedByR = boost::mp11::mp_at_c<OptionType, 2>;
+    using ExperimentCuts = boost::mp11::mp_at_c<OptionType, 3>;
+    using UseTime = boost::mp11::mp_at_c<OptionType, 4>;
+
+    const bool configIsBottomCandidate =
+        config.candidateDirection == Direction::Backward();
+
+    if (configIsBottomCandidate != IsBottomCandidate::value ||
+        config.interactionPointCut != InteractionPointCut::value ||
+        config.spacePointsSortedByRadius != SortedByR::value ||
+        config.experimentCuts.connected() != ExperimentCuts::value ||
+        config.useTime != UseTime::value) {
+      return;  // skip if the configuration does not match
+    }
+
+    // check if we already have an implementation for this configuration
+    if (result != nullptr) {
+      throw std::runtime_error(
+          "DoubletSeedFinder: Multiple implementations found for one "
+          "configuration");
+    }
+
+    // create the implementation for the given configuration
+    result = std::make_unique<
+        Impl<IsBottomCandidate::value, InteractionPointCut::value,
+             SortedByR::value, ExperimentCuts::value, UseTime::value>>(config);
+  });
+  if (result == nullptr) {
+    throw std::runtime_error(
+        "DoubletSeedFinder: No implementation found for the given "
+        "configuration");
+  }
+  return result;
+}
+
+DoubletSeedFinder::DerivedConfig::DerivedConfig(const Config& config,
+                                                float bFieldInZ_)
+    : Config(config), bFieldInZ(bFieldInZ_) {
+  // bFieldInZ is in (pT/radius) natively, no need for conversion
+  const float pTPerHelixRadius = bFieldInZ;
+  minHelixDiameter2 = square(minPt * 2 / pTPerHelixRadius) * helixCutTolerance;
+  timeCutNSigma2 = square(timeCutNSigma);
+}
+
+MiddleSpInfo DoubletSeedFinder::computeMiddleSpInfo(
+    const ConstSpacePointProxy& spM) {
+  const float rM = spM.zr()[1];
+  const float uIP = -1 / rM;
+  const float cosPhiM = -spM.xy()[0] * uIP;
+  const float sinPhiM = -spM.xy()[1] * uIP;
+  const float uIP2 = uIP * uIP;
+
+  return {uIP, uIP2, cosPhiM, sinPhiM};
+}
+
+}  // namespace Acts

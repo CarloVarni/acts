@@ -12,7 +12,6 @@
 #include "Acts/Definitions/Algebra.hpp"
 #include "Acts/Definitions/Direction.hpp"
 #include "Acts/Definitions/Units.hpp"
-#include "Acts/EventData/TrackParameters.hpp"
 #include "Acts/Geometry/GeometryContext.hpp"
 #include "Acts/MagneticField/ConstantBField.hpp"
 #include "Acts/MagneticField/MagneticFieldContext.hpp"
@@ -42,7 +41,7 @@ using namespace Acts::detail;
 namespace ActsTests {
 
 // Create a test context
-GeometryContext tgContext = GeometryContext();
+GeometryContext tgContext = GeometryContext::dangerouslyDefaultConstruct();
 MagneticFieldContext mfContext = MagneticFieldContext();
 
 /// @brief mockup of stepping state
@@ -129,8 +128,8 @@ BOOST_DATA_TEST_CASE(
                  -std::numbers::pi, std::numbers::pi))) ^
         bdata::xrange(1),
     phi, deltaPhi, index) {
-  (void)index;
-  (void)deltaPhi;
+  static_cast<void>(index);
+  static_cast<void>(deltaPhi);
 
   PropagatorState pState;
   pState.stepping.dir = Vector3(std::cos(phi), std::sin(phi), 0.);

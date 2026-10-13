@@ -23,7 +23,6 @@ from acts.examples.reconstruction import (
     SeedFinderConfigArg,
     SeedFinderOptionsArg,
     SeedingAlgorithm,
-    TruthEstimatedSeedingAlgorithmConfigArg,
     CkfConfig,
     addCKFTracks,
     TrackSelectorConfig,
@@ -97,7 +96,7 @@ def run_ckf_tracking(label, seeding):
             setup.trackingGeometry,
             setup.field,
             TrackSmearingSigmas(  # only used by SeedingAlgorithm.TruthSmeared
-                # zero eveything so the CKF has a chance to find the measurements
+                # zero everything so the CKF has a chance to find the measurements
                 loc0=0,
                 loc0PtA=0,
                 loc0PtB=0,
@@ -121,8 +120,12 @@ def run_ckf_tracking(label, seeding):
                 impactMax=3 * u.mm,
             ),
             SeedFinderOptionsArg(bFieldInZ=2 * u.T),
-            TruthEstimatedSeedingAlgorithmConfigArg(deltaR=(10.0 * u.mm, None)),
             seedingAlgorithm=seeding,
+            paramEstimationSpacePoints=(
+                acts.examples.SeedSpacePointSelection.SpreadTriplet
+                if seeding == SeedingAlgorithm.TruthEstimated
+                else None
+            ),
             initialSigmas=[
                 1 * u.mm,
                 1 * u.mm,
@@ -135,6 +138,8 @@ def run_ckf_tracking(label, seeding):
             initialSigmaPtRel=0.1,
             initialVarInflation=[1.0] * 6,
             geoSelectionConfigFile=setup.geoSel,
+            layerMappingConfigFile=setup.gbtsLayerMap,  # only used by SeedingAlgorithm.Gbts
+            connectorInputConfigFile=setup.gbtsConnectionTable,  # only used by SeedingAlgorithm.Gbts
             rnd=rnd,  # only used by SeedingAlgorithm.TruthSmeared
             outputDirRoot=tp,
         )
@@ -184,5 +189,6 @@ for label, seeding in [
     ("truth_estimated", SeedingAlgorithm.TruthEstimated),
     ("seeded", SeedingAlgorithm.GridTriplet),
     ("orthogonal", SeedingAlgorithm.OrthogonalTriplet),
+    ("gbts", SeedingAlgorithm.Gbts),
 ]:
     run_ckf_tracking(label, seeding)

@@ -12,7 +12,6 @@
 #include "Acts/Definitions/Algebra.hpp"
 #include "Acts/Definitions/TrackParametrization.hpp"
 #include "Acts/Definitions/Units.hpp"
-#include "Acts/EventData/TrackParameters.hpp"
 #include "Acts/Geometry/GeometryContext.hpp"
 #include "Acts/Geometry/GeometryIdentifier.hpp"
 #include "Acts/MagneticField/ConstantBField.hpp"
@@ -43,7 +42,7 @@ using namespace Acts::UnitLiterals;
 namespace ActsTests {
 
 // Create a test context
-GeometryContext tgContext = GeometryContext();
+GeometryContext tgContext = GeometryContext::dangerouslyDefaultConstruct();
 MagneticFieldContext mfContext = MagneticFieldContext();
 
 // Global definitions
@@ -56,7 +55,7 @@ Navigator navigator({tGeometry});
 using BFieldType = ConstantBField;
 using EigenStepperType = EigenStepper<>;
 using EigenPropagatorType = Propagator<EigenStepperType, Navigator>;
-using Covariance = BoundSquareMatrix;
+using Covariance = BoundMatrix;
 
 auto bField = std::make_shared<BFieldType>(Vector3{0, 0, 2_T});
 EigenStepperType estepper(bField);
@@ -97,7 +96,7 @@ BOOST_DATA_TEST_CASE(
     pT, phi, theta, charge, index) {
   double p = pT / std::sin(theta);
   double q = -1 + 2 * charge;
-  (void)index;
+  static_cast<void>(index);
 
   // define start parameters
   /// a covariance matrix to transport
@@ -144,7 +143,7 @@ BOOST_DATA_TEST_CASE(
     pT, phi, theta, charge, index) {
   double p = pT / std::sin(theta);
   double q = -1 + 2 * charge;
-  (void)index;
+  static_cast<void>(index);
 
   // define start parameters
   /// a covariance matrix to transport
@@ -194,7 +193,7 @@ BOOST_DATA_TEST_CASE(
     pT, phi, theta, charge, index) {
   double p = pT / std::sin(theta);
   double q = -1 + 2 * charge;
-  (void)index;
+  static_cast<void>(index);
 
   // define start parameters
   /// a covariance matrix to transport
@@ -260,7 +259,7 @@ BOOST_DATA_TEST_CASE(
     pT, phi, theta, charge, index) {
   double p = pT / std::sin(theta);
   double q = -1 + 2 * charge;
-  (void)index;
+  static_cast<void>(index);
 
   // define start parameters
   /// a covariance matrix to transport
@@ -307,7 +306,7 @@ BOOST_DATA_TEST_CASE(
     pT, phi, theta, charge, index) {
   double p = pT / std::sin(theta);
   double q = -1 + 2 * charge;
-  (void)index;
+  static_cast<void>(index);
 
   // define start parameters
   /// a covariance matrix to transport

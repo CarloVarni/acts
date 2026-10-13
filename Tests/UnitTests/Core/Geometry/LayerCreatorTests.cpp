@@ -47,7 +47,7 @@ using namespace Acts;
 namespace ActsTests {
 
 // Create a test context
-GeometryContext tgContext = GeometryContext();
+GeometryContext tgContext = GeometryContext::dangerouslyDefaultConstruct();
 
 using SrfVec = std::vector<std::shared_ptr<const Surface>>;
 
@@ -65,8 +65,8 @@ void draw_surfaces(const SrfVec& surfaces, const std::string& fname) {
         dynamic_cast<const PlanarBounds*>(&srf->bounds());
 
     for (const auto& vtxloc : bounds->vertices()) {
-      Vector3 vtx =
-          srf->transform(tgContext) * Vector3(vtxloc.x(), vtxloc.y(), 0);
+      Vector3 vtx = srf->localToGlobalTransform(tgContext) *
+                    Vector3(vtxloc.x(), vtxloc.y(), 0);
       os << "v " << vtx.x() << " " << vtx.y() << " " << vtx.z() << "\n";
     }
 
@@ -99,11 +99,8 @@ struct LayerCreatorFixture {
         cfg, getDefaultLogger("LayerCreator", Logging::VERBOSE));
   }
 
-  template <typename... Args>
-  bool checkBinning(Args&&... args) {
-    return p_LC->checkBinning(std::forward<Args>(args)...);
-  }
-
+  /// Every bin has to hold at least @p n surfaces. A bin on a module boundary
+  /// holds more, since surfaces are registered in every bin they overlap.
   bool checkBinContentSize(const SurfaceArray* sArray, std::size_t n) {
     std::size_t nBins = sArray->size();
     bool result = true;
@@ -111,10 +108,10 @@ struct LayerCreatorFixture {
       if (!sArray->isValidBin(i)) {
         continue;
       }
-      std::vector<const Surface*> binContent = sArray->at(i);
+      const std::span<const Surface* const> binContent = sArray->at(i);
       BOOST_TEST_INFO("Bin: " << i);
-      BOOST_CHECK_EQUAL(binContent.size(), n);
-      result = result && binContent.size() == n;
+      BOOST_CHECK_GE(binContent.size(), n);
+      result = result && binContent.size() >= n;
     }
 
     return result;
@@ -252,12 +249,11 @@ BOOST_FIXTURE_TEST_CASE(LayerCreator_createCylinderLayer, LayerCreatorFixture) {
 
   //
   double rMax = 10.6071, rMin = 9.59111;  // empirical - w/o envelopes
-  CHECK_CLOSE_REL(layer->thickness(), (rMax - rMin) + 2. * envR, 1e-3);
+  CHECK_CLOSE_REL(layer->layerThickness(), (rMax - rMin) + 2. * envR, 1e-3);
 
   const CylinderBounds* bounds = &layer->bounds();
   CHECK_CLOSE_REL(bounds->get(CylinderBounds::eR), (rMax + rMin) / 2., 1e-3);
   CHECK_CLOSE_REL(bounds->get(CylinderBounds::eHalfLengthZ), 14 + envZ, 1e-3);
-  BOOST_CHECK(checkBinning(tgContext, *layer->surfaceArray()));
   auto axes = layer->surfaceArray()->getAxes();
   BOOST_CHECK_EQUAL(axes.at(0)->getNBins(), 30u);
   BOOST_CHECK_EQUAL(axes.at(1)->getNBins(), 7u);
@@ -273,11 +269,10 @@ BOOST_FIXTURE_TEST_CASE(LayerCreator_createCylinderLayer, LayerCreatorFixture) {
   pl2.envelope[AxisDirection::AxisZ] = {envZ, envZ};
   layer = std::dynamic_pointer_cast<CylinderLayer>(
       p_LC->cylinderLayer(tgContext, srf, 30, 7, pl2));
-  CHECK_CLOSE_REL(layer->thickness(), (rMax - rMin) + 2 * envR, 1e-3);
+  CHECK_CLOSE_REL(layer->layerThickness(), (rMax - rMin) + 2 * envR, 1e-3);
   bounds = &layer->bounds();
   CHECK_CLOSE_REL(bounds->get(CylinderBounds::eR), (rMax + rMin) / 2., 1e-3);
   CHECK_CLOSE_REL(bounds->get(CylinderBounds::eHalfLengthZ), 14 + envZ, 1e-3);
-  BOOST_CHECK(checkBinning(tgContext, *layer->surfaceArray()));
   axes = layer->surfaceArray()->getAxes();
   BOOST_CHECK_EQUAL(axes.at(0)->getNBins(), 30u);
   BOOST_CHECK_EQUAL(axes.at(1)->getNBins(), 7u);
@@ -288,13 +283,10 @@ BOOST_FIXTURE_TEST_CASE(LayerCreator_createCylinderLayer, LayerCreatorFixture) {
 
   layer = std::dynamic_pointer_cast<CylinderLayer>(
       p_LC->cylinderLayer(tgContext, srf, 13, 3, pl2));
-  CHECK_CLOSE_REL(layer->thickness(), (rMax - rMin) + 2 * envR, 1e-3);
+  CHECK_CLOSE_REL(layer->layerThickness(), (rMax - rMin) + 2 * envR, 1e-3);
   bounds = &layer->bounds();
   CHECK_CLOSE_REL(bounds->get(CylinderBounds::eR), (rMax + rMin) / 2., 1e-3);
   CHECK_CLOSE_REL(bounds->get(CylinderBounds::eHalfLengthZ), 14 + envZ, 1e-3);
-  // this succeeds despite sub-optimal binning
-  // since we now have multientry bins
-  BOOST_CHECK(checkBinning(tgContext, *layer->surfaceArray()));
   axes = layer->surfaceArray()->getAxes();
   BOOST_CHECK_EQUAL(axes.at(0)->getNBins(), 13u);
   BOOST_CHECK_EQUAL(axes.at(1)->getNBins(), 3u);
@@ -309,15 +301,10 @@ BOOST_FIXTURE_TEST_CASE(LayerCreator_createCylinderLayer, LayerCreatorFixture) {
   pl3.extent.range(AxisDirection::AxisZ).set(-25, 25);
   layer = std::dynamic_pointer_cast<CylinderLayer>(
       p_LC->cylinderLayer(tgContext, srf, equidistant, equidistant, pl3));
-  CHECK_CLOSE_REL(layer->thickness(), 19, 1e-3);
+  CHECK_CLOSE_REL(layer->layerThickness(), 19, 1e-3);
   bounds = &layer->bounds();
   CHECK_CLOSE_REL(bounds->get(CylinderBounds::eR), 10.5, 1e-3);
   CHECK_CLOSE_REL(bounds->get(CylinderBounds::eHalfLengthZ), 25, 1e-3);
-
-  // this should fail, b/c it's a completely inconvenient binning
-  // but it succeeds despite sub-optimal binning
-  // since we now have multientry bins
-  BOOST_CHECK(checkBinning(tgContext, *layer->surfaceArray()));
 
   axes = layer->surfaceArray()->getAxes();
   BOOST_CHECK_EQUAL(axes.at(0)->getNBins(), 30u);
@@ -343,12 +330,11 @@ BOOST_FIXTURE_TEST_CASE(LayerCreator_createDiscLayer, LayerCreatorFixture) {
   pl.extent.range(AxisDirection::AxisR).set(5., 25.);
   std::shared_ptr<DiscLayer> layer = std::dynamic_pointer_cast<DiscLayer>(
       p_LC->discLayer(tgContext, surfaces, equidistant, equidistant, pl));
-  CHECK_CLOSE_REL(layer->thickness(), 20, 1e-3);
+  CHECK_CLOSE_REL(layer->layerThickness(), 20, 1e-3);
   const RadialBounds* bounds =
       dynamic_cast<const RadialBounds*>(&layer->bounds());
   CHECK_CLOSE_REL(bounds->rMin(), 5, 1e-3);
   CHECK_CLOSE_REL(bounds->rMax(), 25, 1e-3);
-  BOOST_CHECK(checkBinning(tgContext, *layer->surfaceArray()));
   auto axes = layer->surfaceArray()->getAxes();
   BOOST_CHECK_EQUAL(axes.at(0)->getNBins(), 3u);
   BOOST_CHECK_EQUAL(axes.at(1)->getNBins(), 30u);
@@ -373,11 +359,10 @@ BOOST_FIXTURE_TEST_CASE(LayerCreator_createDiscLayer, LayerCreatorFixture) {
       p_LC->discLayer(tgContext, surfaces, nBinsR, nBinsPhi, pl2));
 
   double rMin = 8, rMax = 22.0227;
-  CHECK_CLOSE_REL(layer->thickness(), 0.4 + 2 * envZ, 1e-3);
+  CHECK_CLOSE_REL(layer->layerThickness(), 0.4 + 2 * envZ, 1e-3);
   bounds = dynamic_cast<const RadialBounds*>(&layer->bounds());
   CHECK_CLOSE_REL(bounds->rMin(), rMin - envMinR, 1e-3);
   CHECK_CLOSE_REL(bounds->rMax(), rMax + envMaxR, 1e-3);
-  BOOST_CHECK(checkBinning(tgContext, *layer->surfaceArray()));
   axes = layer->surfaceArray()->getAxes();
   BOOST_CHECK_EQUAL(axes.at(0)->getNBins(), nBinsR);
   BOOST_CHECK_EQUAL(axes.at(1)->getNBins(), nBinsPhi);
@@ -395,11 +380,10 @@ BOOST_FIXTURE_TEST_CASE(LayerCreator_createDiscLayer, LayerCreatorFixture) {
 
   layer = std::dynamic_pointer_cast<DiscLayer>(
       p_LC->discLayer(tgContext, surfaces, equidistant, equidistant, pl2));
-  CHECK_CLOSE_REL(layer->thickness(), 0.4 + 2 * envZ, 1e-3);
+  CHECK_CLOSE_REL(layer->layerThickness(), 0.4 + 2 * envZ, 1e-3);
   bounds = dynamic_cast<const RadialBounds*>(&layer->bounds());
   CHECK_CLOSE_REL(bounds->rMin(), rMin - envMinR, 1e-3);
   CHECK_CLOSE_REL(bounds->rMax(), rMax + envMaxR, 1e-3);
-  BOOST_CHECK(checkBinning(tgContext, *layer->surfaceArray()));
   axes = layer->surfaceArray()->getAxes();
   BOOST_CHECK_EQUAL(axes.at(0)->getNBins(), nBinsR);
   BOOST_CHECK_EQUAL(axes.at(1)->getNBins(), nBinsPhi);
@@ -444,16 +428,12 @@ BOOST_FIXTURE_TEST_CASE(LayerCreator_barrelStagger, LayerCreatorFixture) {
     // std::endl;
 
     Vector3 ctr = A->referencePosition(tgContext, AxisDirection::AxisR);
-    auto binContent = layer->surfaceArray()->at(ctr, ctr.normalized());
-    BOOST_CHECK_EQUAL(binContent.size(), 2u);
-    std::set<const Surface*> act(binContent.begin(), binContent.end());
+    const std::span<const Surface* const> binContent =
+        layer->surfaceArray()->at(tgContext, ctr, ctr.normalized());
 
     std::set<const Surface*> exp({A, B});
-    BOOST_CHECK(std::ranges::includes(act, exp));
+    BOOST_CHECK(std::ranges::includes(binContent, exp));
   }
-
-  // checkBinning should also report everything is fine
-  checkBinning(tgContext, *layer->surfaceArray());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

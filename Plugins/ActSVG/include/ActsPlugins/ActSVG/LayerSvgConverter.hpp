@@ -32,8 +32,10 @@ static const std::array<double, 2> noLimitZ = {
 static const std::array<double, 2> noLimitPhi = {-std::numbers::pi,
                                                  std::numbers::pi};
 
+/// @ingroup actsvg_plugin
 namespace LayerConverter {
 
+/// @ingroup actsvg_plugin
 /// The enumeration for sheets
 enum Sheets {
   eModuleInfo = 0,
@@ -42,6 +44,7 @@ enum Sheets {
   eCrossSectionZR = 3
 };
 
+/// @ingroup actsvg_plugin
 /// A nested options class for the layer conversion
 struct Options {
   /// The name for the conversion object
@@ -53,11 +56,19 @@ struct Options {
   /// The phi limit for projections
   std::array<double, 2> phiRange = noLimitPhi;
   /// Configuration of the views
-  bool gridInfo = true;
-  bool moduleInfo = true;
+  /// @deprecated actsvg 0.4.57 removed the grid sheet display. Kept so the
+  /// option still compiles; convert() throws if it is switched on. No
+  /// [[deprecated]] attribute: on a data member it also fires on every copy
+  /// of Options, which says nothing about whether the option is used.
+  bool gridInfo = false;
+  /// Include module information
+  /// @deprecated actsvg 0.4.57 removed the module sheet display; see gridInfo.
+  bool moduleInfo = false;
+  /// Include projection information
   bool projectionInfo = true;
   /// Label checks
   bool labelProjection = false;
+  /// Label gauge for display
   double labelGauge = 0.;
 };
 

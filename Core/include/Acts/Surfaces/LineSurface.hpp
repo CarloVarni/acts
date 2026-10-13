@@ -25,7 +25,6 @@
 namespace Acts {
 
 class LineBounds;
-class DetectorElementBase;
 class SurfaceBounds;
 
 ///  @class LineSurface
@@ -56,13 +55,18 @@ class LineSurface : public Surface {
   explicit LineSurface(const Transform3& transform,
                        std::shared_ptr<const LineBounds> lbounds = nullptr);
 
-  /// Constructor from DetectorElementBase : Element proxy
+  /// Constructor from SurfacePlacementBase : Element proxy
   ///
   /// @param lbounds are the bounds describing the line dimensions, they must
   /// not be nullptr
-  /// @param detelement for which this surface is (at least) one representation
+  /// @param placement Reference to the surface placement
+  /// @note The Surface does not take any ownership over the
+  ///       `SurfacePlacementBase` it is expected that the user
+  ///        ensures the life-time of the `SurfacePlacementBase`
+  ///        and that the `Surface` is actually owned by
+  ///        the `SurfacePlacementBase` instance
   explicit LineSurface(std::shared_ptr<const LineBounds> lbounds,
-                       const DetectorElementBase& detelement);
+                       const SurfacePlacementBase& placement);
 
   /// Copy constructor
   ///
@@ -78,6 +82,8 @@ class LineSurface : public Surface {
                        const Transform3& shift);
 
  public:
+  ~LineSurface() override = default;
+
   /// Assignment operator
   ///
   /// @param other is the source surface dor copying
@@ -190,7 +196,7 @@ class LineSurface : public Surface {
   ///
   /// <b>Mathematical motivation:</b>
   ///
-  /// Given two lines in parameteric form:<br>
+  /// Given two lines in parametric form:<br>
   ///
   /// @f$ \vec l_{a}(u) = \vec m_a + u \cdot \vec e_{a} @f$
   ///
@@ -262,6 +268,7 @@ class LineSurface : public Surface {
   /// @return Reference to the surface bounds
   const SurfaceBounds& bounds() const final;
   /// This method returns the shared_ptr to the LineBounds
+  /// @return Shared pointer to the line bounds
   const std::shared_ptr<const LineBounds>& boundsPtr() const;
   /// Overwrite the existing surface bounds with new ones
   /// @param newBounds: Pointer to the new bounds
@@ -293,7 +300,7 @@ class LineSurface : public Surface {
   ///
   /// @return Derivative of bound local position w.r.t. position in local 3D
   /// cartesian coordinates
-  ActsMatrix<2, 3> localCartesianToBoundLocalDerivative(
+  Matrix<2, 3> localCartesianToBoundLocalDerivative(
       const GeometryContext& gctx, const Vector3& position) const final;
 
   /// Get the line direction in global coordinates
@@ -303,6 +310,11 @@ class LineSurface : public Surface {
 
  protected:
   std::shared_ptr<const LineBounds> m_bounds;  ///< bounds (shared)
+
+  /// @copydoc Surface::localAxes
+  std::array<AxisDirection, 2> localAxes() const override {
+    return {AxisDirection::AxisR, AxisDirection::AxisZ};
+  }
 
  private:
   /// helper function to apply the globalToLocal with out transform

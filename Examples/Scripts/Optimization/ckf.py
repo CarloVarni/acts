@@ -7,7 +7,7 @@ import argparse
 import acts
 from acts import UnitConstants as u
 from acts.examples import GenericDetector
-from acts.exsamples.root import RootParticleReader
+from acts.examples.root import RootParticleReader
 
 
 def getArgumentParser():
@@ -129,7 +129,6 @@ def runCKFTracks(
         SeedFinderConfigArg,
         SeedFinderOptionsArg,
         SeedingAlgorithm,
-        TruthEstimatedSeedingAlgorithmConfigArg,
         addCKFTracks,
     )
 
@@ -154,8 +153,8 @@ def runCKFTracks(
             rnd=rnd,
         )
     else:
-        acts.logging.getLogger("CKFExample").info(
-            "Reading particles from %s", inputParticlePath.resolve()
+        acts.getDefaultLogger("CKFExample", acts.logging.INFO).info(
+            "Reading particles from {}", inputParticlePath.resolve()
         )
         assert inputParticlePath.exists()
         s.addReader(
@@ -195,7 +194,7 @@ def runCKFTracks(
         trackingGeometry,
         field,
         TrackSmearingSigmas(  # only used by SeedingAlgorithm.TruthSmeared
-            # zero eveything so the CKF has a chance to find the measurements
+            # zero everything so the CKF has a chance to find the measurements
             loc0=0,
             loc0PtA=0,
             loc0PtB=0,
@@ -221,7 +220,11 @@ def runCKFTracks(
             impactMax=ImpactMax * u.mm,
         ),
         SeedFinderOptionsArg(bFieldInZ=2 * u.T, beamPos=(0.0, 0, 0)),
-        TruthEstimatedSeedingAlgorithmConfigArg(deltaR=(10.0 * u.mm, None)),
+        paramEstimationSpacePoints=(
+            acts.examples.SeedSpacePointSelection.SpreadTriplet
+            if truthEstimatedSeeded
+            else None
+        ),
         seedingAlgorithm=(
             SeedingAlgorithm.TruthSmeared
             if truthSmearedSeeded

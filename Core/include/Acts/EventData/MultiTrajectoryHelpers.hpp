@@ -8,15 +8,10 @@
 
 #pragma once
 
-#include "Acts/EventData/MultiTrajectory.hpp"
-#include "Acts/EventData/TrackContainer.hpp"
 #include "Acts/EventData/TransformationHelpers.hpp"
-#include "Acts/Geometry/Layer.hpp"
-#include "Acts/Geometry/TrackingVolume.hpp"
-#include "Acts/Surfaces/Surface.hpp"
+#include "Acts/Geometry/GeometryIdentifier.hpp"
 #include "Acts/Utilities/Helpers.hpp"
 
-#include <functional>
 #include <unordered_map>
 
 namespace Acts::MultiTrajectoryHelpers {
@@ -50,6 +45,8 @@ struct TrajectoryState {
   std::vector<unsigned int> outlierLayer = {};
   /// Number of hits shared with other tracks
   std::size_t nSharedHits = 0;
+  /// Number of split hits, which other tracks may use without penalty
+  std::size_t nSplitHits = 0;
 };
 
 // Container for trajectory summary info at a specific volume
@@ -72,16 +69,19 @@ TrajectoryState trajectoryState(const traj_t& multiTraj, std::size_t tipIndex) {
     const auto& layer = geoID.layer();
     trajState.nStates++;
     auto typeFlags = state.typeFlags();
-    if (typeFlags.test(Acts::TrackStateFlag::HoleFlag)) {
+    if (typeFlags.isHole()) {
       trajState.nHoles++;
-    } else if (typeFlags.test(Acts::TrackStateFlag::OutlierFlag)) {
+    } else if (typeFlags.isOutlier()) {
       trajState.nOutliers++;
       trajState.outlierChi2.push_back(state.chi2());
       trajState.outlierVolume.push_back(volume);
       trajState.outlierLayer.push_back(layer);
-    } else if (typeFlags.test(Acts::TrackStateFlag::MeasurementFlag)) {
-      if (typeFlags.test(Acts::TrackStateFlag::SharedHitFlag)) {
+    } else if (typeFlags.isMeasurement()) {
+      if (typeFlags.isSharedHit()) {
         trajState.nSharedHits++;
+      }
+      if (typeFlags.isSplitHit()) {
+        trajState.nSplitHits++;
       }
       trajState.nMeasurements++;
       trajState.measurementChi2.push_back(state.chi2());
@@ -124,16 +124,19 @@ VolumeTrajectoryStateContainer trajectoryState(
     trajState.nStates++;
     trajState.NDF += state.calibratedSize();
     auto typeFlags = state.typeFlags();
-    if (typeFlags.test(Acts::TrackStateFlag::HoleFlag)) {
+    if (typeFlags.isHole()) {
       trajState.nHoles++;
-    } else if (typeFlags.test(Acts::TrackStateFlag::OutlierFlag)) {
+    } else if (typeFlags.isOutlier()) {
       trajState.nOutliers++;
       trajState.outlierChi2.push_back(state.chi2());
       trajState.outlierVolume.push_back(volume);
       trajState.outlierLayer.push_back(layer);
-    } else if (typeFlags.test(Acts::TrackStateFlag::MeasurementFlag)) {
-      if (typeFlags.test(Acts::TrackStateFlag::SharedHitFlag)) {
+    } else if (typeFlags.isMeasurement()) {
+      if (typeFlags.isSharedHit()) {
         trajState.nSharedHits++;
+      }
+      if (typeFlags.isSplitHit()) {
+        trajState.nSplitHits++;
       }
       trajState.nMeasurements++;
       trajState.measurementChi2.push_back(state.chi2());

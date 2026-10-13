@@ -21,9 +21,10 @@
 
 #include <nlohmann/json.hpp>
 
-// Custom Json encoder/decoders. Naming is mandated by nlohmann::json and thus
-// can not match our naming guidelines.
 namespace Acts {
+
+/// @addtogroup json_plugin
+/// @{
 
 /// Convert VolumeBounds to JSON
 /// @param j Destination JSON object
@@ -71,7 +72,9 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
      {VolumeBounds::BoundsType::eCuboid, "Cuboid"},
      {VolumeBounds::BoundsType::eCutoutCylinder, "CutoutCylinder"},
      {VolumeBounds::BoundsType::eCylinder, "Cylinder"},
+     {VolumeBounds::BoundsType::eDiamond, "Diamond"},
      {VolumeBounds::BoundsType::eGenericCuboid, "GenericCuboid"},
      {VolumeBounds::BoundsType::eTrapezoid, "Trapezoid"}})
 
+/// @}
 }  // namespace Acts

@@ -9,13 +9,16 @@
 #pragma once
 
 #include "Acts/Definitions/PdgParticle.hpp"
-#include "Acts/EventData/GenericBoundTrackParameters.hpp"
+#include "Acts/Definitions/TrackParametrization.hpp"
 #include "Acts/EventData/detail/TrackParametersUtils.hpp"
 #include "ActsPlugins/Json/SurfaceJsonConverter.hpp"
 
 #include <nlohmann/json.hpp>
 
 namespace Acts {
+
+/// @addtogroup json_plugin
+/// @{
 NLOHMANN_JSON_SERIALIZE_ENUM(Acts::PdgParticle,
 
                              {{Acts::PdgParticle::eInvalid, "Invalid"},
@@ -40,7 +43,9 @@ NLOHMANN_JSON_SERIALIZE_ENUM(Acts::PdgParticle,
                               {Acts::PdgParticle::eLead, "Lead"}}
 
 )
-}
+
+/// @}
+}  // namespace Acts
 
 #ifdef NLOHMANN_JSON_NAMESPACE_BEGIN
 NLOHMANN_JSON_NAMESPACE_BEGIN
@@ -90,8 +95,9 @@ struct adl_serializer<parameters_t> {
     // Bound track parameters have
     // reference surface attached
     // and position takes a geometry context
-    if constexpr (Acts::detail::isGenericBoundTrackParams<parameters_t>) {
-      Acts::GeometryContext gctx;
+    if constexpr (Acts::detail::isBoundTrackParams<parameters_t>) {
+      Acts::GeometryContext gctx =
+          Acts::GeometryContext::dangerouslyDefaultConstruct();
       j["position"] = t.fourPosition(gctx);
 
       j["referenceSurface"] =
@@ -135,14 +141,15 @@ struct adl_serializer<parameters_t> {
     }
 
     // Create particle hypothesis
-    typename parameters_t::ParticleHypothesis particle(absPdg);
+    Acts::ParticleHypothesis particle(absPdg);
 
     // Bound track parameters have
     // reference surface attached
     // and constructor is hidden
     // behind a factory method
-    if constexpr (Acts::detail::isGenericBoundTrackParams<parameters_t>) {
-      Acts::GeometryContext gctx;
+    if constexpr (Acts::detail::isBoundTrackParams<parameters_t>) {
+      Acts::GeometryContext gctx =
+          Acts::GeometryContext::dangerouslyDefaultConstruct();
       auto referenceSurface =
           Acts::SurfaceJsonConverter::fromJson(j.at("referenceSurface"));
 
@@ -169,7 +176,6 @@ struct adl_serializer<parameters_t> {
 /// @tparam parameters_t The track parameters type
 template <Acts::detail::isBoundOrFreeTrackParams parameters_t>
 struct adl_serializer<std::shared_ptr<parameters_t>> {
-  using CovarianceMatrix = typename parameters_t::CovarianceMatrix;
   static void to_json(nlohmann::json& j,
                       const std::shared_ptr<parameters_t>& t) {
     if (t == nullptr) {
@@ -193,7 +199,6 @@ struct adl_serializer<std::shared_ptr<parameters_t>> {
 /// @tparam parameters_t The track parameters type
 template <Acts::detail::isBoundOrFreeTrackParams parameters_t>
 struct adl_serializer<std::unique_ptr<parameters_t>> {
-  using CovarianceMatrix = typename parameters_t::CovarianceMatrix;
   static void to_json(nlohmann::json& j,
                       const std::unique_ptr<parameters_t>& t) {
     if (t == nullptr) {

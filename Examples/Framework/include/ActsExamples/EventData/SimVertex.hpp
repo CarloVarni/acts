@@ -10,7 +10,7 @@
 
 #include "Acts/Definitions/Algebra.hpp"
 #include "ActsExamples/EventData/SimParticle.hpp"
-#include "ActsFatras/EventData/ProcessType.hpp"
+#include "ActsFatras/EventData/GenerationProcess.hpp"
 
 #include <boost/container/flat_set.hpp>
 
@@ -42,25 +42,6 @@ class SimVertexBarcode {
   }
   /// Return the generation identifier.
   constexpr GenerationId generation() const { return m_id.generation(); }
-
-  /// Set the primary vertex identifier.
-  [[deprecated("Use withVertexPrimary() instead")]]
-  constexpr SimVertexBarcode setVertexPrimary(PrimaryVertexId id) {
-    m_id = m_id.withVertexPrimary(id);
-    return *this;
-  }
-  /// Set the secondary vertex identifier.
-  [[deprecated("Use withVertexSecondary() instead")]]
-  constexpr SimVertexBarcode setVertexSecondary(SecondaryVertexId id) {
-    m_id = m_id.withVertexSecondary(id);
-    return *this;
-  }
-  /// Set the particle identifier.
-  [[deprecated("Use withGeneration() instead")]]
-  constexpr SimVertexBarcode setGeneration(GenerationId id) {
-    m_id = m_id.withGeneration(id);
-    return *this;
-  }
 
   /// Create a new barcode with a different primary vertex identifier.
   [[nodiscard]]
@@ -106,7 +87,8 @@ struct SimVertex {
   /// The vertex four-position
   Acts::Vector4 position4 = Acts::Vector4::Zero();
   /// The vertex process type
-  ActsFatras::ProcessType process = ActsFatras::ProcessType::eUndefined;
+  ActsFatras::GenerationProcess process =
+      ActsFatras::GenerationProcess::eUndefined;
   /// The incoming particles into the vertex
   SimBarcodeContainer incoming;
   /// The outgoing particles from the vertex
@@ -119,9 +101,9 @@ struct SimVertex {
   ///
   /// Associated particles are left empty by default and must be filled by the
   /// user after construction.
-  SimVertex(
-      SimVertexBarcode id_, const Acts::Vector4& position4_,
-      ActsFatras::ProcessType process_ = ActsFatras::ProcessType::eUndefined)
+  SimVertex(SimVertexBarcode id_, const Acts::Vector4& position4_,
+            ActsFatras::GenerationProcess process_ =
+                ActsFatras::GenerationProcess::eUndefined)
       : id(id_), position4(position4_), process(process_) {}
   // explicitly default rule-of-five.
   SimVertex() = default;

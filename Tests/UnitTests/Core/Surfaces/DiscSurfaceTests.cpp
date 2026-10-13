@@ -17,12 +17,20 @@
 #include "Acts/Geometry/Extent.hpp"
 #include "Acts/Geometry/GeometryContext.hpp"
 #include "Acts/Geometry/Polyhedron.hpp"
+#include "Acts/Material/BinnedSurfaceMaterial.hpp"
+#include "Acts/Material/HomogeneousSurfaceMaterial.hpp"
+#include "Acts/Material/Material.hpp"
+#include "Acts/Material/MaterialSlab.hpp"
 #include "Acts/Surfaces/AnnulusBounds.hpp"
 #include "Acts/Surfaces/DiscSurface.hpp"
+#include "Acts/Surfaces/DiscTrapezoidBounds.hpp"
 #include "Acts/Surfaces/RadialBounds.hpp"
 #include "Acts/Surfaces/Surface.hpp"
 #include "Acts/Surfaces/SurfaceBounds.hpp"
 #include "Acts/Surfaces/SurfaceMergingException.hpp"
+#include "Acts/Utilities/AxisDefinitions.hpp"
+#include "Acts/Utilities/BinUtility.hpp"
+#include "Acts/Utilities/BinningType.hpp"
 #include "Acts/Utilities/Intersection.hpp"
 #include "Acts/Utilities/Result.hpp"
 #include "Acts/Utilities/ThrowAssert.hpp"
@@ -34,13 +42,14 @@
 #include <memory>
 #include <numbers>
 #include <string>
+#include <vector>
 
 using namespace Acts;
 using namespace Acts::UnitLiterals;
 
 namespace ActsTests {
 // Create a test context
-GeometryContext tgContext = GeometryContext();
+GeometryContext tgContext = GeometryContext::dangerouslyDefaultConstruct();
 auto logger = Acts::getDefaultLogger("UnitTests", Acts::Logging::VERBOSE);
 
 BOOST_AUTO_TEST_SUITE(SurfacesSuite)
@@ -328,7 +337,7 @@ BOOST_AUTO_TEST_CASE(DiscSurfaceAlignment) {
       discSurfaceObject->localCartesianToBoundLocalDerivative(tgContext,
                                                               globalPosition);
   // Check if the result is as expected
-  ActsMatrix<2, 3> expLoc3DToLocBound = ActsMatrix<2, 3>::Zero();
+  Matrix<2, 3> expLoc3DToLocBound = Matrix<2, 3>::Zero();
   expLoc3DToLocBound << 0, 1, 0, -1. / 3, 0, 0;
   CHECK_CLOSE_ABS(loc3DToLocBound, expLoc3DToLocBound, 1e-10);
 }
@@ -553,15 +562,18 @@ BOOST_DATA_TEST_CASE(RDirection,
   BOOST_CHECK_EQUAL(bounds->get(RadialBounds::eMaxR), 150_mm);
 
   // Disc did not move
-  BOOST_CHECK_EQUAL(base.matrix(), disc3->transform(tgContext).matrix());
+  BOOST_CHECK_EQUAL(base.matrix(),
+                    disc3->localToGlobalTransform(tgContext).matrix());
 
   // Rotation in z depends on the ordering, the left side "wins"
   Transform3 expected12 = base;
-  BOOST_CHECK_EQUAL(expected12.matrix(), disc3->transform(tgContext).matrix());
+  BOOST_CHECK_EQUAL(expected12.matrix(),
+                    disc3->localToGlobalTransform(tgContext).matrix());
 
   Transform3 expected21 = base * AngleAxis3(14_degree, Vector3::UnitZ());
-  CHECK_CLOSE_OR_SMALL(disc3Reversed->transform(tgContext).matrix(),
-                       expected21.matrix(), 1e-6, 1e-10);
+  CHECK_CLOSE_OR_SMALL(
+      disc3Reversed->localToGlobalTransform(tgContext).matrix(),
+      expected21.matrix(), 1e-6, 1e-10);
 
   // Test r merging with phi sectors (matching)
   auto discPhi1 = makeDisc(base, 30_mm, 100_mm, 10_degree, 40_degree);
@@ -647,7 +659,8 @@ BOOST_DATA_TEST_CASE(PhiDirection,
     auto [disc3, reversed] =
         disc->mergedWith(*disc2, Acts::AxisDirection::AxisPhi, false, *logger);
     BOOST_REQUIRE_NE(disc3, nullptr);
-    BOOST_CHECK_EQUAL(base.matrix(), disc3->transform(tgContext).matrix());
+    BOOST_CHECK_EQUAL(base.matrix(),
+                      disc3->localToGlobalTransform(tgContext).matrix());
     BOOST_CHECK(reversed);
 
     auto [disc3Reversed, reversed2] =
@@ -671,7 +684,8 @@ BOOST_DATA_TEST_CASE(PhiDirection,
     auto [disc45, reversed45] =
         disc4->mergedWith(*disc5, Acts::AxisDirection::AxisPhi, false, *logger);
     BOOST_REQUIRE_NE(disc45, nullptr);
-    BOOST_CHECK_EQUAL(base.matrix(), disc45->transform(tgContext).matrix());
+    BOOST_CHECK_EQUAL(base.matrix(),
+                      disc45->localToGlobalTransform(tgContext).matrix());
     BOOST_CHECK(reversed45);
 
     auto [disc54, reversed54] =
@@ -697,8 +711,8 @@ BOOST_DATA_TEST_CASE(PhiDirection,
     auto [disc67, reversed67] =
         disc6->mergedWith(*disc7, Acts::AxisDirection::AxisPhi, false, *logger);
     BOOST_REQUIRE_NE(disc67, nullptr);
-    CHECK_CLOSE_OR_SMALL(disc67->transform(tgContext).matrix(), base.matrix(),
-                         1e-6, 1e-10);
+    CHECK_CLOSE_OR_SMALL(disc67->localToGlobalTransform(tgContext).matrix(),
+                         base.matrix(), 1e-6, 1e-10);
     BOOST_CHECK(!reversed67);
 
     auto [disc76, reversed76] =
@@ -709,8 +723,8 @@ BOOST_DATA_TEST_CASE(PhiDirection,
     // bounds are different because of avg phi
     BOOST_CHECK_NE(disc76->bounds(), disc67->bounds());
     // transforms should be the same
-    BOOST_CHECK_EQUAL(disc76->transform(tgContext).matrix(),
-                      disc67->transform(tgContext).matrix());
+    BOOST_CHECK_EQUAL(disc76->localToGlobalTransform(tgContext).matrix(),
+                      disc67->localToGlobalTransform(tgContext).matrix());
     // not reversed either because you get the ordering you put in
     BOOST_CHECK(!reversed76);
 
@@ -735,7 +749,7 @@ BOOST_DATA_TEST_CASE(PhiDirection,
     BOOST_REQUIRE_NE(disc3, nullptr);
     Transform3 trfExpected12 =
         base * AngleAxis3(a(85_degree), Vector3::UnitZ());
-    CHECK_CLOSE_OR_SMALL(disc3->transform(tgContext).matrix(),
+    CHECK_CLOSE_OR_SMALL(disc3->localToGlobalTransform(tgContext).matrix(),
                          trfExpected12.matrix(), 1e-6, 1e-10);
     BOOST_CHECK(reversed);
 
@@ -761,7 +775,7 @@ BOOST_DATA_TEST_CASE(PhiDirection,
     BOOST_REQUIRE_NE(disc45, nullptr);
     Transform3 trfExpected45 =
         base * AngleAxis3(a(180_degree), Vector3::UnitZ());
-    CHECK_CLOSE_OR_SMALL(disc45->transform(tgContext).matrix(),
+    CHECK_CLOSE_OR_SMALL(disc45->localToGlobalTransform(tgContext).matrix(),
                          trfExpected45.matrix(), 1e-6, 1e-10);
     BOOST_CHECK(reversed45);
 
@@ -788,7 +802,7 @@ BOOST_DATA_TEST_CASE(PhiDirection,
     BOOST_REQUIRE_NE(disc67, nullptr);
     Transform3 trfExpected67 =
         base * AngleAxis3(a(90_degree), Vector3::UnitZ());
-    CHECK_CLOSE_OR_SMALL(disc67->transform(tgContext).matrix(),
+    CHECK_CLOSE_OR_SMALL(disc67->localToGlobalTransform(tgContext).matrix(),
                          trfExpected67.matrix(), 1e-6, 1e-10);
     BOOST_CHECK(!reversed67);
 
@@ -797,8 +811,8 @@ BOOST_DATA_TEST_CASE(PhiDirection,
     BOOST_REQUIRE_NE(disc76, nullptr);
     // surfaces are not equal due to different transforms
     BOOST_CHECK(*disc76 != *disc67);
-    BOOST_CHECK_NE(disc76->transform(tgContext).matrix(),
-                   disc67->transform(tgContext).matrix());
+    BOOST_CHECK_NE(disc76->localToGlobalTransform(tgContext).matrix(),
+                   disc67->localToGlobalTransform(tgContext).matrix());
     // bounds should be equal however
     BOOST_CHECK_EQUAL(disc76->bounds(), disc67->bounds());
 
@@ -814,6 +828,98 @@ BOOST_DATA_TEST_CASE(PhiDirection,
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_CASE(DiscSurfaceMaterialAssignment) {
+  auto surface =
+      Surface::makeShared<DiscSurface>(Transform3::Identity(), 1., 100.);
+  MaterialSlab slab(Material::fromMolarDensity(1., 2., 3., 4., 5.), 0.1);
+
+  // HomogeneousSurfaceMaterial is always valid
+  auto homMat = std::make_shared<HomogeneousSurfaceMaterial>(slab);
+  BOOST_CHECK_NO_THROW(surface->assignSurfaceMaterial(homMat));
+  BOOST_CHECK_NE(surface->surfaceMaterial(), nullptr);
+
+  // nullptr clears the material
+  BOOST_CHECK_NO_THROW(surface->assignSurfaceMaterial(nullptr));
+  BOOST_CHECK_EQUAL(surface->surfaceMaterial(), nullptr);
+
+  // 1D AxisR - valid for disc
+  BinUtility buR(10, 1.f, 100.f, Acts::open, AxisDirection::AxisR);
+  auto matR = std::make_shared<BinnedSurfaceMaterial>(
+      buR, MaterialSlabVector(10, slab));
+  BOOST_CHECK_NO_THROW(surface->assignSurfaceMaterial(matR));
+
+  // 1D AxisPhi - valid for disc
+  BinUtility buPhi(10, -3.14f, 3.14f, Acts::closed, AxisDirection::AxisPhi);
+  auto matPhi = std::make_shared<BinnedSurfaceMaterial>(
+      buPhi, MaterialSlabVector(10, slab));
+  BOOST_CHECK_NO_THROW(surface->assignSurfaceMaterial(matPhi));
+
+  // 2D {AxisR, AxisPhi} - valid for disc
+  BinUtility bu2D(5, 1.f, 100.f, Acts::open, AxisDirection::AxisR);
+  bu2D += BinUtility(3, -3.14f, 3.14f, Acts::closed, AxisDirection::AxisPhi);
+  auto mat2D = std::make_shared<BinnedSurfaceMaterial>(
+      bu2D, MaterialSlabMatrix(3, MaterialSlabVector(5, slab)));
+  BOOST_CHECK_NO_THROW(surface->assignSurfaceMaterial(mat2D));
+
+  // Wrong axis directions - should throw
+  for (auto badDir : {AxisDirection::AxisRPhi, AxisDirection::AxisZ,
+                      AxisDirection::AxisX, AxisDirection::AxisY}) {
+    BinUtility buBad(10, 0.f, 10.f, Acts::open, badDir);
+    auto matBad = std::make_shared<BinnedSurfaceMaterial>(
+        buBad, MaterialSlabVector(10, slab));
+    BOOST_CHECK_THROW(surface->assignSurfaceMaterial(matBad),
+                      std::invalid_argument);
+  }
+}
+
+/// A disc's bound coordinates are polar in the surface's own cartesian frame:
+/// `DiscSurface::localToGlobal` places them at `(r cos phi, r sin phi)`
+/// whatever the bounds are. So the bounds' own map to that frame has to agree
+/// with it, at any average phi.
+BOOST_AUTO_TEST_CASE(DiscBoundToCartesianJacobianMatchesTheSurface) {
+  const GeometryContext gctx = GeometryContext::dangerouslyDefaultConstruct();
+  const double averagePhi = 0.7;
+
+  std::vector<std::shared_ptr<DiscBounds>> bounds;
+  bounds.push_back(std::make_shared<RadialBounds>(20., 40., 0.4, averagePhi));
+  bounds.push_back(
+      std::make_shared<DiscTrapezoidBounds>(6., 10., 20., 40., averagePhi));
+  bounds.push_back(std::make_shared<AnnulusBounds>(
+      20., 40., -0.2, 0.2, Vector2(0., -5.), averagePhi));
+
+  Transform3 transform = Transform3::Identity();
+  transform.translate(Vector3(0., 0., 300.));
+  transform.rotate(Eigen::AngleAxisd(0.9, Vector3::UnitZ()));
+
+  for (const auto& b : bounds) {
+    auto surface = Surface::makeShared<DiscSurface>(transform, b);
+    const RotationMatrix3 rotation =
+        surface->localToGlobalTransform(gctx).rotation();
+
+    for (const double r : {24., 30., 36.}) {
+      const Vector2 lposition(r, averagePhi + 0.05);
+
+      // d(local cartesian) / d(bound), by central difference on the surface
+      // itself
+      constexpr double h = 1e-6;
+      SquareMatrix2 numeric;
+      for (int i = 0; i < 2; ++i) {
+        Vector2 up = lposition;
+        Vector2 down = lposition;
+        up[i] += h;
+        down[i] -= h;
+        const Vector3 delta = (surface->localToGlobal(gctx, up) -
+                               surface->localToGlobal(gctx, down)) /
+                              (2 * h);
+        // back into the surface's own cartesian frame
+        numeric.col(i) = (rotation.transpose() * delta).head<2>();
+      }
+
+      CHECK_CLOSE_ABS(b->boundToCartesianJacobian(lposition), numeric, 1e-6);
+    }
+  }
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -22,15 +22,16 @@
 #include "Acts/Surfaces/RectangleBounds.hpp"
 #include "Acts/Surfaces/StrawSurface.hpp"
 #include "Acts/Surfaces/TrapezoidBounds.hpp"
+#include "Acts/Utilities/TransformHelpers.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <iterator>
 #include <numbers>
 #include <stdexcept>
 #include <utility>
-#include <vector>
 
 #include "G4Box.hh"
 #include "G4LogicalVolume.hh"
@@ -148,9 +149,9 @@ std::shared_ptr<LineBounds> ActsPlugins::Geant4ShapeConverter::lineBounds(
 
 std::tuple<std::shared_ptr<RectangleBounds>, std::array<int, 2u>, double>
 ActsPlugins::Geant4ShapeConverter::rectangleBounds(const G4Box& g4Box) {
-  std::vector<double> hG4XYZ = {static_cast<double>(g4Box.GetXHalfLength()),
-                                static_cast<double>(g4Box.GetYHalfLength()),
-                                static_cast<double>(g4Box.GetZHalfLength())};
+  std::array<double, 3> hG4XYZ = {static_cast<double>(g4Box.GetXHalfLength()),
+                                  static_cast<double>(g4Box.GetYHalfLength()),
+                                  static_cast<double>(g4Box.GetZHalfLength())};
 
   auto minAt = std::min_element(hG4XYZ.begin(), hG4XYZ.end());
   std::size_t minPos = std::distance(hG4XYZ.begin(), minAt);
@@ -188,7 +189,7 @@ ActsPlugins::Geant4ShapeConverter::trapezoidBounds(const G4Trd& g4Trd) {
   double hlY1 = static_cast<double>(g4Trd.GetYHalfLength2());
   double hlZ = static_cast<double>(g4Trd.GetZHalfLength());
 
-  std::vector<double> dXYZ = {(hlX0 + hlX1) * 0.5, (hlY0 + hlY1) * 0.5, hlZ};
+  std::array<double, 3> dXYZ = {(hlX0 + hlX1) * 0.5, (hlY0 + hlY1) * 0.5, hlZ};
 
   auto minAt = std::min_element(dXYZ.begin(), dXYZ.end());
   std::size_t minPos = std::distance(dXYZ.begin(), minAt);
@@ -251,7 +252,7 @@ ActsPlugins::Geant4ShapeConverter::trapezoidBounds(const G4Trap& g4Trap) {
   double hlY1 = y2 + 2 * z * std::tan(theta) * std::sin(phi);
   double hlZ = z;
 
-  std::vector<double> dXYZ = {(hlX0 + hlX1) * 0.5, (hlY0 + hlY1) * 0.5, hlZ};
+  std::array<double, 3> dXYZ = {(hlX0 + hlX1) * 0.5, (hlY0 + hlY1) * 0.5, hlZ};
 
   auto minAt = std::ranges::min_element(dXYZ);
   std::size_t minPos = std::distance(dXYZ.begin(), minAt);
@@ -321,20 +322,19 @@ ActsPlugins::Geant4ShapeConverter::planarBounds(const G4VSolid& g4Solid) {
 namespace {
 Transform3 axesOriented(const Transform3& toGlobalOriginal,
                         const std::array<int, 2u>& axes) {
-  auto originalRotation = toGlobalOriginal.rotation();
-  auto colX = originalRotation.col(std::abs(axes[0u]));
-  auto colY = originalRotation.col(std::abs(axes[1u]));
-  colX *= std::copysign(1., axes[0u]);
-  colY *= std::copysign(1., axes[1u]);
-  Vector3 colZ = colX.cross(colY);
+  const RotationMatrix3 originalRotation = toGlobalOriginal.rotation();
+  const Vector3 colX =
+      std::copysign(1., axes[0u]) * originalRotation.col(std::abs(axes[0u]));
+  const Vector3 colY =
+      std::copysign(1., axes[1u]) * originalRotation.col(std::abs(axes[1u]));
+  const Vector3 colZ = colX.cross(colY);
 
-  Transform3 orientedTransform = Transform3::Identity();
-  orientedTransform.matrix().block(0, 0, 3, 1) = colX;
-  orientedTransform.matrix().block(0, 1, 3, 1) = colY;
-  orientedTransform.matrix().block(0, 2, 3, 1) = colZ;
-  orientedTransform.matrix().block(0, 3, 3, 1) = toGlobalOriginal.translation();
+  RotationMatrix3 orientedRotation;
+  orientedRotation.col(0) = colX;
+  orientedRotation.col(1) = colY;
+  orientedRotation.col(2) = colZ;
 
-  return orientedTransform;
+  return makeTransform3(orientedRotation, toGlobalOriginal.translation());
 }
 }  // namespace
 

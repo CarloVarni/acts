@@ -18,7 +18,8 @@
 #include "Acts/Utilities/Logger.hpp"
 #include "Acts/Utilities/UnitVectors.hpp"
 #include "ActsFatras/Kernel/InteractionList.hpp"
-#include "ActsFatras/Kernel/Simulation.hpp"
+#include "ActsFatras/Kernel/MultiParticleSimulation.hpp"
+#include "ActsFatras/Kernel/SingleParticleSimulation.hpp"
 #include "ActsFatras/Physics/Decay/NoDecay.hpp"
 #include "ActsFatras/Physics/StandardInteractions.hpp"
 #include "ActsFatras/Selectors/ParticleSelectors.hpp"
@@ -87,8 +88,8 @@ using NeutralSimulation =
                                          ActsFatras::NoDecay>;
 // full simulator type for charged and neutrals
 using FatrasSimulation =
-    ActsFatras::Simulation<ChargedSelector, ChargedSimulation, NeutralSelector,
-                           NeutralSimulation>;
+    ActsFatras::MultiParticleSimulation<ChargedSelector, ChargedSimulation,
+                                        NeutralSelector, NeutralSimulation>;
 
 // parameters for data-driven test cases
 
@@ -152,7 +153,7 @@ bool containsParticleId(const Container& sortedByParticleId,
 
 BOOST_DATA_TEST_CASE(FatrasSimulationCase, dataset, pdg, phi, eta, p,
                      numParticles) {
-  GeometryContext geoCtx;
+  auto geoCtx = GeometryContext::dangerouslyDefaultConstruct();
   MagneticFieldContext magCtx;
   Logging::Level logLevel = Logging::Level::DEBUG;
 

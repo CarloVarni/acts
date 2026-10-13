@@ -37,10 +37,10 @@ auto newBuilder(const magnetic_field_t& magneticField,
   // as a half-open interval. Has the potential to introduce very minor
   // floating point errors, but no easy way to fix this right now.
   // TODO: Fix the aforementioned problem.
-  std::vector<double> maxima = {
+  std::array<double, 3> maxima = {
       std::nexttoward(max[0], -std::numeric_limits<double>::infinity()),
       std::nexttoward(max[1], -std::numeric_limits<double>::infinity()),
-      std::nexttoward(max[1], -std::numeric_limits<double>::infinity()),
+      std::nexttoward(max[2], -std::numeric_limits<double>::infinity()),
   };
 
   Field field(covfie::make_parameter_pack(
