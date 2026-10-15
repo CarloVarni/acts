@@ -115,24 +115,9 @@ full_chain_hough_transform_algorithm::full_chain_hough_transform_algorithm(
       m_spacepoint_formation(
           {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy, m_stream,
           logger->cloneWithSuffix("SpFormationAlg"), m_await_function),
-      m_seeding(finder_config, grid_config, filter_config,
-                {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
+      m_seeding({m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
                 m_stream, logger->cloneWithSuffix("SeedingAlg"),
-                m_await_function),
-      m_gbts_seeding(
-          gbts_config, {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy,
-          m_stream, logger->cloneWithSuffix("GbtsAlg"), m_await_function),
-      m_track_parameter_estimation(
-          track_params_estimation_config,
-          {m_cached_device_mr, &m_cached_pinned_host_mr}, m_copy, m_stream,
-          logger->cloneWithSuffix("TrackParEstAlg"), m_await_function),
-      m_finding(finding_config, {m_cached_device_mr, &m_cached_pinned_host_mr},
-                m_copy, m_stream, logger->cloneWithSuffix("TrackFindingAlg"),
-                nullptr, m_await_function),
-      m_fitting(fitting_config, {m_cached_device_mr, &m_cached_pinned_host_mr},
-                m_copy, m_stream, logger->cloneWithSuffix("TrackFittingAlg"),
-                m_await_function),
-      usingGBTS(useGBTS) {
+                m_await_function) {
   // Tell the user what device is being used.
   int device = 0;
   CUDA_ERROR_CHECK(cudaGetDevice(&device));
@@ -163,29 +148,7 @@ full_chain_hough_transform_algorithm::output_type full_chain_hough_transform_alg
     // Run the seed-finding (asynchronously).
     const spacepoint_formation_algorithm::output_type spacepoints =
         m_spacepoint_formation(m_device_detector, measurements);
-
-    triplet_seeding_algorithm::output_type seeds;
-    if (usingGBTS) {
-      seeds = m_gbts_seeding(spacepoints, measurements);
-    } else {
-      seeds = m_seeding(spacepoints);
-    }
-    const seed_parameter_estimation_algorithm::output_type track_params =
-        m_track_parameter_estimation(m_field, measurements, spacepoints, seeds);
-
-    // Run the track finding (asynchronously).
-    const finding_algorithm::output_type track_candidates =
-        m_finding(m_device_detector, m_field, measurements, track_params);
-
-    // Copy a limited amount of result data back to the host.
-    const auto host_tracks =
-        m_copy.to(track_candidates.tracks, m_cached_pinned_host_mr, nullptr,
-                  vecmem::copy::type::device_to_host);
-    output_type result{m_host_mr};
-    vecmem::copy host_copy;
-    host_copy(host_tracks, result)->wait();
-    return result;
-
+    return output_type{m_host_mr};
   }
   // If not, copy the measurements back to the host, and return a dummy
   // object.
@@ -218,23 +181,7 @@ bound_track_parameters_collection_types::host full_chain_hough_transform_algorit
     const spacepoint_formation_algorithm::output_type spacepoints =
         m_spacepoint_formation(m_device_detector, measurements);
 
-    triplet_seeding_algorithm::output_type seeds;
-    if (usingGBTS) {
-      seeds = m_gbts_seeding(spacepoints, measurements);
-    } else {
-      seeds = m_seeding(spacepoints);
-    }
-    const seed_parameter_estimation_algorithm::output_type track_params =
-        m_track_parameter_estimation(m_field, measurements, spacepoints, seeds);
-
-    // Copy a limited amount of result data back to the host.
-    const auto host_seeds = m_copy.to(track_params, m_cached_pinned_host_mr,
-                                      vecmem::copy::type::device_to_host);
-    bound_track_parameters_collection_types::host result{&m_host_mr};
-    vecmem::copy host_copy;
-    host_copy(host_seeds, result)->wait();
-    return result;
-
+    return {};
   }
   // If not, copy the measurements back to the host, and return a dummy
   // object.

@@ -54,6 +54,8 @@ class hough_transform_seeding_algorithm
 
   virtual void fill_hough_planes_kernel(
       const fill_hough_planes_kernel_payload& payload) const = 0;
-};
+
+  virtual void synchronize() const = 0;
+  };
 
 }  // namespace traccc::device
