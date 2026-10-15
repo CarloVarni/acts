@@ -13,7 +13,7 @@
 #include "traccc/cuda/clusterization/clusterization_algorithm.hpp"
 #include "traccc/cuda/clusterization/measurement_sorting_algorithm.hpp"
 #include "traccc/cuda/seeding/silicon_pixel_spacepoint_formation_algorithm.hpp"
-#include "traccc/seeding/device/hough_transform_seeding_algorithm.hpp"
+#include "traccc/cuda/seeding/hough_transform_seeding_algorithm.hpp"
 #include "traccc/cuda/utils/stream_wrapper.hpp"
 #include "traccc/edm/silicon_cell_collection.hpp"
 #include "traccc/edm/track_collection.hpp"
@@ -59,7 +59,7 @@ class full_chain_hough_transform_algorithm
   /// Clustering algorithm type
   using clustering_algorithm = traccc::cuda::clusterization_algorithm;
   /// Seeding algorithm
-  using seeding_algorithm = traccc::device::hough_transform_seeding_algorithm;
+  using seeding_algorithm = traccc::cuda::hough_transform_seeding_algorithm;
   /// @}
 
   /// Device data shared by all instances of the algorithm
