@@ -38,9 +38,7 @@ class hough_transform_seeding_algorithm	: public device::hough_transform_seeding
   /// @param await_func The function to use for synchronizing events
   ///
   hough_transform_seeding_algorithm(
-      const seedfinder_config& finder_config,
-      const spacepoint_grid_config& grid_config,
-      const seedfilter_config& filter_config, const memory_resource& mr,
+      const memory_resource& mr,
       const vecmem::copy& copy, const stream_wrapper& str,
       std::unique_ptr<const Logger> logger = getDummyLogger().clone(),
       await_function_type await_func = await_sync_event);

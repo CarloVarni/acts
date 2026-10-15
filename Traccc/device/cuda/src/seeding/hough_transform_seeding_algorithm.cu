@@ -27,18 +27,15 @@
 namespace traccc::cuda {
 
 hough_transform_seeding_algorithm::hough_transform_seeding_algorithm(
-    const seedfinder_config& finder_config,
-    const spacepoint_grid_config& grid_config,
-    const seedfilter_config& filter_config, const traccc::memory_resource& mr,
+    const traccc::memory_resource& mr,
     const vecmem::copy& copy, const stream_wrapper& str,
     std::unique_ptr<const Logger> logger, await_function_type await_func)
-    : device::hough_transform_seeding_algorithm(finder_config, grid_config,
-                                        filter_config, mr, copy,
+    : device::hough_transform_seeding_algorithm(mr, copy,
                                         std::move(logger)),
       cuda::algorithm_base{str, std::move(await_func)} {}
 
 
-void triplet_seeding_algorithm::synchronize() const {
+void hough_transform_seeding_algorithm::synchronize() const {
   stream().synchronize();
 }
 
