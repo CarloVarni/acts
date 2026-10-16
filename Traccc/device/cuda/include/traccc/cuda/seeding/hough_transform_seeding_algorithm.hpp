@@ -37,13 +37,15 @@ class hough_transform_seeding_algorithm	: public device::hough_transform_seeding
   /// @param logger The logger instance to use for messaging
   /// @param await_func The function to use for synchronizing events
   ///
-  hough_transform_seeding_algorithm(
-      const memory_resource& mr,
-      const vecmem::copy& copy, const stream_wrapper& str,
-      std::unique_ptr<const Logger> logger = getDummyLogger().clone(),
-      await_function_type await_func = await_sync_event);
+  hough_transform_seeding_algorithm(const memory_resource& mr,
+				    const vecmem::copy& copy,
+				    const stream_wrapper& str,
+				    std::unique_ptr<const Logger> logger = getDummyLogger().clone(),
+				    await_function_type await_func = await_sync_event);
 
  private:
+  void fill_hough_planes_kernel(const fill_hough_planes_kernel_payload& payload) const;
+
   /// Wait for outstanding work on the algorithm stream or queue.
   void synchronize() const override;
 

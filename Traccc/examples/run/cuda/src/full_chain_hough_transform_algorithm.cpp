@@ -78,18 +78,11 @@ full_chain_hough_transform_algorithm::shared_data::shared_data(
   }
 }
 
-full_chain_hough_transform_algorithm::full_chain_hough_transform_algorithm(
-    vecmem::memory_resource& host_mr,
-    const clustering_config& clustering_config,
-    const seedfinder_config& finder_config,
-    const spacepoint_grid_config& grid_config,
-    const seedfilter_config& filter_config,
-    const gbts_seedfinder_config& gbts_config,
-    const track_params_estimation_config& track_params_estimation_config,
-    const finding_algorithm::config_type& finding_config,
-    const fitting_algorithm::config_type& fitting_config,
-    const shared_data& data, std::unique_ptr<const traccc::Logger> logger,
-    bool useGBTS, await_strategy await_mode)
+full_chain_hough_transform_algorithm::full_chain_hough_transform_algorithm(vecmem::memory_resource& host_mr,
+									   const clustering_config& clustering_config,
+									   const shared_data& data,
+									   std::unique_ptr<const traccc::Logger> logger,
+									   await_strategy await_mode)
     : messaging(logger->clone()),
       m_host_mr(host_mr),
       m_pinned_host_mr(),

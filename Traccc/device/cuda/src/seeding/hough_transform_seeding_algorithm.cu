@@ -34,6 +34,8 @@ hough_transform_seeding_algorithm::hough_transform_seeding_algorithm(
                                         std::move(logger)),
       cuda::algorithm_base{str, std::move(await_func)} {}
 
+void hough_transform_seeding_algorithm::fill_hough_planes_kernel(const fill_hough_planes_kernel_payload& payload) const {
+}
 
 void hough_transform_seeding_algorithm::synchronize() const {
   stream().synchronize();

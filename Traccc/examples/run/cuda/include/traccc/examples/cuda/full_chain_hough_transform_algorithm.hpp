@@ -53,13 +53,13 @@ class full_chain_hough_transform_algorithm
  public:
   /// @name Type declaration(s)
   /// @{
+  /// Seeding algorithm
+  using seeding_algorithm = traccc::cuda::hough_transform_seeding_algorithm;
   /// Spacepoint formation algorithm type
   using spacepoint_formation_algorithm =
       traccc::cuda::silicon_pixel_spacepoint_formation_algorithm;
   /// Clustering algorithm type
   using clustering_algorithm = traccc::cuda::clusterization_algorithm;
-  /// Seeding algorithm
-  using seeding_algorithm = traccc::cuda::hough_transform_seeding_algorithm;
   /// @}
 
   /// Device data shared by all instances of the algorithm
@@ -99,11 +99,11 @@ class full_chain_hough_transform_algorithm
   /// @param mr The memory resource to use for the intermediate and result
   ///           objects
   ///
-  full_chain_hough_transform_algorithm(
-      vecmem::memory_resource& host_mr,
-      const clustering_config& clustering_config,
-      const shared_data& data, std::unique_ptr<const traccc::Logger> logger,
-      bool useGBTS = false, await_strategy = await_strategy::sync_event);
+  full_chain_hough_transform_algorithm(vecmem::memory_resource& host_mr,
+				       const clustering_config& clustering_config,
+				       const shared_data& data,
+				       std::unique_ptr<const traccc::Logger> logger,
+				       await_strategy = await_strategy::sync_event);
 
   /// Algorithm destructor
   ~full_chain_hough_transform_algorithm();
@@ -160,7 +160,7 @@ class full_chain_hough_transform_algorithm
   /// Spacepoint formation algorithm
   spacepoint_formation_algorithm m_spacepoint_formation;
   /// Seeding algorithm
-
+  seeding_algorithm m_seeding_algorithm;
 };
 
 }  // namespace traccc::cuda
