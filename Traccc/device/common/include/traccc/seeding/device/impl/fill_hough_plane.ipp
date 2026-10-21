@@ -106,7 +106,7 @@ void fill_hough_plane(const global_index_t globalIndex,
 
     for (unsigned int i(0); i<25; ++i) {
 	if (binContents[i] == 0ULL) continue;
-	houghplanes[i].plane()[globalIndex] = binContents[i];
+	houghplanes.plane()[i][globalIndex] = binContents[i];
     }
 }
 
