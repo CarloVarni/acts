@@ -41,7 +41,7 @@ auto hough_transform_seeding_algorithm::operator()(
     return {};
   }
  
-  edm::houghplane_collection<unsigned short, N_COLS, N_ROWS>::const_view::size_type n_slices = m_config.wedges.size(); 
+  edm::houghplane_collection<unsigned short, N_COLS, N_ROWS>::const_view::size_type n_slices = 1; // m_config.wedges.size(); 
   vecmem::vector<unsigned int> plane_sizes_host =
         ((mr().host != nullptr) ? vecmem::vector<unsigned int>(n_slices, mr().host)
                                 : vecmem::vector<unsigned int>(n_slices));
@@ -88,6 +88,12 @@ auto hough_transform_seeding_algorithm::operator()(
                   spacepoint_wedge_association, spacepoint_detector_id,
 		  spacepoint_r, spacepoint_phi,
 		  result});
+/* 
+   vecmem::data::vector_buffer<unsigned int> n_maxima_finding_stage_host(n_slices, mr().main);
+   copy().setup(vecmem::ignore_event, n_maxima_finding_stage_host);
+   copy().memset(vecmem::ignore_event, n_maxima_finding_stage_host, 0);   
+   count_maxima_kernel({result, n_maxima_finding_stage_host});
+*/
 
 /*  
   synchronize();
@@ -114,7 +120,7 @@ auto hough_transform_seeding_algorithm::operator()(
   }
   std::cout << std::endl;
 
-  /*
+  
   edm::houghplane_collection<unsigned short, N_COLS, N_ROWS>::const_device host_device{host_view};
   for (unsigned int i = 0; i < host_device.size(); ++i) {
     const edm::houghplane plane = host_device.at(i);

@@ -135,10 +135,10 @@ void fill_hough_plane_by_column(const global_index_t globalIndex,
     } // loop on space points
 
     static const std::array<unsigned short, 25> min_contributions {
-        5, 5, 5, 5, 5, 5,
-        5, 5, 5, 5, 5, 5, 5,
-        5, 5, 5, 5, 5, 5,
-        5, 5, 5, 5, 5, 5
+        4, 4, 4, 4, 4, 4,
+        4, 4, 4, 4, 4, 4, 4,
+        4, 4, 4, 4, 4, 4,
+        4, 4, 4, 4, 4, 4
     };
 
     // Fill the plane
@@ -191,23 +191,23 @@ void fill_hough_plane_by_bin(const global_index_t globalIndex,
       if (min_value_y > max_y) continue;
       if (max_value_y < min_y) continue;
 
-      for (unsigned int wedge_idx(0); wedge_idx<25; ++wedge_idx) {
+      for (unsigned int wedge_idx(0); wedge_idx<houghplanes.size(); ++wedge_idx) {
           if ((spacepoint_wedge_association[i] & (1ULL << wedge_idx)) == 0ULL) continue;
           binContents[wedge_idx] |= spacepoint_detector_id[i];
       }
     }
 
     static const std::array<unsigned short, 25> min_contributions {
-        5, 5, 5, 5, 5, 5,
-        5, 5, 5, 5, 5, 5, 5,
-        5, 5, 5, 5, 5, 5,
-        5, 5, 5, 5, 5, 5
+        4, 4, 4, 4, 4, 4,
+        4, 4, 4, 4, 4, 4, 4,
+        4, 4, 4, 4, 4, 4,
+        4, 4, 4, 4, 4, 4
     };
     
-    for (unsigned int wedge_idx(0); wedge_idx<25; ++wedge_idx) {
+    for (unsigned int wedge_idx(0); wedge_idx<houghplanes.size(); ++wedge_idx) {
         if (binContents[wedge_idx] == 0ULL) continue;
 	unsigned short value = count_bits(binContents[wedge_idx]);
-	// if (value < min_contributions[wedge_idx]) continue;
+	if (value < min_contributions[wedge_idx]) continue;
 	houghplanes.plane()[wedge_idx][globalIndex] = value;
     }
 }

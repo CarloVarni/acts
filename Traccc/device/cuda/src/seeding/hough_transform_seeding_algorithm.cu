@@ -63,6 +63,17 @@ namespace kernels {
 		      spacepoint_r, spacepoint_phi,
 		      houghplanes);
    }
+
+   
+   template<unsigned int N_COLS,
+           unsigned int N_ROWS>
+   __global__
+   void count_maxima(const edm::houghplane_collection<unsigned short, device::N_COLS, device::N_ROWS>::view& houghplanes,
+		   vecmem::data::vector_view<unsigned int>& counter) {
+	   device::count_maxima(details::global_index1(),
+			   houghplanes,
+			   counter);
+   }
 } // namespace kernels
 
 hough_transform_seeding_algorithm::hough_transform_seeding_algorithm(
@@ -84,7 +95,7 @@ void hough_transform_seeding_algorithm::define_plane_edges_kernel(const define_p
 }
 
 void hough_transform_seeding_algorithm::precompute_spacepoint_variables_kernel(const precompute_spacepoint_variables_payload& payload) const {
-   const unsigned int n_threads = warp_size() * 32;
+   const unsigned int n_threads = warp_size() * 8;
    const unsigned int n_blocks = (payload.n_spacepoints  + n_threads - 1) / n_threads;
    kernels::precompute_spacepoint_variables
 		<<<n_blocks, n_threads, 0, details::get_stream(stream())>>>(payload.config,
@@ -106,10 +117,18 @@ void hough_transform_seeding_algorithm::fill_hough_plane_kernel(const fill_hough
 			payload.spacepoint_wedge_association,
 			payload.spacepoint_detector_id,
 			payload.spacepoint_r,
-                        payload.spacepoint_phi,
+            payload.spacepoint_phi,
 			payload.houghplanes);
   });
   TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+}
+
+void hough_transform_seeding_algorithm::count_maxima_kernel(const count_maxima_payload& payload) const {
+  const unsigned int n_threads = warp_size() * 4;
+  const unsigned int n_blocks = (device::N_COLS + n_threads - 1) / n_threads;
+  kernels::count_maxima<device::N_COLS, device::N_ROWS>
+        <<<n_blocks, n_threads, 0, details::get_stream(stream())>>>(payload.houghplanes, 
+		  payload.maxima_counter);
 }
 
 void hough_transform_seeding_algorithm::synchronize() const {
