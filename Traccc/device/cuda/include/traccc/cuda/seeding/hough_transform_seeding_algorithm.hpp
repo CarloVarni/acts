@@ -55,6 +55,7 @@ class hough_transform_seeding_algorithm : public device::hough_transform_seeding
   void evaluate_nn_kernel(const evaluate_nn_payload& payload) const;
   void count_contributing_hits_kernel(const count_contributing_hits_payload& payload) const;
   void find_contributing_hits_kernel(const find_contributing_hits_payload& payload) const;
+  void compute_cottheta_matrix_kernel(const compute_cottheta_matrix_payload& payload) const;
   void make_seeds_kernel(const make_seeds_payload& payload) const;
 
   /// Wait for outstanding work on the algorithm stream or queue.

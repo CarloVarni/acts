@@ -434,6 +434,17 @@ auto hough_transform_seeding_algorithm::operator()(
         vecmem::data::buffer_type::resizable);
   copy().setup(matrices)->ignore();
 
+
+ unsigned int max_hits = 0u;
+ for (unsigned int value : hits_sizes_host) max_hits = std::max(max_hits, value);
+ compute_cottheta_matrix_kernel({total_maxima, max_hits,
+                          spacepoints,
+                          spacepoint_r,
+                          nn_outcome,
+                          hits,
+                          matrices});
+
+
   // Create the result object.
   edm::seed_collection::buffer seed_buffer(total_maxima, mr().main);
   copy().setup(vecmem::ignore_event, seed_buffer);
@@ -447,7 +458,7 @@ auto hough_transform_seeding_algorithm::operator()(
                      seed_buffer});
   
 
-  /*  
+ 
   // -------------------------------------------------------------------------------------
   vecmem::data::jagged_vector_view<scalar> matrices_host_view;
   vecmem::data::jagged_vector_buffer<scalar> matrices_host_buffer;
@@ -468,7 +479,6 @@ auto hough_transform_seeding_algorithm::operator()(
   };
   // -------------------------------------------------------------------------------------
   throw; 
-  */
 
 
   /*

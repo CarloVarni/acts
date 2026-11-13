@@ -201,6 +201,24 @@ namespace kernels {
   }
 
   __global__
+  void compute_cottheta_matrix(const unsigned int n_images,
+                const edm::spacepoint_collection::const_view spacepoints,
+                  const vecmem::data::vector_view<const scalar> spacepoint_r,
+                  const vecmem::data::vector_view<const unsigned int> nn_outcome,
+                  const vecmem::data::jagged_vector_view<const traccc::device::global_index_t> hits,
+                  vecmem::data::jagged_vector_view<scalar> cot_theta_matrix) {
+        device::compute_cottheta_matrix(blockIdx.x,
+            threadIdx.y, // cols
+            threadIdx.x, // rows
+            n_images,
+            spacepoints,
+            spacepoint_r,
+            nn_outcome,
+            hits,
+            cot_theta_matrix);
+  }
+
+  __global__
   void make_seeds(const unsigned int n_images,
                   const edm::spacepoint_collection::const_view spacepoints,
                   const vecmem::data::vector_view<const scalar> spacepoint_r,
@@ -364,6 +382,19 @@ void hough_transform_seeding_algorithm::find_contributing_hits_kernel(const find
                                                                     payload.nn_outcome,
                                                                     payload.hits);
   TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+}
+
+void hough_transform_seeding_algorithm::compute_cottheta_matrix_kernel(const compute_cottheta_matrix_payload& payload) const {
+    const unsigned int n_blocks = payload.n_images;
+    const dim3 n_threads(payload.max_n_hits, payload.max_n_hits);
+    kernels::compute_cottheta_matrix
+            <<<n_blocks, n_threads, 0, details::get_stream(stream())>>>(payload.n_images,
+                    payload.spacepoints,
+                    payload.spacepoint_r,
+                    payload.nn_outcome,
+                    payload.hits,
+                    payload.cot_theta_matrix);
+    TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
 }
 
 void hough_transform_seeding_algorithm::make_seeds_kernel(const make_seeds_payload& payload) const {
