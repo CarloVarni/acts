@@ -221,11 +221,21 @@ namespace kernels {
   __global__
   void select_hits(const unsigned int n_images,
                    const vecmem::data::vector_view<const unsigned int> nn_outcome,
-                   const vecmem::data::jagged_vector_view<const scalar> cot_theta_matrix) {
+                   const vecmem::data::jagged_vector_view<const unsigned int> hits,
+                   const vecmem::data::jagged_vector_view<const scalar> cot_theta_matrix,
+                   vecmem::data::jagged_vector_view<unsigned int> indexes,
+                   vecmem::data::vector_view<scalar> mode_values,
+                   vecmem::data::vector_view<unsigned int> n_filtered_hits,
+                   vecmem::data::vector_view<unsigned int> hit_indexes) {
         device::select_hits(details::global_index1(),
                             n_images,
                             nn_outcome,
-                            cot_theta_matrix);
+                            hits,
+                            cot_theta_matrix,
+                            indexes,
+                            mode_values,
+                            n_filtered_hits,
+                            hit_indexes);
   }
 
   __global__
@@ -412,7 +422,12 @@ void hough_transform_seeding_algorithm::select_hits_kernel(const select_hits_pay
     const unsigned int n_blocks = (payload.n_images + n_threads - 1) / n_threads;
     kernels::select_hits<<<n_blocks, n_threads, 0, details::get_stream(stream())>>>(payload.n_images,
                                                                                     payload.nn_outcome,
-                                                                                    payload.cot_theta_matrix);
+                                                                                    payload.hits,
+                                                                                    payload.cot_theta_matrix,
+                                                                                    payload.indexes,
+                                                                                    payload.mode_values,
+                                                                                    payload.n_filtered_hits,
+                                                                                    payload.hit_indexes);
 }
 
 void hough_transform_seeding_algorithm::make_seeds_kernel(const make_seeds_payload& payload) const {

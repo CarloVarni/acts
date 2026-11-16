@@ -424,7 +424,7 @@ auto hough_transform_seeding_algorithm::operator()(
   */
   
 
-  // Make the seeds
+  // Compute cot-theta
   std::vector<unsigned int> matrices_sizes(hits_sizes_host.size());
   std::transform(hits_sizes_host.begin(), hits_sizes_host.end(), matrices_sizes.begin(),
                [](unsigned int x) { return x * x; });
@@ -444,22 +444,55 @@ auto hough_transform_seeding_algorithm::operator()(
                           hits,
                           matrices});
 
+  // Filter hits
+  vecmem::data::jagged_vector_buffer<unsigned int> iotas(matrices_sizes,
+        mr().main, mr().host);
+  copy().setup(iotas)->ignore();
 
-  // Create the result object.
-  edm::seed_collection::buffer seed_buffer(total_maxima, mr().main);
-  copy().setup(vecmem::ignore_event, seed_buffer);
+  vecmem::data::vector_buffer<unsigned int> n_filtered_hits(total_maxima, mr().main);
+  copy().setup(vecmem::ignore_event, n_filtered_hits);
+  copy().memset(vecmem::ignore_event, n_filtered_hits, 0);
 
-  make_seeds_kernel({total_maxima,
-                     spacepoints,
-                     spacepoint_r,
+  vecmem::data::vector_buffer<unsigned int> best_hit_indexes(total_maxima, mr().main);
+  copy().setup(vecmem::ignore_event, best_hit_indexes);
+  copy().memset(vecmem::ignore_event, best_hit_indexes, 0);
+
+  vecmem::data::vector_buffer<scalar> mode_values(total_maxima, mr().main);
+  copy().setup(vecmem::ignore_event, mode_values);
+  copy().memset(vecmem::ignore_event, mode_values, 0);
+
+  select_hits_kernel({total_maxima,
                      nn_outcome,
                      hits,
                      matrices,
-                     seed_buffer});
-  
+                     iotas,
+                     mode_values,
+                     n_filtered_hits,
+                     best_hit_indexes}); 
 
- 
+
+  /*
   // -------------------------------------------------------------------------------------
+  synchronize();
+
+  vecmem::vector<unsigned int> n_filtered_hits_host = ((mr().host != nullptr)
+                ? vecmem::vector<unsigned int>(mr().host)
+                : vecmem::vector<unsigned int>());
+  copy()(n_filtered_hits, n_filtered_hits_host)->wait(); 
+
+
+  vecmem::vector<unsigned int> best_hit_indexes_host = ((mr().host != nullptr)
+                ? vecmem::vector<unsigned int>(mr().host)
+                : vecmem::vector<unsigned int>());
+  copy()(best_hit_indexes, best_hit_indexes_host)->wait();
+
+
+  vecmem::vector<scalar> mode_values_host = ((mr().host != nullptr)
+                ? vecmem::vector<scalar>(mr().host)
+                : vecmem::vector<scalar>());
+  copy()(mode_values, mode_values_host)->wait();
+
+
   vecmem::data::jagged_vector_view<scalar> matrices_host_view;
   vecmem::data::jagged_vector_buffer<scalar> matrices_host_buffer;
     
@@ -474,11 +507,40 @@ auto hough_transform_seeding_algorithm::operator()(
 
   for (unsigned int i(0); i<matrices_host_device.size(); ++i) {
     std::cout << "matrix " << i << ": ";
+    std::cout << "mode is " << mode_values_host[i] << " with " << n_filtered_hits_host[i] << " hits: ";
+    std::cout << "[best is " << best_hit_indexes_host[i] << "]: "; 
     for (unsigned int j(0); j<matrices_sizes[i]; ++j) std::cout << matrices_host_device[i][j] << " ";
     std::cout << std::endl;
   };
   // -------------------------------------------------------------------------------------
   throw; 
+  */
+
+
+  vecmem::vector<unsigned int> n_filtered_hits_host = ((mr().host != nullptr)
+                ? vecmem::vector<unsigned int>(mr().host)
+                : vecmem::vector<unsigned int>());
+  copy()(n_filtered_hits, n_filtered_hits_host)->wait();
+
+  vecmem::data::jagged_vector_buffer<scalar> selected_hits(n_filtered_hits_host,
+          mr().main, mr().host,
+          vecmem::data::buffer_type::resizable);
+  copy().setup(selected_hits)->ignore();
+
+
+  // Create the result object.
+  edm::seed_collection::buffer seed_buffer(total_maxima, mr().main);
+  copy().setup(vecmem::ignore_event, seed_buffer);
+
+  make_seeds_kernel({total_maxima,
+                     spacepoints,
+                     spacepoint_r,
+                     nn_outcome,
+                     hits,
+                     matrices,
+                     seed_buffer});
+
+
 
 
   /*

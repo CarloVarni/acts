@@ -234,8 +234,18 @@ class hough_transform_seeding_algorithm
     const unsigned int n_images;
     // The NN outcome
     const vecmem::data::vector_view<const unsigned int>& nn_outcome;
+    // The associated hits
+    const vecmem::data::jagged_vector_view<const unsigned int>& hits;
     // Cot-Theta matrix for filtering
     const vecmem::data::jagged_vector_view<const scalar>& cot_theta_matrix;
+    // indexes
+    vecmem::data::jagged_vector_view<unsigned int>& indexes;
+    // Cot-Theta mode
+    vecmem::data::vector_view<scalar>& mode_values;
+    // Number of filtered hits
+    vecmem::data::vector_view<unsigned int>& n_filtered_hits;
+    // Most compatible hit
+    vecmem::data::vector_view<unsigned int>& hit_indexes;
   };
 
   struct make_seeds_payload {
