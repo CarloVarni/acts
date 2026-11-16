@@ -6,21 +6,6 @@
 
 namespace traccc::device {
 
-template <typename T>
-TRACCC_HOST_DEVICE 
-inline void sort_row(vecmem::device_vector<T> row) {
-    const auto n = row.capacity();
-    for (unsigned int i = 1; i < n; ++i) {
-        const T value = row[i];
-        unsigned int j = i;
-        while (j > 0 && value < row[j - 1]) {
-            row[j] = row[j - 1];
-            --j;
-        }
-        row[j] = value;
-    }
-}
-
 TRACCC_HOST_DEVICE
 void make_seeds(const global_index_t globalIndex,
                 const unsigned int n_images,

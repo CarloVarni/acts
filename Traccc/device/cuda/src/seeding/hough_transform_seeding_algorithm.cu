@@ -219,6 +219,16 @@ namespace kernels {
   }
 
   __global__
+  void select_hits(const unsigned int n_images,
+                   const vecmem::data::vector_view<const unsigned int> nn_outcome,
+                   const vecmem::data::jagged_vector_view<const scalar> cot_theta_matrix) {
+        device::select_hits(details::global_index1(),
+                            n_images,
+                            nn_outcome,
+                            cot_theta_matrix);
+  }
+
+  __global__
   void make_seeds(const unsigned int n_images,
                   const edm::spacepoint_collection::const_view spacepoints,
                   const vecmem::data::vector_view<const scalar> spacepoint_r,
@@ -395,6 +405,14 @@ void hough_transform_seeding_algorithm::compute_cottheta_matrix_kernel(const com
                     payload.hits,
                     payload.cot_theta_matrix);
     TRACCC_CUDA_ERROR_CHECK(cudaGetLastError());
+}
+
+void hough_transform_seeding_algorithm::select_hits_kernel(const select_hits_payload& payload) const {
+    const unsigned int n_threads = warp_size() * 4;
+    const unsigned int n_blocks = (payload.n_images + n_threads - 1) / n_threads;
+    kernels::select_hits<<<n_blocks, n_threads, 0, details::get_stream(stream())>>>(payload.n_images,
+                                                                                    payload.nn_outcome,
+                                                                                    payload.cot_theta_matrix);
 }
 
 void hough_transform_seeding_algorithm::make_seeds_kernel(const make_seeds_payload& payload) const {
