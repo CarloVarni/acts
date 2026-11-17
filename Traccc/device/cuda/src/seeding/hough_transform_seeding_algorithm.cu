@@ -240,16 +240,19 @@ namespace kernels {
 
   __global__
   void make_seeds(const unsigned int n_images,
-                  const edm::spacepoint_collection::const_view spacepoints,
-                  const vecmem::data::vector_view<const scalar> spacepoint_r,
                   const vecmem::data::vector_view<const unsigned int> nn_outcome,
                   const vecmem::data::jagged_vector_view<const traccc::device::global_index_t> hits,
-                  vecmem::data::jagged_vector_view<scalar> cot_theta_matrix,
+                  const vecmem::data::jagged_vector_view<const scalar> cot_theta_matrix,
+                  const vecmem::data::vector_view<const scalar> mode_values,
+                  const vecmem::data::vector_view<const unsigned int> best_matches,
+                  vecmem::data::jagged_vector_view<traccc::device::global_index_t> filtered_hits,
                   edm::seed_collection::view seeds) {
         device::make_seeds(details::global_index1(), n_images,
-                           spacepoints, spacepoint_r,
                            nn_outcome, hits,
                            cot_theta_matrix,
+                           mode_values,
+                           best_matches,
+                           filtered_hits,
                            seeds);
   }
 } // namespace kernels
@@ -434,11 +437,12 @@ void hough_transform_seeding_algorithm::make_seeds_kernel(const make_seeds_paylo
     const unsigned int n_threads = warp_size() * 4;
     const unsigned int n_blocks = (payload.n_images + n_threads - 1) / n_threads;
     kernels::make_seeds<<<n_blocks, n_threads, 0, details::get_stream(stream())>>>(payload.n_images,
-                                                                                   payload.spacepoints,
-                                                                                   payload.spacepoint_r,
                                                                                    payload.nn_outcome,                                                                                   
                                                                                    payload.hits,
                                                                                    payload.cot_theta_matrix,
+                                                                                   payload.mode_values,
+                                                                                   payload.best_matches,
+                                                                                   payload.filtered_hits,
                                                                                    payload.seeds);
 }
 

@@ -7,13 +7,27 @@
 namespace traccc::device {
 
 TRACCC_HOST_DEVICE
+void select_hits(const scalar* values,
+                 const scalar mode,
+                 const unsigned int n_hits,
+                 const vecmem::device_vector<const global_index_t> hits,
+                 vecmem::device_vector<global_index_t> filtered_hits) {
+    static constexpr scalar tolerance = 0.001f;
+    for (unsigned int i = 0; i < n_hits; ++i) {
+        if (std::abs(values[i] - mode) < tolerance ||
+            values[i] == std::numeric_limits<scalar>::max()) filtered_hits.push_back(hits[i]);
+    }
+}
+
+TRACCC_HOST_DEVICE
 void make_seeds(const global_index_t globalIndex,
                 const unsigned int n_images,
-                const edm::spacepoint_collection::const_view& spacepoints_view,
-                const vecmem::data::vector_view<const scalar>& spacepoint_r_view,
                 const vecmem::data::vector_view<const unsigned int>& nn_outcome_view,
                 const vecmem::data::jagged_vector_view<const global_index_t>& hits_view,
-                vecmem::data::jagged_vector_view<scalar>& cot_theta_matrix_view,
+                const vecmem::data::jagged_vector_view<const scalar>& cot_theta_matrix_view,
+                const vecmem::data::vector_view<const scalar>& mode_values_view,
+                const vecmem::data::vector_view<const unsigned int>& best_matches_view,
+                vecmem::data::jagged_vector_view<global_index_t>& filtered_hits_view,
                 edm::seed_collection::view& seeds_view) {
     if (globalIndex >= n_images) return;
     
@@ -22,17 +36,34 @@ void make_seeds(const global_index_t globalIndex,
     if (nn_outcome[globalIndex] == 0) return;
  
     const vecmem::jagged_device_vector<const global_index_t> hits(hits_view);
-    if (hits[globalIndex].capacity() < 3) return;
-
+    const unsigned int n_hits = hits[globalIndex].capacity();
+    if (n_hits < 3) return;
     const auto& associated_hits = hits[globalIndex];
+
+    // apply hit filtering
+    const vecmem::jagged_device_vector<const scalar> cot_theta_matrix(cot_theta_matrix_view);
+    const vecmem::device_vector<const scalar> mode_values(mode_values_view);
+    const vecmem::device_vector<const unsigned int> best_matches(best_matches_view);
+    vecmem::jagged_device_vector<global_index_t> filtered_hits(filtered_hits_view);
+
+    const unsigned int n_filtered_hits = filtered_hits[globalIndex].capacity();
+    if (n_filtered_hits < 3) return;
+ 
+    const scalar mode = mode_values[globalIndex];
+    const unsigned int best_match_index = best_matches[globalIndex];
+ 
+    select_hits(&cot_theta_matrix[globalIndex][n_hits * best_match_index],
+                mode,
+                n_hits,
+                hits[globalIndex],
+                filtered_hits[globalIndex]);
 
     // create seeds
     edm::seed_collection::device seeds(seeds_view);
 
-    assert(associated_hits.capacity() >= 3);
-    seeds[globalIndex].bottom_index() = associated_hits[0];
-    seeds[globalIndex].middle_index() = associated_hits[(associated_hits.capacity() - 1) / 2];
-    seeds[globalIndex].top_index() = associated_hits[associated_hits.capacity() - 1];
+    seeds[globalIndex].bottom_index() = filtered_hits[globalIndex][0];
+    seeds[globalIndex].middle_index() = filtered_hits[globalIndex][(n_filtered_hits - 1) / 2];
+    seeds[globalIndex].top_index() = filtered_hits[globalIndex][n_filtered_hits - 1];
     seeds[globalIndex].quality() = 0.00f;
 }
 

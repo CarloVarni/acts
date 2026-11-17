@@ -6,16 +6,15 @@
 
 namespace traccc::device {
 
-template <typename T>
 TRACCC_HOST_DEVICE 
-inline void sort_row(const vecmem::device_vector<const T> values,
+inline void sort_row(const vecmem::device_vector<const scalar> values,
                      vecmem::device_vector<unsigned int> row) {
     assert(values.capacity() == row.capacity());
     const unsigned int n = row.capacity();
     
     for (unsigned int i = 1; i < n; ++i) {
         const unsigned int index = row[i];
-        const T value = values[index];
+        const scalar value = values[index];
         unsigned int j = i;
 
         while (j > 0 && value < values[row[j - 1]]) {

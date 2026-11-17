@@ -245,22 +245,24 @@ class hough_transform_seeding_algorithm
     // Number of filtered hits
     vecmem::data::vector_view<unsigned int>& n_filtered_hits;
     // Most compatible hit
-    vecmem::data::vector_view<unsigned int>& hit_indexes;
+    vecmem::data::vector_view<global_index_t>& hit_indexes;
   };
 
   struct make_seeds_payload {
     // Number of images
     const unsigned int n_images;
-    // The space points
-    const edm::spacepoint_collection::const_view& spacepoints;
-    // The space point r
-    const vecmem::data::vector_view<const scalar>& spacepoint_r;
     // The NN outcome
     const vecmem::data::vector_view<const unsigned int>& nn_outcome;
     // The hits
     const vecmem::data::jagged_vector_view<const global_index_t>& hits;
     // Cot-Theta matrix for filtering
-    vecmem::data::jagged_vector_view<scalar>& cot_theta_matrix;
+    const vecmem::data::jagged_vector_view<const scalar>& cot_theta_matrix;
+    // Mode values
+    const vecmem::data::vector_view<const scalar>& mode_values;
+    // Best matches
+    const vecmem::data::vector_view<const global_index_t>& best_matches;
+    // Filtered hits
+    vecmem::data::jagged_vector_view<global_index_t>& filtered_hits;
     // Seeds
     edm::seed_collection::view& seeds;
   };

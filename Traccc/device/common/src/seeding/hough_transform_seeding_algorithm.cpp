@@ -100,7 +100,7 @@ auto hough_transform_seeding_algorithm::operator()(
           spacepoint_bfield_z});
   
 
-  /*  
+  /*
   // --------------------------------------------------------------------------------------
   edm::spacepoint_collection::const_view sp_host_view;
   edm::spacepoint_collection::buffer sp_host_buffer;
@@ -150,6 +150,7 @@ auto hough_transform_seeding_algorithm::operator()(
   }
   // -------------------------------------------------------------------------------------
   */
+
 
 
   // ---------------------------------------------------
@@ -216,7 +217,7 @@ auto hough_transform_seeding_algorithm::operator()(
                       maxima_global_index});
  
 
-  /* 
+   /*
   // -------------------------------------------------------------------------------------
   // planes
   vecmem::vector<unsigned short> houghplane_entries_host = ((mr().host != nullptr)
@@ -248,7 +249,6 @@ auto hough_transform_seeding_algorithm::operator()(
   }
   throw;
   */
-
 
   /*
   vecmem::data::jagged_vector_view<unsigned int> host_view;
@@ -444,6 +444,8 @@ auto hough_transform_seeding_algorithm::operator()(
                           hits,
                           matrices});
 
+  
+
   // Filter hits
   vecmem::data::jagged_vector_buffer<unsigned int> iotas(matrices_sizes,
         mr().main, mr().host);
@@ -491,7 +493,7 @@ auto hough_transform_seeding_algorithm::operator()(
                 ? vecmem::vector<scalar>(mr().host)
                 : vecmem::vector<scalar>());
   copy()(mode_values, mode_values_host)->wait();
-
+  
 
   vecmem::data::jagged_vector_view<scalar> matrices_host_view;
   vecmem::data::jagged_vector_buffer<scalar> matrices_host_buffer;
@@ -507,13 +509,12 @@ auto hough_transform_seeding_algorithm::operator()(
 
   for (unsigned int i(0); i<matrices_host_device.size(); ++i) {
     std::cout << "matrix " << i << ": ";
-    std::cout << "mode is " << mode_values_host[i] << " with " << n_filtered_hits_host[i] << " hits: ";
-    std::cout << "[best is " << best_hit_indexes_host[i] << "]: "; 
+    // std::cout << "mode is " << mode_values_host[i] << " with " << n_filtered_hits_host[i] << " hits: ";
+    // std::cout << "[best is " << best_hit_indexes_host[i] << "]: "; 
     for (unsigned int j(0); j<matrices_sizes[i]; ++j) std::cout << matrices_host_device[i][j] << " ";
     std::cout << std::endl;
   };
   // -------------------------------------------------------------------------------------
-  throw; 
   */
 
 
@@ -522,7 +523,7 @@ auto hough_transform_seeding_algorithm::operator()(
                 : vecmem::vector<unsigned int>());
   copy()(n_filtered_hits, n_filtered_hits_host)->wait();
 
-  vecmem::data::jagged_vector_buffer<scalar> selected_hits(n_filtered_hits_host,
+  vecmem::data::jagged_vector_buffer<global_index_t> selected_hits(n_filtered_hits_host,
           mr().main, mr().host,
           vecmem::data::buffer_type::resizable);
   copy().setup(selected_hits)->ignore();
@@ -533,18 +534,20 @@ auto hough_transform_seeding_algorithm::operator()(
   copy().setup(vecmem::ignore_event, seed_buffer);
 
   make_seeds_kernel({total_maxima,
-                     spacepoints,
-                     spacepoint_r,
                      nn_outcome,
                      hits,
                      matrices,
+                     mode_values,
+                     best_hit_indexes,
+                     selected_hits,
                      seed_buffer});
 
 
 
 
-  /*
+  /*  
   // -------------------------------------------------------------------------------------
+  synchronize();
   edm::seed_collection::view seeds_view_host;
   edm::seed_collection::buffer seeds_buffer_host;
 
